@@ -25,11 +25,11 @@ Python Dependencies
 
 Make sure you have the required dependencies installed:
 
-	pip install -r $REPO_PATH/py_scripts/requirements.txt
+	pip install -r $REPO_PATH/requirements.txt
 
 Finally, run the controller Python script:
 
-	python3 $REPO_PATH/py_scripts/main.py
+	python3 $REPO_PATH/it/polimi/hri_learn/refine_model.py
 	
 ---
 
