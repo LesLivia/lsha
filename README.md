@@ -19,43 +19,6 @@ Authors:
 |:----------------- |:-------------------------|
 | Lestingi Livia    | livia.lestingi@polimi.it |
 
-ROS Package
------------
-
-The standalone Python robot controller and the robot and humans in the simulated scene 
-communicate over ROS.
-Installing [ROS Melodic][ros] is necessary to proceed.
-
-The custom package has to be built within the catkin workspace (paths should be properly modified):
-
-	cd $REPO_PATH/catkin_ws
-	catkin_make
-
-Source the generated setup file:
-
-	source $REPO_PATH/catkin_ws/devel/setup.bash
-
-V-Rep Scene
------------
-
-Before running V-Rep, make sure `roscore` is running and the [ROS Interface][rosint]
-is correctly loaded.
-
-The custom scene can be opened either via the GUI or the following command:
-
-	./$VREP_PATH/vrep.sh $REPO_PATH/hri_deployment/VRep_Scenes/hri_healthcare_scene.ttt
-
-**Note**: The human is controlled through the following keyboard inputs:
-
-| Key            | Action                |
-|:---------------|:----------------------|
-| Up Arrow       | Walk                  |
-| Down Arrow     | Stop                  |
-| Left Arrow     | Turn Left             |
-| Right Arrow    | Turn Right            |
-| Tab            | Switch to Other Human |
-| Enter          | Set as Served         |
-
 
 Python Dependencies
 -----------
