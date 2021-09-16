@@ -7,8 +7,8 @@ The algorithm is not tied to a specific domain, although it has been successfull
 to infer a model of human behavior in human-robot interaction scenarios.
 
 The algorithm has the same structure as [L\*][angluin] which consists of:
-- a [Teacher][it/polimi/hri_learn/lstar_sha] that stores all the collected runs of the system and is able to answer queries based on currently accumulated knowledge 
-- a [Learner][it/polimi/hri_learn/lstar_sha] that maintains and progressively refines the hypothesis automaton modeling the system under learning through answers to queries provided by the Teacher
+- a [Teacher](it/polimi/hri_learn/lstar_sha) that stores all the collected runs of the system and is able to answer queries based on currently accumulated knowledge 
+- a [Learner](it/polimi/hri_learn/lstar_sha) that maintains and progressively refines the hypothesis automaton modeling the system under learning through answers to queries provided by the Teacher
 
 **Note**: The framework has been tested on Ubuntu 18.04. Should you succeed in running it
 on a different OS, please report any issue or interesting result to *livia.lestingi@polimi.it*.
