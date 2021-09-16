@@ -343,7 +343,7 @@ class Teacher:
                         if abs(avg_metrics - old_avg) < old_avg / 10:
                             return d
                     # FIXME
-                    if len(self.get_distributions()) >= 10:
+                    if len(self.get_distributions()) >= 3:
                         return None
                     if save:
                         var_metrics = sum([(m - avg_metrics) ** 2 for m in metrics]) / len(metrics)
@@ -460,7 +460,7 @@ class Teacher:
     #############################################
     def get_counterexample(self, table: ObsTable):
         # FIXME
-        if len(self.get_signals()) >= 1200:
+        if len(self.get_signals()) >= 200:
             return None
 
         S = table.get_S()
