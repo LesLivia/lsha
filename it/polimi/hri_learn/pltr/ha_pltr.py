@@ -2,9 +2,7 @@ from typing import List
 
 from graphviz import Digraph
 
-from domain.hafeatures import HybridAutomaton
-
-SAVE_PATH = 'resources/learned_ha/'
+from it.polimi.hri_learn.domain.hafeatures import HybridAutomaton
 
 FONT_OPEN_TAG = '<FONT {}>'
 FONT_CLOSE_TAG = '</FONT>'
@@ -36,7 +34,7 @@ def style_label(args: List[str], font_sizes: List[int] = None, font_colors: List
     return label
 
 
-def plot_ha(ha: HybridAutomaton, name: str, view=False):
+def to_graphviz(ha: HybridAutomaton, name: str, SAVE_PATH: str, view=False):
     f = Digraph('hybrid_automaton', filename=SAVE_PATH + name)
     f.attr(rankdir='LR', size='2')
     f.attr('node', shape='circle')
@@ -49,7 +47,7 @@ def plot_ha(ha: HybridAutomaton, name: str, view=False):
     edges = ha.edges
 
     for loc in locations:
-        label = style_label([loc.name, '<br/><b>'+loc.flow_cond+'</b>'], [8, 6], ['black', '#ad0c00'])
+        label = style_label([loc.name, '<br/><b>' + loc.flow_cond + '</b>'], [8, 6], ['black', '#ad0c00'])
         f.node(loc.name, label=label)
 
     for edge in edges:
@@ -65,5 +63,8 @@ def plot_ha(ha: HybridAutomaton, name: str, view=False):
         f.edge(edge.start.name, edge.dest.name, label=label)
 
     f.edge_attr.update(arrowsize='0.5')
+
     if view:
         f.view()
+
+    return f

@@ -21,7 +21,7 @@ class LogLevel(Enum):
         elif self.value == 2:
             return 'DEBUG'
         elif self.value == 3:
-            return 'WARN'
+            return 'WARNING'
         elif self.value == 4:
             return 'ERROR'
         elif self.value == 99:
@@ -35,7 +35,7 @@ class LogLevel(Enum):
             return LogLevel.INFO
         elif s == 'DEBUG':
             return LogLevel.DEBUG
-        elif s == 'WARN':
+        elif s == 'WARNING':
             return LogLevel.WARNING
         elif s == 'ERROR':
             return LogLevel.ERROR

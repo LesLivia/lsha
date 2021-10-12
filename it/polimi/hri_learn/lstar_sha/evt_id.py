@@ -1,3 +1,4 @@
+import configparser
 import math
 import sys
 from typing import List
@@ -11,10 +12,16 @@ WARNING!
         default model and distr. for empty string.
 '''
 LOGGER = Logger()
-CASE_STUDY = sys.argv[1]
-CS_VERSION = sys.argv[2]
+config = configparser.ConfigParser()
+config.sections()
+config.read(sys.argv[1])
+config.sections()
+
+CASE_STUDY = config['SUL CONFIGURATION']['CASE_STUDY']
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'])
 MAIN_SIGNAL = None
-if CASE_STUDY in ['hri', 'hri_sim']:
+
+if CASE_STUDY == 'HRI':
     MAIN_SIGNAL = 0
     DRIVER_SIG = 2
     DEFAULT_MODEL = 0
@@ -77,7 +84,7 @@ class EventFactory:
     '''
 
     def label_event(self, timestamp: float, trace):
-        if CASE_STUDY in ['hri', 'hri_sim']:
+        if CASE_STUDY=='HRI':
             posX = self.get_signals()[trace][1]
             moving = self.get_signals()[trace][2]
 
@@ -85,7 +92,7 @@ class EventFactory:
             '''
             Repeat for every guard in the system
             '''
-            if CS_VERSION in ['b', 'c']:
+            if CS_VERSION in [1, 2]:
                 posY = self.get_signals()[trace][3]
                 curr_posx = list(filter(lambda x: x.timestamp <= timestamp, posX))[-1]
                 curr_posy = list(filter(lambda x: x.timestamp <= timestamp, posY))[-1]
@@ -163,13 +170,13 @@ class EventFactory:
             returns metric for HT queries.
     '''
 
-    def get_ht_metric(self, segment: List[SignalPoint], model=None):
-        if CASE_STUDY in ['hri', 'hri_sim']:
-            return self.get_ftg_metric(segment, model)
+    def get_ht_param(self, segment: List[SignalPoint], model=None):
+        if CASE_STUDY == 'HRI':
+            return self.get_ftg_param(segment, model)
         else:
-            return self.get_thermo_metric(segment, model)
+            return self.get_thermo_param(segment, model)
 
-    def get_ftg_metric(self, segment: List[SignalPoint], model: int):
+    def get_ftg_param(self, segment: List[SignalPoint], model: int):
         try:
             val = [pt.value for pt in segment]
             # metric for walking
@@ -191,7 +198,7 @@ class EventFactory:
         except ValueError:
             return None
 
-    def get_thermo_metric(self, segment: List[SignalPoint], model: int):
+    def get_thermo_param(self, segment: List[SignalPoint], model: int):
         try:
             val = [pt.value for pt in segment]
             if model in [1, 2]:
@@ -273,8 +280,8 @@ class EventFactory:
     def parse_traces_uppaal(self, path: str):
         # support method to parse traces sampled by ref query
         f = open(path, 'r')
-        if CASE_STUDY == 'hri':
-            if CS_VERSION in ['a', 'b']:
+        if CASE_STUDY == 'HRI':
+            if CS_VERSION in [1, 2]:
                 variables = ['humanFatigue[currH - 1]', 'humanPositionX[currH - 1]',
                              'amy.busy || amy.p_2', 'humanPositionY[currH - 1]']
             else:

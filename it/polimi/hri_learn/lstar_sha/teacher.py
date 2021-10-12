@@ -310,7 +310,7 @@ class Teacher:
                 eligible_distributions = [k for k in MODEL_TO_DISTR_MAP.keys() if
                                           MODEL_TO_DISTR_MAP[k] == model]
 
-                metrics = [self.evt_factory.get_ht_metric(segment, model) for segment in segments]
+                metrics = [self.evt_factory.get_ht_param(segment, model) for segment in segments]
                 metrics = [met for met in metrics if met is not None]
                 alpha = 0.1
                 m = len(metrics)

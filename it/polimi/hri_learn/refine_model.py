@@ -1,3 +1,4 @@
+import configparser
 import math
 import sys
 import warnings
@@ -13,7 +14,15 @@ from it.polimi.hri_learn.lstar_sha.teacher import Teacher
 warnings.filterwarnings('ignore')
 startTime = datetime.now()
 
-CS_VERSION = sys.argv[2]
+config = configparser.ConfigParser()
+config.sections()
+config.read(sys.argv[1])
+config.sections()
+
+CS = config['SUL CONFIGURATION']['CASE_STUDY']
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'])
+RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
+
 N_0 = (0.003, 0.0001, 100)
 N_1 = (0.004, 0.0004, 100)
 
@@ -21,7 +30,7 @@ LOGGER = Logger()
 PROB_DISTR = [N_0, N_1]
 
 UNCONTR_EVTS = {}
-if CS_VERSION == 'b':
+if CS_VERSION == 1:
     UNCONTR_EVTS = {'w': 'in_waiting_room'}  # , 'o': 'in_office'}
 elif CS_VERSION == 'c':
     UNCONTR_EVTS = {'w': 'in_waiting_room', 'o': 'in_office'}
@@ -50,6 +59,12 @@ LEARNER = Learner(TEACHER)
 
 # RUN LEARNING ALGORITHM:
 LEARNED_HA = LEARNER.run_hl_star(filter_empty=True)
-ha_pltr.plot_ha(LEARNED_HA, 'H_{}_{}{}'.format(sys.argv[1], CS_VERSION, sys.argv[3]), view=True)
+
+# PLOT (AND SAVE) RESULT
+HA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH']
+
+SHA_NAME = '{}_{}_{}'.format(CS, RESAMPLE_STRATEGY, CS_VERSION)
+graphviz_sha = ha_pltr.to_graphviz(LEARNED_HA, SHA_NAME, HA_SAVE_PATH, view=True)
+
 TEACHER.plot_distributions()
 print(datetime.now() - startTime)

@@ -3,45 +3,45 @@ import random
 import subprocess
 import sys
 from typing import List
+import configparser
 
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 
-CS = sys.argv[1]
-CS_VERSION = int(sys.argv[3])
+config = configparser.ConfigParser()
+config.sections()
+config.read(sys.argv[1])
+config.sections()
 
-UPP_EXE_PATH = '/Applications/Dev/uppaal64-4.1.24/bin-Darwin'
-UPP_OUT_PATH = '/Users/lestingi/PycharmProjects/hritoolchain/resources/uppaal_logs/rt_traces/{}.txt'
-SCRIPT_PATH = '/Users/lestingi/PycharmProjects/hritoolchain/resources/scripts/verify.sh'
+CS = config['SUL CONFIGURATION']['CASE_STUDY']
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'])
+
+UPP_EXE_PATH = config['TRACE GENERATION']['UPPAAL_PATH']
+UPP_OUT_PATH = config['TRACE GENERATION']['UPPAAL_OUT_PATH']
+SCRIPT_PATH = config['TRACE GENERATION']['UPPAAL_SCRIPT_PATH']
 
 SIM_LOGS_PATH = '/Users/lestingi/PycharmProjects/hritoolchain/resources/sim_logs/refinement/full-exp/'
 LOG_FILES = ['humanFatigue.log', 'humanPosition.log']
 
-# FIXME: should be relative paths, or passed as input args
-if CS == 'hri':
+if CS == 'HRI':
     LINE_1 = ['bool force_exe = true;\n', 'bool force_exe']
     LINE_2 = ['int force_act[MAX_E] = ', 'int force_act']
     LINE_3 = ['const int TAU = {};\n', 'const int TAU']
     LINE_4 = ['amy = HFoll_{}(1, 48, 2, 3, -1);\n', 'amy = HFoll_']
     LINE_5 = ['const int VERSION = {};\n', 'const int VERSION']
     LINES_TO_CHANGE = [LINE_1, LINE_2, LINE_3, LINE_4, LINE_5]
-    UPP_MODEL_PATH = '/Users/lestingi/Desktop/phd-workspace/hri-models/uppaal-models/hri-w_ref.xml'
-    if CS_VERSION == 1:
-        UPP_QUERY_PATH = '/Users/lestingi/Desktop/phd-workspace/hri-models/uppaal-models/hri-w_ref1.q'
-    elif CS_VERSION == 2:
-        UPP_QUERY_PATH = '/Users/lestingi/Desktop/phd-workspace/hri-models/uppaal-models/hri-w_ref2.q'
-    else:
-        UPP_QUERY_PATH = '/Users/lestingi/Desktop/phd-workspace/hri-models/uppaal-models/hri-w_ref3.q'
 else:
     LINE_1 = ['bool force_exe = true;\n', 'bool force_exe']
     LINE_2 = ['int force_open[MAX_E] = ', 'int force_open']
     LINE_3 = ['const int TAU = {};\n', 'const int TAU']
     LINE_4 = ['r = Room_{}(15.2);\n', 'r = Room']
     LINES_TO_CHANGE = [LINE_1, LINE_2, LINE_3, LINE_4]
-    UPP_MODEL_PATH = '/Users/lestingi/Desktop/phd-workspace/hri-models/uppaal-models/thermostat.xml'
-    UPP_QUERY_PATH = '/Users/lestingi/Desktop/phd-workspace/hri-models/uppaal-models/thermostat.q'
+
+UPP_MODEL_PATH = config['TRACE GENERATION']['UPPAAL_MODEL_PATH']
+UPP_QUERY_PATH = config['TRACE GENERATION']['UPPAAL_QUERY_PATH'].format(CS_VERSION)
 
 MAX_E = 15
 LOGGER = Logger()
+
 
 class TraceGenerator:
     def __init__(self, word: str = None):
@@ -62,7 +62,7 @@ class TraceGenerator:
 
     def evts_to_ints(self):
         for evt in self.events:
-            if CS == 'hri':
+            if CS == 'HRI':
                 if evt in ['u_2', 'u_4']:
                     self.evt_int.append(1)
                 elif evt in ['u_3']:
@@ -116,7 +116,7 @@ class TraceGenerator:
         tau = max(len(self.evt_int) * 150, 200)
         new_line_3 = LINE_3[0].format(tau)
         new_line_4 = LINE_4[0].format(CS_VERSION)
-        new_line_5 = LINE_5[0].format(CS_VERSION - 1) if CS == 'hri' else None
+        new_line_5 = LINE_5[0].format(CS_VERSION - 1) if CS == 'HRI' else None
         new_lines = [new_line_1, new_line_2, new_line_3, new_line_4, new_line_5]
 
         lines = m_r.readlines()
@@ -158,9 +158,7 @@ class TraceGenerator:
         self.fix_model()
         random.seed()
         n = random.randint(0, 2 ** 32)
-        case_study = sys.argv[1]
-        version = sys.argv[2]
-        s = '{}_{}_{}'.format(case_study, version, n)
+        s = '{}_{}_{}'.format(CS, CS_VERSION, n)
         FNULL = open(os.devnull, 'w')
         LOGGER.debug('!! GENERATING NEW TRACES FOR: {} !!'.format(self.word))
         p = subprocess.Popen([SCRIPT_PATH, UPP_EXE_PATH, UPP_MODEL_PATH, UPP_QUERY_PATH, UPP_OUT_PATH.format(s)],
