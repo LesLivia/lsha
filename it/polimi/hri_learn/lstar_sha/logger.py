@@ -1,10 +1,11 @@
 import sys
 from enum import Enum
+import configparser
 
-if len(sys.argv) > 4:
-    MIN_LOG_LEVEL = int(sys.argv[4])
-else:
-    MIN_LOG_LEVEL = 3
+config = configparser.ConfigParser()
+config.sections()
+config.read(sys.argv[1])
+config.sections()
 
 
 class LogLevel(Enum):
@@ -28,6 +29,30 @@ class LogLevel(Enum):
         else:
             return ''
 
+    @staticmethod
+    def parse_str(s):
+        if s == 'INFO':
+            return LogLevel.INFO
+        elif s == 'DEBUG':
+            return LogLevel.DEBUG
+        elif s == 'WARN':
+            return LogLevel.WARNING
+        elif s == 'ERROR':
+            return LogLevel.ERROR
+        elif s == 'MSG':
+            return LogLevel.MSG
+        else:
+            return None
+
+
+# INIT LOGGING LEVEL BASED ON CONFIG FILE
+if 'LoggingLevel' in config['DEFAULT']:
+    MIN_LOG_LEVEL = LogLevel.parse_str(config['DEFAULT']['LoggingLevel']).value
+else:
+    MIN_LOG_LEVEL = LogLevel.WARNING.value
+
+
+#
 
 class Logger:
     def __init__(self):
