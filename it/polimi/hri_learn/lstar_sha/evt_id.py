@@ -84,7 +84,7 @@ class EventFactory:
     '''
 
     def label_event(self, timestamp: float, trace):
-        if CASE_STUDY=='HRI':
+        if CASE_STUDY == 'HRI':
             posX = self.get_signals()[trace][1]
             moving = self.get_signals()[trace][2]
 
@@ -92,20 +92,20 @@ class EventFactory:
             '''
             Repeat for every guard in the system
             '''
-            if CS_VERSION in [1, 2]:
+            if CS_VERSION in [1, 2, 3, 4, 5]:
                 posY = self.get_signals()[trace][3]
                 curr_posx = list(filter(lambda x: x.timestamp <= timestamp, posX))[-1]
                 curr_posy = list(filter(lambda x: x.timestamp <= timestamp, posY))[-1]
-                # in_waiting = curr_posx.value >= 2000.0 and curr_posy.value <= 3000.0
-                in_waiting = 16 <= curr_posx.value <= 23.0 and 1.0 <= curr_posy.value <= 10.0
+                in_waiting = 2000.0 < curr_posx.value <= 3000.0
+                # in_waiting = 16 <= curr_posx.value <= 23.0 and 1.0 <= curr_posy.value <= 10.0
                 identified_guard += self.get_guards()[0] if in_waiting else '!' + self.get_guards()[0]
 
-            if CS_VERSION in ['c']:
+            if CS_VERSION in [3, 4, 5]:
                 posY = self.get_signals()[trace][3]
                 curr_posx = list(filter(lambda x: x.timestamp <= timestamp, posX))[-1]
                 curr_posy = list(filter(lambda x: x.timestamp <= timestamp, posY))[-1]
-                # in_office = curr_posx.value >= 2000.0 and 1000.0 <= curr_posy.value <= 3000.0
-                in_office = 1.0 <= curr_posx.value <= 11.0 and 1.0 <= curr_posy.value <= 10.0
+                in_office = curr_posx.value <= 2000.0 and 1000.0 <= curr_posy.value <= 3000.0
+                # in_office = 1.0 <= curr_posx.value <= 11.0 and 1.0 <= curr_posy.value <= 10.0
                 identified_guard += self.get_guards()[1] if in_office else '!' + self.get_guards()[1]
 
             if CS_VERSION in ['x']:

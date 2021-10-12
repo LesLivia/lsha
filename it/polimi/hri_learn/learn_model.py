@@ -30,9 +30,9 @@ LOGGER = Logger()
 PROB_DISTR = [N_0, N_1]
 
 UNCONTR_EVTS = {}
-if CS_VERSION == 1:
+if CS_VERSION in [1, 2]:
     UNCONTR_EVTS = {'w': 'in_waiting_room'}  # , 'o': 'in_office'}
-elif CS_VERSION == 'c':
+elif CS_VERSION in [3, 4, 5]:
     UNCONTR_EVTS = {'w': 'in_waiting_room', 'o': 'in_office'}
 elif CS_VERSION == 'x':
     UNCONTR_EVTS = {'s': 'sat', 'r': 'ran', 'h': 'harsh_env', 'l': 'load', 'a': 'assisted_walk'}

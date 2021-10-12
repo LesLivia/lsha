@@ -6,14 +6,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.special as sci
 import scipy.stats as stats
+from scipy.stats.stats import KstestResult
 from tqdm import tqdm
 
 from it.polimi.hri_learn.domain.sigfeatures import SignalPoint
-from it.polimi.hri_learn.lstar_sha.evt_id import EventFactory, DEFAULT_DISTR, DEFAULT_MODEL, MAIN_SIGNAL, MODEL_TO_DISTR_MAP, \
+from it.polimi.hri_learn.lstar_sha.evt_id import EventFactory, DEFAULT_DISTR, DEFAULT_MODEL, MAIN_SIGNAL, \
+    MODEL_TO_DISTR_MAP, \
     DRIVER_SIG
 from it.polimi.hri_learn.lstar_sha.learner import ObsTable
 from it.polimi.hri_learn.lstar_sha.logger import Logger
-from it.polimi.hri_learn.lstar_sha.trace_gen import TraceGenerator, CS
+from it.polimi.hri_learn.lstar_sha.trace_gen import TraceGenerator
 
 LOGGER = Logger()
 TG = TraceGenerator()
@@ -323,7 +325,7 @@ class Teacher:
                     scs = 0
                     for i in range(100):
                         y = list(np.random.normal(distr[0], distr[1], m))
-                        res = stats.ks_2samp(metrics, y)
+                        res: KstestResult = stats.ks_2samp(metrics, y)
                         if res.pvalue > alpha:
                             scs += 1
                     if abs(avg_metrics - distr[0]) < D_min and scs > 0:
@@ -340,11 +342,8 @@ class Teacher:
                     for d in eligible_distributions:
                         distr: Tuple[float, float, float] = self.get_distributions()[d]
                         old_avg: float = distr[0]
-                        if abs(avg_metrics - old_avg) < old_avg / 10:
+                        if abs(avg_metrics - old_avg) < old_avg / 5:
                             return d
-                    # FIXME
-                    if len(self.get_distributions()) >= 3:
-                        return None
                     if save:
                         var_metrics = sum([(m - avg_metrics) ** 2 for m in metrics]) / len(metrics)
                         std_dev_metrics = math.sqrt(var_metrics) if var_metrics != 0 else avg_metrics / 10
@@ -460,7 +459,7 @@ class Teacher:
     #############################################
     def get_counterexample(self, table: ObsTable):
         # FIXME
-        if len(self.get_signals()) >= 200:
+        if len(self.get_signals()) >= 2000:
             return None
 
         S = table.get_S()
