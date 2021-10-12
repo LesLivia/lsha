@@ -44,6 +44,5 @@ Finally, run the controller Python script:
 [paper3]: https://doi.org/10.1109/SMC42975.2020.9283204
 [paper4]: https://doi.org/10.1109/ACCESS.2021.3117852
 [angluin]: https://doi.org/10.1016/0890-5401(87)90052-6
-[vrep]: https://coppeliarobotics.com/downloads
-[ros]: http://wiki.ros.org/melodic/Installation
-[rosint]: https://www.coppeliarobotics.com/helpFiles/en/rosInterf.htm
+[uppaal]: https://uppaal.org/
+[dep]: https://github.com/LesLivia/hri_deployment
