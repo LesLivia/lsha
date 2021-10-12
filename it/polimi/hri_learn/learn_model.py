@@ -9,6 +9,7 @@ import it.polimi.hri_learn.pltr.ha_pltr as ha_pltr
 from it.polimi.hri_learn.lstar_sha.learner import Learner
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
+import it.polimi.hri_learn.pltr.lsha_report as report
 
 # LEARNING PROCEDURE SETUP
 warnings.filterwarnings('ignore')
@@ -58,7 +59,7 @@ for sym in TEACHER.get_symbols().keys():
 LEARNER = Learner(TEACHER)
 
 # RUN LEARNING ALGORITHM:
-LEARNED_HA = LEARNER.run_hl_star(filter_empty=True)
+LEARNED_HA = LEARNER.run_lsha(filter_empty=True)
 
 # PLOT (AND SAVE) RESULT
 HA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH']
@@ -67,4 +68,7 @@ SHA_NAME = '{}_{}_{}'.format(CS, RESAMPLE_STRATEGY, CS_VERSION)
 graphviz_sha = ha_pltr.to_graphviz(LEARNED_HA, SHA_NAME, HA_SAVE_PATH, view=True)
 
 TEACHER.plot_distributions()
-print(datetime.now() - startTime)
+
+report.save_data(TEACHER.get_symbols(), TEACHER.get_distributions(), LEARNER.get_table(),
+                 len(TEACHER.get_signals()), datetime.now() - startTime, SHA_NAME)
+

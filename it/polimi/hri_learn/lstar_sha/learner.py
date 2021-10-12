@@ -59,7 +59,8 @@ class ObsTable:
         else:
             return '({}, {})'.format(MODEL_FORMATTER.format(tup[0]), DISTR_FORMATTER.format(tup[1]))
 
-    def print(self, filter_empty=False):
+    def to_str(self, filter_empty=False):
+        result = ''
         max_s = max([len(word) / 3 for word in self.get_S()])
         max_low_s = max([len(word) / 3 for word in self.get_low_S()])
         max_tabs = int(max(max_s, max_low_s))
@@ -68,11 +69,11 @@ class ObsTable:
         for t_word in self.get_E():
             HEADER += t_word if t_word != '' else EMPTY_STRING
             HEADER += '\t\t|\t\t'
-        print(HEADER)
+        result += HEADER + '\n'
 
         SEPARATOR = '----' * max_tabs + '+' + '---------------+' * len(self.get_E())
+        result += SEPARATOR + '\n'
 
-        print(SEPARATOR)
         for (i, s_word) in enumerate(self.get_S()):
             row = self.get_upper_observations()[i]
             row_is_populated = any([row[j][0] is not None and row[j][1] is not None for j in range(len(self.get_E()))])
@@ -86,8 +87,8 @@ class ObsTable:
                 for (j, t_word) in enumerate(self.get_E()):
                     ROW += ObsTable.tuple_to_str(self.get_upper_observations()[i][j])
                     ROW += '\t|\t'
-                print(ROW)
-        print(SEPARATOR)
+                result += ROW + '\n'
+        result += SEPARATOR + '\n'
         for (i, s_word) in enumerate(self.get_low_S()):
             row = self.get_lower_observations()[i]
             row_is_populated = any([row[j][0] is not None and row[j][1] is not None for j in range(len(self.get_E()))])
@@ -101,8 +102,12 @@ class ObsTable:
                 for (j, t_word) in enumerate(self.get_E()):
                     ROW += ObsTable.tuple_to_str(self.get_lower_observations()[i][j])
                     ROW += '\t|\t'
-                print(ROW)
-        print(SEPARATOR)
+                result += ROW + '\n'
+        result += SEPARATOR + '\n'
+        return result
+
+    def print(self, filter_empty=False):
+        print(self.to_str(filter_empty))
 
 
 class Learner:
@@ -423,7 +428,7 @@ class Learner:
 
         return HybridAutomaton(locations, edges)
 
-    def run_hl_star(self, debug_print=True, filter_empty=False):
+    def run_lsha(self, debug_print=True, filter_empty=False):
         # Fill Observation Table with Answers to Queries (from TEACHER)
         step0 = True
         self.fill_table()
