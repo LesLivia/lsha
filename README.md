@@ -37,6 +37,8 @@ Make sure to set each property to match your environment, specifically:
 - **UPPAAL_OUT_PATH** is the path where you want the generated traces to be stored;
 - **CS_VERSION** is the experiment you want to perform \[1-5\].
 
+**Note**: The algorithm has been tested on Uppaal **v.4.1.24** on Mac OS X. Should you run into any issue while testing with a different configuration please report to livia.lestingi@polimi.it.
+
 Python Dependencies
 -----------
 
