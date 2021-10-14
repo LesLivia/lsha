@@ -27,15 +27,15 @@ Authors:
 Configuration File Setup
 -----------
 
-The [main L\*_sha script](it/polimi/hri_learn/learn_model.py) requires as input parameter the path to a configuration file, whose template can be found within the [`resources/config`](resources/config) folder.
+The [main L\*_sha script](it/polimi/hri_learn/learn_model.py) requires as input parameter the path to a configuration file, whose template can be found within the [`./resources/config/`](resources/config) folder.
 
 Make sure to set each property to match your environment, specifically: 
 - **UPPAAL_PATH** is the path to Uppaal [command line utility][verifyta];
 - **UPPAAL_SCRIPT_PATH** is the path to [*verify.sh*](resources/scripts);
 - **UPPAAL_MODEL_PATH** is the path to [*hri-w_ref.xml*](resources/uppaal_resources); 
 - **UPPAAL_QUERY_PATH** is the path to [*hri-w_ref{}.q*](resources/uppaal_resources) where *{}* will be replaced by the chosen **CS_VERSION** value;
-- **UPPAAL_OUT_PATH** is the path where you want Uppaal output to be saved;
-- **CS_VERSION** is the experiment you want to perform (1-5).
+- **UPPAAL_OUT_PATH** is the path where you want the generated traces to be stored;
+- **CS_VERSION** is the experiment you want to perform \[1-5\].
 
 Python Dependencies
 -----------
