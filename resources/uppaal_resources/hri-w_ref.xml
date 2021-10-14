@@ -1,0 +1,1526 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>/**
+*** CHANNELS
+**/
+// Human Channels
+broadcast chan pass_out, start_h_action, stop_h_action;
+
+/**
+*** CONSTANTS
+**/
+const double PI = 3.1415926535;
+const double INT16_MAX =  32767.0;
+
+
+// Human Fatigue Profiles [fatiguing rate, recovery rate]
+// MET = ln(1-epsilon)/(-lambda)
+const double YOUNG_HEALTHY[2] = {0.0005, 0.0005}; // approx. 1380s
+
+// Pre-Simulation
+/*
+const double YOUNG_SICK[2] = {0.001865, 0.005117}; 
+const double YOUNG_SICK_SIGMA[2] = {0.0000719, 0.000001};
+
+const double ELDERLY_HEALTHY[2] = {0.000409, 0.000450}; 
+const double ELDERLY_HEALTHY_SIGMA[2] = {0.000091, 0.000119}; 
+*/
+// Post-Simulation
+const double YOUNG_SICK[2] = {0.004, 0.003}; 
+const double YOUNG_SICK_SIGMA[2] = {0.0004, 0.0001};
+
+const double YOUNG_SICK_SIT[2] = {0.004, 0.005}; 
+const double YOUNG_SICK_SIGMA_SIT[2] = {0.0004, 0.0001};
+
+const double YOUNG_SICK_RUN[2] = {0.007, 0.003}; 
+const double YOUNG_SICK_SIGMA_RUN[2] = {0.0004, 0.0001};
+
+const double ELDERLY_HEALTHY[2] = {0.000553, 0.000302}; 
+const double ELDERLY_HEALTHY_SIGMA[2] = {0.004548, 0.000175};
+//
+const double ELDERLY_SICK[2] = {0.005, 0.004}; // approx. 350s 
+const double COVID_PATIENT[2] = {0.025, 0.001}; // approx. 280s
+
+double stdNormal () { // N(0, 1)
+    return sqrt(-2*ln(1-random(1))) * cos(2* PI*random(1));
+}
+
+double Normal(double mean , double stdDev) {
+    return mean + stdDev * stdNormal ();
+}
+
+/**
+*** VARIABLES
+**/
+
+// Human Mgmt
+int currH = 1;
+
+double humanFatigue[3] = {0.0, 0.0, 0.0};
+double humanPositionX[3] = {0.0, 0.0, 0.0};
+double humanPositionY[3] = {0.0, 0.0, 0.0};
+double humTheta[3] = {0.0, 0.0, 0.0};
+
+const double ORT_VALS[4] = {0.0, 90.0, 180.0, -90.0};
+
+/**
+* MISSION DEFINITION
+**/
+
+const int MAX_E = 15;
+
+bool force_exe = true;
+int force_act[MAX_E] = {1, 2, 1, 2, 1, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1};
+
+// -&gt; DEFINE BOUND FOR QUERIES 
+// (you can refine it by examining simulations)
+const int TAU = 1350;
+const int VERSION = 4;
+//</declaration>
+	<template>
+		<name>HFoll_1</name>
+		<parameter>int id, int v, int p_f, int p_fw, int start_from</parameter>
+		<declaration>clock t, F, Fp;
+clock tUpd;
+
+double lambda, mi;
+const double passout_th = 1.0;
+
+// Fatigue Sharing Parameters
+const int Tpoll = 1;
+
+bool ONCE_FTG = true;
+bool ONCE_POS = true;
+
+void updateF(double coeff, bool walking) { 
+    // if two human instances are the same person,
+    // residual conditions must be retrieved
+    if (ONCE_FTG &amp;&amp; start_from!=-1 &amp;&amp; currH==id) {
+        F = humanFatigue[start_from-1]; 
+        Fp = F;
+        humanFatigue[id-1] = F;
+    }
+    // same as ONCE_FTG
+    if (ONCE_POS &amp;&amp; start_from!=-1) {
+        humanPositionX[id-1] = humanPositionX[start_from-1];
+        humanPositionY[id-1] = humanPositionY[start_from-1];
+    } 
+ 
+    if(walking) {
+        humanFatigue[id-1] = 1-(1-humanFatigue[id-1])*exp(coeff*Tpoll); 
+    } else {
+        humanFatigue[id-1] = humanFatigue[id-1]*exp(coeff*Tpoll);
+    }
+
+    humanFatigue[id-1] = fmax(0, humanFatigue[id-1]);
+}
+
+double ort = 0.0;
+
+void updateP() {
+    double eps = 0.0;
+    if(ONCE_FTG &amp;&amp; ONCE_POS) {
+        ONCE_FTG = false;
+        ONCE_POS = false;
+    }
+
+    humanPositionX[id-1] = humanPositionX[id-1] + v*Tpoll*cos(ort*PI/180);
+    humanPositionY[id-1] = humanPositionY[id-1] + v*Tpoll*sin(ort*PI/180);
+}
+
+void get_rates() {
+    // unfortunately the switch case is not supported yet
+    if(p_f==1) {
+        lambda = YOUNG_HEALTHY[0]; mi = YOUNG_HEALTHY[1];
+    } else if(p_f==2) {
+        lambda = Normal(YOUNG_SICK[0], YOUNG_SICK_SIGMA[0]); 
+        mi = Normal(YOUNG_SICK[1], YOUNG_SICK_SIGMA[1]);
+    } else if(p_f==3) {
+        lambda = Normal(ELDERLY_HEALTHY[0], ELDERLY_HEALTHY_SIGMA[0]); 
+        mi = Normal(ELDERLY_HEALTHY[1], ELDERLY_HEALTHY_SIGMA[1]);
+    } else if(p_f==4) {
+        lambda = ELDERLY_SICK[0]; mi = ELDERLY_SICK[1];
+    } else if(p_f==5) {
+        lambda = COVID_PATIENT[0]; mi = COVID_PATIENT[1];
+    } else {
+        lambda = 0.005; mi = 0.005; //default values
+    }
+}
+
+void initHuman() {
+    t = 0;
+    tUpd = 0;
+    F = 0; 
+    Fp = 0;
+
+    humanPositionX[id-1] = 220.0;
+    humanPositionY[id-1] = 300.0;
+
+    get_rates();
+}</declaration>
+		<location id="id0" x="-390" y="-255">
+			<name x="-399" y="-246">idle</name>
+			<label kind="invariant" x="-399" y="-229">Fp'==0 &amp;&amp; tUpd&lt;=Tpoll
+&amp;&amp; F' == -Fp*mi*exp(-mi*t)</label>
+		</location>
+		<location id="id1" x="221" y="-255">
+			<name x="213" y="-289">busy</name>
+			<label kind="invariant" x="212" y="-340">Fp'==0 &amp;&amp; F &lt;= passout_th 
+&amp;&amp; F' == Fp*lambda*exp(-lambda*t)
+&amp;&amp; tUpd&lt;=Tpoll</label>
+		</location>
+		<location id="id2" x="-585" y="-254">
+			<name x="-628" y="-271">Init</name>
+			<committed/>
+		</location>
+		<location id="id3" x="374" y="-255">
+			<name x="391" y="-272">passed_out</name>
+			<label kind="invariant" x="391" y="-255">t' == 0 &amp;&amp;
+F' == 0</label>
+			<label kind="exponentialrate" x="366" y="-238">1</label>
+		</location>
+		<location id="id4" x="-391" y="-365">
+			<name x="-401" y="-399">p_1</name>
+			<committed/>
+		</location>
+		<location id="id5" x="221" y="-110">
+			<name x="204" y="-93">p_2</name>
+			<committed/>
+		</location>
+		<init ref="id2"/>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="synchronisation" x="-170" y="-289">start_h_action?</label>
+			<label kind="assignment" x="-170" y="-272">t = 0,  tUpd=0, Fp=1-F, get_rates()</label>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="synchronisation" x="-170" y="-204">stop_h_action?</label>
+			<label kind="assignment" x="-170" y="-187">t = 0, Fp=F, tUpd=0, get_rates()</label>
+			<nail x="119" y="-204"/>
+			<nail x="-263" y="-204"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id0"/>
+			<label kind="assignment" x="-382" y="-348">tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id1"/>
+			<label kind="assignment" x="187" y="-178">tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id5"/>
+			<label kind="guard" x="263" y="-170">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="246" y="-153">updateF(-lambda, 1),
+updateP(), tUpd=0</label>
+			<nail x="255" y="-178"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id4"/>
+			<label kind="guard" x="-501" y="-340">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="-501" y="-323">updateF(-mi, 0), 
+tUpd=0</label>
+			<nail x="-408" y="-306"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id3"/>
+			<label kind="guard" x="239" y="-272">F &gt;= passout_th</label>
+			<label kind="synchronisation" x="264" y="-255">pass_out!</label>
+			<label kind="assignment" x="315" y="-238">t = 0</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<nail x="349" y="-204"/>
+			<nail x="391" y="-204"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id0"/>
+			<label kind="assignment" x="-544" y="-246">initHuman()</label>
+		</transition>
+	</template>
+	<template>
+		<name>HFoll_2</name>
+		<parameter>int id, int v, int p_f, int p_fw, int start_from</parameter>
+		<declaration>clock t, F, Fp;
+clock tUpd;
+
+double lambda, mi;
+const double passout_th = 1.0;
+
+// Fatigue Sharing Parameters
+const int Tpoll = 1;
+
+bool ONCE_FTG = true;
+bool ONCE_POS = true;
+
+bool in_waiting_room = false;
+
+void updateF(double coeff, bool walking) { 
+    // if two human instances are the same person,
+    // residual conditions must be retrieved
+    if (ONCE_FTG &amp;&amp; start_from!=-1 &amp;&amp; currH==id) {
+        F = humanFatigue[start_from-1]; 
+        Fp = F;
+        humanFatigue[id-1] = F;
+    }
+    // same as ONCE_FTG
+    if (ONCE_POS &amp;&amp; start_from!=-1) {
+        humanPositionX[id-1] = humanPositionX[start_from-1];
+        humanPositionY[id-1] = humanPositionY[start_from-1];
+    } 
+ 
+    if(walking) {
+        humanFatigue[id-1] = 1-(1-humanFatigue[id-1])*exp(coeff*Tpoll); 
+    } else {
+        humanFatigue[id-1] = humanFatigue[id-1]*exp(coeff*Tpoll);
+    }
+
+    humanFatigue[id-1] = fmax(0, humanFatigue[id-1]);
+}
+
+double ort = 0.0;
+
+void updateP() {
+    double eps = 0.0;
+    if(ONCE_FTG &amp;&amp; ONCE_POS) {
+        ONCE_FTG = false;
+        ONCE_POS = false;
+    }
+
+    humanPositionX[id-1] = humanPositionX[id-1] + v*Tpoll*cos(ort*PI/180);
+    humanPositionY[id-1] = humanPositionY[id-1] + v*Tpoll*sin(ort*PI/180);
+
+    if(humanPositionX[id-1]&gt;=5000.0 || humanPositionX[id-1]&lt;=1.0) v = -v;
+
+    in_waiting_room = humanPositionX[id-1] &gt;= 2000.0 &amp;&amp; humanPositionX[id-1] &lt;= 3000.0;
+}
+
+void get_rates() {
+    // unfortunately the switch case is not supported yet
+    if(p_f==1) {
+        lambda = YOUNG_HEALTHY[0]; mi = YOUNG_HEALTHY[1];
+    } else if(p_f==2) {
+        if(in_waiting_room) {
+            lambda = Normal(YOUNG_SICK_SIT[0], YOUNG_SICK_SIGMA_SIT[0]); 
+            mi = Normal(YOUNG_SICK_SIT[1], YOUNG_SICK_SIGMA_SIT[1]);        
+        } else {
+            lambda = Normal(YOUNG_SICK[0], YOUNG_SICK_SIGMA[0]); 
+            mi = Normal(YOUNG_SICK[1], YOUNG_SICK_SIGMA[1]);        
+        }
+    } else if(p_f==3) {
+        lambda = Normal(ELDERLY_HEALTHY[0], ELDERLY_HEALTHY_SIGMA[0]); 
+        mi = Normal(ELDERLY_HEALTHY[1], ELDERLY_HEALTHY_SIGMA[1]);
+    } else if(p_f==4) {
+        lambda = ELDERLY_SICK[0]; mi = ELDERLY_SICK[1];
+    } else if(p_f==5) {
+        lambda = COVID_PATIENT[0]; mi = COVID_PATIENT[1];
+    } else {
+        lambda = 0.005; mi = 0.005; //default values
+    }
+}
+
+void initHuman() {
+    t = 0;
+    tUpd = 0;
+    F = 0; 
+    Fp = 0;
+
+    humanPositionX[id-1] = 220.0;
+    humanPositionY[id-1] = 300.0;
+
+    get_rates();
+}</declaration>
+		<location id="id6" x="-339" y="-51">
+			<name x="-348" y="-42">idle</name>
+			<label kind="invariant" x="-348" y="-25">Fp'==0 &amp;&amp; tUpd&lt;=Tpoll
+&amp;&amp; F' == -Fp*mi*exp(-mi*t)</label>
+		</location>
+		<location id="id7" x="272" y="-51">
+			<name x="264" y="-85">busy</name>
+			<label kind="invariant" x="263" y="-136">Fp'==0 &amp;&amp; F &lt;= passout_th 
+&amp;&amp; F' == Fp*lambda*exp(-lambda*t)
+&amp;&amp; tUpd&lt;=Tpoll</label>
+		</location>
+		<location id="id8" x="-534" y="-50">
+			<name x="-577" y="-67">Init</name>
+			<committed/>
+		</location>
+		<location id="id9" x="425" y="-51">
+			<name x="442" y="-68">passed_out</name>
+			<label kind="invariant" x="442" y="-51">t' == 0 &amp;&amp;
+F' == 0</label>
+			<label kind="exponentialrate" x="417" y="-34">1</label>
+		</location>
+		<location id="id10" x="-340" y="-161">
+			<name x="-350" y="-195">p_1</name>
+			<committed/>
+		</location>
+		<location id="id11" x="272" y="94">
+			<name x="255" y="111">p_2</name>
+			<committed/>
+		</location>
+		<location id="id12" x="85" y="-314">
+			<name x="42" y="-331">sit</name>
+			<label kind="invariant" x="-110" y="-314">Fp'==0 &amp;&amp; tUpd&lt;=Tpoll
+&amp;&amp; F' == -Fp*mi*exp(-mi*t)</label>
+		</location>
+		<location id="id13" x="85" y="-416">
+			<name x="75" y="-450">p_3</name>
+			<committed/>
+		</location>
+		<init ref="id8"/>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id12"/>
+			<label kind="assignment" x="8" y="-374">tUpd=0</label>
+			<nail x="68" y="-365"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id13"/>
+			<label kind="guard" x="93" y="-391">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="93" y="-374">updateF(-mi, 0), 
+tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="8" y="-187">start_h_action?</label>
+			<label kind="assignment" x="34" y="-170">t = 0,  tUpd=0, 
+Fp=1-F, get_rates()</label>
+			<nail x="85" y="-238"/>
+			<nail x="178" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id12"/>
+			<label kind="guard" x="161" y="-229">in_waiting_room</label>
+			<label kind="synchronisation" x="178" y="-212">stop_h_action?</label>
+			<label kind="assignment" x="195" y="-195">t = 0, Fp=F, 
+tUpd=0, get_rates()</label>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="-119" y="-85">start_h_action?</label>
+			<label kind="assignment" x="-119" y="-68">t = 0,  tUpd=0, Fp=1-F, get_rates()</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id6"/>
+			<label kind="guard" x="-119" y="-17">!in_waiting_room</label>
+			<label kind="synchronisation" x="-119" y="0">stop_h_action?</label>
+			<label kind="assignment" x="-119" y="17">t = 0, Fp=F, tUpd=0, get_rates()</label>
+			<nail x="170" y="0"/>
+			<nail x="-212" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id6"/>
+			<label kind="assignment" x="-331" y="-144">tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id7"/>
+			<label kind="assignment" x="238" y="26">tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id11"/>
+			<label kind="guard" x="314" y="34">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="297" y="51">updateF(-lambda, 1),
+updateP(), tUpd=0</label>
+			<nail x="306" y="26"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id10"/>
+			<label kind="guard" x="-450" y="-136">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="-450" y="-119">updateF(-mi, 0), 
+tUpd=0</label>
+			<nail x="-357" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id9"/>
+			<label kind="guard" x="290" y="-68">F &gt;= passout_th</label>
+			<label kind="synchronisation" x="315" y="-51">pass_out!</label>
+			<label kind="assignment" x="366" y="-34">t = 0</label>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id9"/>
+			<nail x="400" y="0"/>
+			<nail x="442" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id6"/>
+			<label kind="assignment" x="-493" y="-42">initHuman()</label>
+		</transition>
+	</template>
+	<template>
+		<name>HFoll_3</name>
+		<parameter>int id, int v, int p_f, int p_fw, int start_from</parameter>
+		<declaration>clock t, F, Fp;
+clock tUpd;
+
+double lambda, mi;
+const double passout_th = 1.0;
+
+// Fatigue Sharing Parameters
+const int Tpoll = 1;
+
+bool in_waiting_room = false;
+bool from_office = false;
+
+void updateF(double coeff, bool walking) {  
+    if(walking) {
+        humanFatigue[id-1] = 1-(1-humanFatigue[id-1])*exp(coeff*Tpoll); 
+    } else {
+        humanFatigue[id-1] = humanFatigue[id-1]*exp(coeff*Tpoll);
+    }
+
+    humanFatigue[id-1] = fmax(0, humanFatigue[id-1]);
+}
+
+double ort = 0.0;
+
+void updateP() {
+    double eps = 0.0;
+    bool xout, yout;
+    int i = fint(random(100)) % 4, j = fint(random(100));
+    if(j&gt;=70) ort = ORT_VALS[i];
+
+    humanPositionX[id-1] = humanPositionX[id-1] + v*Tpoll*cos(ort*PI/180);
+    humanPositionY[id-1] = humanPositionY[id-1] + v*Tpoll*sin(ort*PI/180);
+
+    xout = humanPositionX[id-1]&gt;=5000.0 || humanPositionX[id-1]&lt;=1.0;
+    yout = humanPositionY[id-1]&gt;=5000.0 || humanPositionY[id-1]&lt;=1.0;
+    if(xout || yout) v = -v;
+
+    in_waiting_room = humanPositionX[id-1] &gt;= 2000.0 &amp;&amp; humanPositionX[id-1] &lt;= 3000.0;
+    from_office = humanPositionX[currH-1]&lt;=2000.0 &amp;&amp; humanPositionY[currH-1]&gt;=1000.0 &amp;&amp; humanPositionY[currH-1]&lt;=3000.0;
+}
+
+void get_rates() {
+    // unfortunately the switch case is not supported yet
+    if(p_f==1) {
+        lambda = YOUNG_HEALTHY[0]; mi = YOUNG_HEALTHY[1];
+    } else if(p_f==2) {
+        if(in_waiting_room) {
+            lambda = Normal(YOUNG_SICK_SIT[0], YOUNG_SICK_SIGMA_SIT[0]); 
+            mi = Normal(YOUNG_SICK_SIT[1], YOUNG_SICK_SIGMA_SIT[1]);        
+        } 
+        else if (from_office) {
+            lambda = Normal(YOUNG_SICK_RUN[0], YOUNG_SICK_SIGMA_RUN[0]); 
+            mi = Normal(YOUNG_SICK_RUN[1], YOUNG_SICK_SIGMA_RUN[1]);        
+        }
+        else {
+            lambda = Normal(YOUNG_SICK[0], YOUNG_SICK_SIGMA[0]); 
+            mi = Normal(YOUNG_SICK[1], YOUNG_SICK_SIGMA[1]);        
+        }
+    } else if(p_f==3) {
+        lambda = Normal(ELDERLY_HEALTHY[0], ELDERLY_HEALTHY_SIGMA[0]); 
+        mi = Normal(ELDERLY_HEALTHY[1], ELDERLY_HEALTHY_SIGMA[1]);
+    } else if(p_f==4) {
+        lambda = ELDERLY_SICK[0]; mi = ELDERLY_SICK[1];
+    } else if(p_f==5) {
+        lambda = COVID_PATIENT[0]; mi = COVID_PATIENT[1];
+    } else {
+        lambda = 0.005; mi = 0.005; //default values
+    }
+}
+
+void initHuman() {
+    double start = 1.0;
+
+    t = 0;
+    tUpd = 0;
+    F = 0; 
+    Fp = 0;
+
+    if(force_exe) {
+        if(force_act[0]==3) start = 1500.0;
+    }
+    humanPositionX[id-1] = start;
+    humanPositionY[id-1] = start;
+    in_waiting_room = humanPositionX[id-1] &gt;= 2000.0 &amp;&amp; humanPositionX[id-1] &lt;= 3000.0;
+    from_office = humanPositionX[currH-1]&lt;=2000.0 &amp;&amp; humanPositionY[currH-1]&gt;=1000.0 &amp;&amp; humanPositionY[currH-1]&lt;=3000.0;
+
+    get_rates();
+}</declaration>
+		<location id="id14" x="-339" y="-51">
+			<name x="-331" y="-42">idle</name>
+			<label kind="invariant" x="-331" y="-25">Fp'==0 &amp;&amp; tUpd&lt;=Tpoll
+&amp;&amp; F' == -Fp*mi*exp(-mi*t)</label>
+		</location>
+		<location id="id15" x="272" y="-51">
+			<name x="264" y="-85">busy</name>
+			<label kind="invariant" x="263" y="-136">Fp'==0 &amp;&amp; F &lt;= passout_th 
+&amp;&amp; F' == Fp*lambda*exp(-lambda*t)
+&amp;&amp; tUpd&lt;=Tpoll</label>
+		</location>
+		<location id="id16" x="-534" y="-50">
+			<name x="-577" y="-67">Init</name>
+			<committed/>
+		</location>
+		<location id="id17" x="425" y="-51">
+			<name x="442" y="-68">passed_out</name>
+			<label kind="invariant" x="442" y="-51">t' == 0 &amp;&amp;
+F' == 0</label>
+			<label kind="exponentialrate" x="417" y="-34">1</label>
+		</location>
+		<location id="id18" x="-340" y="76">
+			<name x="-357" y="93">p_1</name>
+			<committed/>
+		</location>
+		<location id="id19" x="272" y="94">
+			<name x="255" y="111">p_2</name>
+			<committed/>
+		</location>
+		<location id="id20" x="85" y="-314">
+			<name x="102" y="-331">sit</name>
+			<label kind="invariant" x="110" y="-314">Fp'==0 &amp;&amp; tUpd&lt;=Tpoll
+&amp;&amp; F' == -Fp*mi*exp(-mi*t)</label>
+		</location>
+		<location id="id21" x="85" y="-416">
+			<name x="75" y="-450">p_3</name>
+			<committed/>
+		</location>
+		<location id="id22" x="-340" y="-246">
+			<name x="-382" y="-263">run</name>
+			<label kind="invariant" x="-569" y="-246">Fp'==0 &amp;&amp; F &lt;= passout_th 
+&amp;&amp; F' == Fp*lambda*exp(-lambda*t)
+&amp;&amp; tUpd&lt;=Tpoll</label>
+		</location>
+		<location id="id23" x="-340" y="-340">
+			<name x="-350" y="-374">p_4</name>
+			<committed/>
+		</location>
+		<init ref="id16"/>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id17"/>
+			<label kind="guard" x="348" y="-263">F &gt;= passout_th</label>
+			<label kind="synchronisation" x="348" y="-246">pass_out!</label>
+			<nail x="425" y="-246"/>
+		</transition>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id20"/>
+			<label kind="guard" x="-127" y="-323">in_waiting_room</label>
+			<label kind="synchronisation" x="-127" y="-306">stop_h_action?</label>
+			<label kind="assignment" x="-127" y="-289">t = 0, Fp=F, 
+tUpd=0, get_rates()</label>
+			<nail x="34" y="-246"/>
+		</transition>
+		<transition>
+			<source ref="id23"/>
+			<target ref="id22"/>
+			<label kind="assignment" x="-425" y="-306">tUpd=0</label>
+			<nail x="-365" y="-297"/>
+		</transition>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id23"/>
+			<label kind="guard" x="-331" y="-314">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="-331" y="-297">updateF(-lambda, 1),
+updateP(), tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-280" y="-195">!in_waiting_room</label>
+			<label kind="synchronisation" x="-280" y="-178">stop_h_action?</label>
+			<label kind="assignment" x="-280" y="-161">t = 0, Fp=F, 
+tUpd=0, get_rates()</label>
+			<nail x="-289" y="-212"/>
+			<nail x="-289" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id22"/>
+			<label kind="guard" x="-425" y="-187">from_office</label>
+			<label kind="synchronisation" x="-450" y="-170">start_h_action?</label>
+			<label kind="assignment" x="-450" y="-153">t = 0,  tUpd=0, 
+Fp=1-F, get_rates()</label>
+		</transition>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id20"/>
+			<label kind="assignment" x="8" y="-374">tUpd=0</label>
+			<nail x="68" y="-365"/>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id21"/>
+			<label kind="guard" x="93" y="-391">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="93" y="-374">updateF(-mi, 0), 
+tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id15"/>
+			<label kind="synchronisation" x="8" y="-187">start_h_action?</label>
+			<label kind="assignment" x="34" y="-170">t = 0,  tUpd=0, 
+Fp=1-F, get_rates()</label>
+			<nail x="85" y="-238"/>
+			<nail x="178" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id20"/>
+			<label kind="guard" x="161" y="-229">in_waiting_room</label>
+			<label kind="synchronisation" x="178" y="-212">stop_h_action?</label>
+			<label kind="assignment" x="195" y="-195">t = 0, Fp=F, 
+tUpd=0, get_rates()</label>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id15"/>
+			<label kind="guard" x="-119" y="-102">!from_office</label>
+			<label kind="synchronisation" x="-119" y="-85">start_h_action?</label>
+			<label kind="assignment" x="-119" y="-68">t = 0,  tUpd=0, Fp=1-F, get_rates()</label>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-119" y="-17">!in_waiting_room</label>
+			<label kind="synchronisation" x="-119" y="0">stop_h_action?</label>
+			<label kind="assignment" x="-119" y="17">t = 0, Fp=F, tUpd=0, get_rates()</label>
+			<nail x="170" y="0"/>
+			<nail x="-212" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id14"/>
+			<label kind="assignment" x="-331" y="25">tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id15"/>
+			<label kind="assignment" x="238" y="26">tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id19"/>
+			<label kind="guard" x="314" y="34">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="297" y="51">updateF(-lambda, 1),
+updateP(), tUpd=0</label>
+			<nail x="306" y="26"/>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id18"/>
+			<label kind="guard" x="-450" y="17">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="-467" y="34">updateF(-mi, 0), 
+tUpd=0</label>
+			<nail x="-357" y="17"/>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id17"/>
+			<label kind="guard" x="290" y="-68">F &gt;= passout_th</label>
+			<label kind="synchronisation" x="315" y="-51">pass_out!</label>
+			<label kind="assignment" x="366" y="-34">t = 0</label>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id17"/>
+			<nail x="400" y="0"/>
+			<nail x="442" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id16"/>
+			<target ref="id14"/>
+			<label kind="assignment" x="-493" y="-42">initHuman()</label>
+		</transition>
+	</template>
+	<template>
+		<name>HFoll_4</name>
+		<parameter>int id, int v, int p_f, int p_fw, int start_from</parameter>
+		<declaration>clock t, F, Fp;
+clock tUpd;
+
+double lambda, mi;
+const double passout_th = 1.0;
+
+// Fatigue Sharing Parameters
+const int Tpoll = 1;
+
+bool in_waiting_room = false;
+bool from_office = false;
+
+void updateF(double coeff, bool walking) {  
+    if(walking) {
+        humanFatigue[id-1] = 1-(1-humanFatigue[id-1])*exp(coeff*Tpoll); 
+    } else {
+        humanFatigue[id-1] = humanFatigue[id-1]*exp(coeff*Tpoll);
+    }
+
+    humanFatigue[id-1] = fmax(0, humanFatigue[id-1]);
+}
+
+double ort = 0.0;
+
+void updateP() {
+    double eps = 0.0;
+    bool xout, yout;
+    int i = fint(random(100)) % 4, j = fint(random(100));
+    if(j&gt;=70) ort = ORT_VALS[i];
+
+    humanPositionX[id-1] = humanPositionX[id-1] + v*Tpoll*cos(ort*PI/180);
+    humanPositionY[id-1] = humanPositionY[id-1] + v*Tpoll*sin(ort*PI/180);
+
+    xout = humanPositionX[id-1]&gt;=5000.0 || humanPositionX[id-1]&lt;=1.0;
+    yout = humanPositionY[id-1]&gt;=5000.0 || humanPositionY[id-1]&lt;=1.0;
+    if(xout || yout) v = -v;
+
+    in_waiting_room = humanPositionX[id-1] &gt;= 2000.0 &amp;&amp; humanPositionX[id-1] &lt;= 3000.0;
+    from_office = humanPositionX[currH-1]&lt;=2000.0 &amp;&amp; humanPositionY[currH-1]&gt;=1000.0 &amp;&amp; humanPositionY[currH-1]&lt;=3000.0;
+}
+
+void get_rates(bool r) {
+    // unfortunately the switch case is not supported yet
+    if(p_f==1) {
+        lambda = YOUNG_HEALTHY[0]; mi = YOUNG_HEALTHY[1];
+    } else if(p_f==2) {
+        if(in_waiting_room) {
+            if(r) {
+                lambda = Normal(YOUNG_SICK_SIT[0], YOUNG_SICK_SIGMA_SIT[0]); 
+                mi = Normal(YOUNG_SICK_SIT[1], YOUNG_SICK_SIGMA_SIT[1]);        
+            } else {
+                lambda = Normal(YOUNG_SICK[0], YOUNG_SICK_SIGMA[0]); 
+                mi = Normal(YOUNG_SICK[1], YOUNG_SICK_SIGMA[1]);        
+            }
+        } 
+        else if (from_office) {
+            lambda = Normal(YOUNG_SICK_RUN[0], YOUNG_SICK_SIGMA_RUN[0]); 
+            mi = Normal(YOUNG_SICK_RUN[1], YOUNG_SICK_SIGMA_RUN[1]);        
+        }
+        else {
+            lambda = Normal(YOUNG_SICK[0], YOUNG_SICK_SIGMA[0]); 
+            mi = Normal(YOUNG_SICK[1], YOUNG_SICK_SIGMA[1]);        
+        }
+    } else if(p_f==3) {
+        lambda = Normal(ELDERLY_HEALTHY[0], ELDERLY_HEALTHY_SIGMA[0]); 
+        mi = Normal(ELDERLY_HEALTHY[1], ELDERLY_HEALTHY_SIGMA[1]);
+    } else if(p_f==4) {
+        lambda = ELDERLY_SICK[0]; mi = ELDERLY_SICK[1];
+    } else if(p_f==5) {
+        lambda = COVID_PATIENT[0]; mi = COVID_PATIENT[1];
+    } else {
+        lambda = 0.005; mi = 0.005; //default values
+    }
+}
+
+void initHuman() {
+    double start = 1.0;
+
+    t = 0;
+    tUpd = 0;
+    F = 0; 
+    Fp = 0;
+
+    if(force_exe) {
+        if(force_act[0]==3) start = 1500.0;
+    }
+    humanPositionX[id-1] = start;
+    humanPositionY[id-1] = start;
+    in_waiting_room = humanPositionX[id-1] &gt;= 2000.0 &amp;&amp; humanPositionX[id-1] &lt;= 3000.0;
+    from_office = humanPositionX[currH-1]&lt;=2000.0 &amp;&amp; humanPositionY[currH-1]&gt;=1000.0 &amp;&amp; humanPositionY[currH-1]&lt;=3000.0;
+
+    get_rates(0);
+}</declaration>
+		<location id="id24" x="-339" y="-51">
+			<name x="-331" y="-42">idle</name>
+			<label kind="invariant" x="-331" y="-25">Fp'==0 &amp;&amp; tUpd&lt;=Tpoll
+&amp;&amp; F' == -Fp*mi*exp(-mi*t)</label>
+		</location>
+		<location id="id25" x="272" y="-51">
+			<name x="264" y="-85">busy</name>
+			<label kind="invariant" x="263" y="-136">Fp'==0 &amp;&amp; F &lt;= passout_th 
+&amp;&amp; F' == Fp*lambda*exp(-lambda*t)
+&amp;&amp; tUpd&lt;=Tpoll</label>
+		</location>
+		<location id="id26" x="-534" y="-50">
+			<name x="-577" y="-67">Init</name>
+			<committed/>
+		</location>
+		<location id="id27" x="425" y="-51">
+			<name x="442" y="-68">passed_out</name>
+			<label kind="invariant" x="442" y="-51">t' == 0 &amp;&amp;
+F' == 0</label>
+			<label kind="exponentialrate" x="417" y="-34">1</label>
+		</location>
+		<location id="id28" x="-340" y="76">
+			<name x="-357" y="93">p_1</name>
+			<committed/>
+		</location>
+		<location id="id29" x="272" y="94">
+			<name x="255" y="111">p_2</name>
+			<committed/>
+		</location>
+		<location id="id30" x="85" y="-314">
+			<name x="102" y="-331">sit</name>
+			<label kind="invariant" x="110" y="-314">Fp'==0 &amp;&amp; tUpd&lt;=Tpoll
+&amp;&amp; F' == -Fp*mi*exp(-mi*t)</label>
+		</location>
+		<location id="id31" x="85" y="-416">
+			<name x="75" y="-450">p_3</name>
+			<committed/>
+		</location>
+		<location id="id32" x="-340" y="-246">
+			<name x="-382" y="-263">run</name>
+			<label kind="invariant" x="-569" y="-246">Fp'==0 &amp;&amp; F &lt;= passout_th 
+&amp;&amp; F' == Fp*lambda*exp(-lambda*t)
+&amp;&amp; tUpd&lt;=Tpoll</label>
+		</location>
+		<location id="id33" x="-340" y="-340">
+			<name x="-350" y="-374">p_4</name>
+			<committed/>
+		</location>
+		<init ref="id26"/>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id27"/>
+			<label kind="guard" x="348" y="-263">F &gt;= passout_th</label>
+			<label kind="synchronisation" x="348" y="-246">pass_out!</label>
+			<nail x="425" y="-246"/>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id30"/>
+			<label kind="guard" x="-127" y="-323">in_waiting_room</label>
+			<label kind="synchronisation" x="-127" y="-306">stop_h_action?</label>
+			<label kind="assignment" x="-127" y="-289">t = 0, Fp=F, 
+tUpd=0, get_rates(0)</label>
+			<nail x="34" y="-246"/>
+		</transition>
+		<transition>
+			<source ref="id33"/>
+			<target ref="id32"/>
+			<label kind="assignment" x="-425" y="-306">tUpd=0</label>
+			<nail x="-365" y="-297"/>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id33"/>
+			<label kind="guard" x="-331" y="-314">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="-331" y="-297">updateF(-lambda, 1),
+updateP(), tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id24"/>
+			<label kind="guard" x="-280" y="-195">!in_waiting_room</label>
+			<label kind="synchronisation" x="-280" y="-178">stop_h_action?</label>
+			<label kind="assignment" x="-280" y="-161">t = 0, Fp=F, 
+tUpd=0, get_rates(0)</label>
+			<nail x="-289" y="-212"/>
+			<nail x="-289" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id24"/>
+			<target ref="id32"/>
+			<label kind="guard" x="-425" y="-187">from_office</label>
+			<label kind="synchronisation" x="-450" y="-170">start_h_action?</label>
+			<label kind="assignment" x="-450" y="-153">t = 0,  tUpd=0, 
+Fp=1-F, 
+get_rates(0)</label>
+		</transition>
+		<transition>
+			<source ref="id31"/>
+			<target ref="id30"/>
+			<label kind="assignment" x="8" y="-374">tUpd=0</label>
+			<nail x="68" y="-365"/>
+		</transition>
+		<transition>
+			<source ref="id30"/>
+			<target ref="id31"/>
+			<label kind="guard" x="93" y="-391">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="93" y="-374">updateF(-mi, 0), 
+tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id30"/>
+			<target ref="id25"/>
+			<label kind="synchronisation" x="8" y="-187">start_h_action?</label>
+			<label kind="assignment" x="34" y="-170">t = 0,  tUpd=0, 
+Fp=1-F, get_rates(0)</label>
+			<nail x="85" y="-238"/>
+			<nail x="178" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id30"/>
+			<label kind="guard" x="161" y="-229">in_waiting_room</label>
+			<label kind="synchronisation" x="178" y="-212">stop_h_action?</label>
+			<label kind="assignment" x="195" y="-195">t = 0, Fp=F, 
+tUpd=0, get_rates(1)</label>
+		</transition>
+		<transition>
+			<source ref="id24"/>
+			<target ref="id25"/>
+			<label kind="guard" x="-119" y="-102">!from_office</label>
+			<label kind="synchronisation" x="-119" y="-85">start_h_action?</label>
+			<label kind="assignment" x="-119" y="-68">t = 0,  tUpd=0, Fp=1-F, get_rates(0)</label>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id24"/>
+			<label kind="guard" x="-119" y="-17">!in_waiting_room</label>
+			<label kind="synchronisation" x="-119" y="0">stop_h_action?</label>
+			<label kind="assignment" x="-119" y="17">t = 0, Fp=F, tUpd=0, get_rates(0)</label>
+			<nail x="170" y="0"/>
+			<nail x="-212" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id28"/>
+			<target ref="id24"/>
+			<label kind="assignment" x="-331" y="25">tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id29"/>
+			<target ref="id25"/>
+			<label kind="assignment" x="238" y="26">tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id29"/>
+			<label kind="guard" x="314" y="34">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="297" y="51">updateF(-lambda, 1),
+updateP(), tUpd=0</label>
+			<nail x="306" y="26"/>
+		</transition>
+		<transition>
+			<source ref="id24"/>
+			<target ref="id28"/>
+			<label kind="guard" x="-450" y="17">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="-467" y="34">updateF(-mi, 0), 
+tUpd=0</label>
+			<nail x="-357" y="17"/>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id27"/>
+			<label kind="guard" x="290" y="-68">F &gt;= passout_th</label>
+			<label kind="synchronisation" x="315" y="-51">pass_out!</label>
+			<label kind="assignment" x="366" y="-34">t = 0</label>
+		</transition>
+		<transition>
+			<source ref="id27"/>
+			<target ref="id27"/>
+			<nail x="400" y="0"/>
+			<nail x="442" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id26"/>
+			<target ref="id24"/>
+			<label kind="assignment" x="-493" y="-42">initHuman()</label>
+		</transition>
+	</template>
+	<template>
+		<name>HFoll_5</name>
+		<parameter>int id, int v, int p_f, int p_fw, int start_from</parameter>
+		<declaration>clock t, F, Fp;
+clock tUpd;
+
+double lambda, mi;
+const double passout_th = 1.0;
+
+// Fatigue Sharing Parameters
+const int Tpoll = 1;
+
+bool in_waiting_room = false;
+bool from_office = false;
+
+void updateF(double coeff, bool walking) {  
+    if(walking) {
+        humanFatigue[id-1] = 1-(1-humanFatigue[id-1])*exp(coeff*Tpoll); 
+    } else {
+        humanFatigue[id-1] = humanFatigue[id-1]*exp(coeff*Tpoll);
+    }
+
+    humanFatigue[id-1] = fmax(0, humanFatigue[id-1]);
+}
+
+double ort = 0.0;
+
+void updateP() {
+    double eps = 0.0;
+    bool xout, yout;
+    int i = fint(random(100)) % 4, j = fint(random(100));
+    if(j&gt;=70) ort = ORT_VALS[i];
+
+    humanPositionX[id-1] = humanPositionX[id-1] + v*Tpoll*cos(ort*PI/180);
+    humanPositionY[id-1] = humanPositionY[id-1] + v*Tpoll*sin(ort*PI/180);
+
+    xout = humanPositionX[id-1]&gt;=5000.0 || humanPositionX[id-1]&lt;=1.0;
+    yout = humanPositionY[id-1]&gt;=5000.0 || humanPositionY[id-1]&lt;=1.0;
+    if(xout || yout) v = -v;
+
+    in_waiting_room = humanPositionX[id-1] &gt;= 2000.0 &amp;&amp; humanPositionX[id-1] &lt;= 3000.0;
+    from_office = humanPositionX[currH-1]&lt;=2000.0 &amp;&amp; humanPositionY[currH-1]&gt;=1000.0 &amp;&amp; humanPositionY[currH-1]&lt;=3000.0;
+}
+
+bool r = false;
+void get_rates() {
+    // unfortunately the switch case is not supported yet
+    if(p_f==1) {
+        lambda = YOUNG_HEALTHY[0]; mi = YOUNG_HEALTHY[1];
+    } else if(p_f==2) {
+        if(in_waiting_room) {
+            if(r) {
+                lambda = Normal(YOUNG_SICK_SIT[0], YOUNG_SICK_SIGMA_SIT[0]); 
+                mi = Normal(YOUNG_SICK_SIT[1], YOUNG_SICK_SIGMA_SIT[1]);        
+            } else {
+                lambda = Normal(YOUNG_SICK[0], YOUNG_SICK_SIGMA[0]); 
+                mi = Normal(YOUNG_SICK[1], YOUNG_SICK_SIGMA[1]);        
+            }
+        } 
+        else if (from_office) {
+            lambda = Normal(YOUNG_SICK_RUN[0], YOUNG_SICK_SIGMA_RUN[0]); 
+            mi = Normal(YOUNG_SICK_RUN[1], YOUNG_SICK_SIGMA_RUN[1]);        
+        }
+        else {
+            lambda = Normal(YOUNG_SICK[0], YOUNG_SICK_SIGMA[0]); 
+            mi = Normal(YOUNG_SICK[1], YOUNG_SICK_SIGMA[1]);        
+        }
+    } else if(p_f==3) {
+        lambda = Normal(ELDERLY_HEALTHY[0], ELDERLY_HEALTHY_SIGMA[0]); 
+        mi = Normal(ELDERLY_HEALTHY[1], ELDERLY_HEALTHY_SIGMA[1]);
+    } else if(p_f==4) {
+        lambda = ELDERLY_SICK[0]; mi = ELDERLY_SICK[1];
+    } else if(p_f==5) {
+        lambda = COVID_PATIENT[0]; mi = COVID_PATIENT[1];
+    } else {
+        lambda = 0.005; mi = 0.005; //default values
+    }
+}
+
+void initHuman() {
+    double start = 1.0;
+
+    t = 0;
+    tUpd = 0;
+    F = 0; 
+    Fp = 0;
+
+    if(force_exe) {
+        if(force_act[0]==3) start = 1500.0;
+    }
+    humanPositionX[id-1] = start;
+    humanPositionY[id-1] = start;
+    in_waiting_room = humanPositionX[id-1] &gt;= 2000.0 &amp;&amp; humanPositionX[id-1] &lt;= 3000.0;
+    from_office = humanPositionX[currH-1]&lt;=2000.0 &amp;&amp; humanPositionY[currH-1]&gt;=1000.0 &amp;&amp; humanPositionY[currH-1]&lt;=3000.0;
+
+    get_rates();
+}</declaration>
+		<location id="id34" x="-331" y="8">
+			<name x="-323" y="17">idle</name>
+			<label kind="invariant" x="-323" y="34">Fp'==0 &amp;&amp; tUpd&lt;=Tpoll
+&amp;&amp; F' == -Fp*mi*exp(-mi*t)</label>
+		</location>
+		<location id="id35" x="280" y="8">
+			<name x="272" y="-26">busy</name>
+			<label kind="invariant" x="271" y="-77">Fp'==0 &amp;&amp; F &lt;= passout_th 
+&amp;&amp; F' == Fp*lambda*exp(-lambda*t)
+&amp;&amp; tUpd&lt;=Tpoll</label>
+		</location>
+		<location id="id36" x="-526" y="9">
+			<name x="-569" y="-8">Init</name>
+			<committed/>
+		</location>
+		<location id="id37" x="433" y="8">
+			<name x="450" y="-9">passed_out</name>
+			<label kind="invariant" x="450" y="8">t' == 0 &amp;&amp;
+F' == 0</label>
+			<label kind="exponentialrate" x="425" y="25">1</label>
+		</location>
+		<location id="id38" x="-332" y="135">
+			<name x="-349" y="152">p_1</name>
+			<committed/>
+		</location>
+		<location id="id39" x="280" y="153">
+			<name x="263" y="170">p_2</name>
+			<committed/>
+		</location>
+		<location id="id40" x="93" y="-255">
+			<name x="110" y="-272">sit</name>
+			<label kind="invariant" x="118" y="-255">Fp'==0 &amp;&amp; tUpd&lt;=Tpoll
+&amp;&amp; F' == -Fp*mi*exp(-mi*t)</label>
+		</location>
+		<location id="id41" x="93" y="-357">
+			<name x="83" y="-391">p_3</name>
+			<committed/>
+		</location>
+		<location id="id42" x="-332" y="-187">
+			<name x="-374" y="-204">run</name>
+			<label kind="invariant" x="-561" y="-187">Fp'==0 &amp;&amp; F &lt;= passout_th 
+&amp;&amp; F' == Fp*lambda*exp(-lambda*t)
+&amp;&amp; tUpd&lt;=Tpoll</label>
+		</location>
+		<location id="id43" x="-332" y="-281">
+			<name x="-342" y="-315">p_4</name>
+			<committed/>
+		</location>
+		<init ref="id36"/>
+		<transition>
+			<source ref="id42"/>
+			<target ref="id37"/>
+			<label kind="guard" x="356" y="-204">F &gt;= passout_th</label>
+			<label kind="synchronisation" x="356" y="-187">pass_out!</label>
+			<nail x="433" y="-187"/>
+		</transition>
+		<transition>
+			<source ref="id42"/>
+			<target ref="id40"/>
+			<label kind="guard" x="-119" y="-264">in_waiting_room</label>
+			<label kind="synchronisation" x="-119" y="-247">stop_h_action?</label>
+			<label kind="assignment" x="-119" y="-230">t = 0, Fp=F, 
+tUpd=0, get_rates()</label>
+			<nail x="42" y="-187"/>
+		</transition>
+		<transition>
+			<source ref="id43"/>
+			<target ref="id42"/>
+			<label kind="assignment" x="-417" y="-247">tUpd=0</label>
+			<nail x="-357" y="-238"/>
+		</transition>
+		<transition>
+			<source ref="id42"/>
+			<target ref="id43"/>
+			<label kind="guard" x="-323" y="-255">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="-323" y="-238">updateF(-lambda, 1),
+updateP(), tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id42"/>
+			<target ref="id34"/>
+			<label kind="guard" x="-272" y="-136">!in_waiting_room</label>
+			<label kind="synchronisation" x="-272" y="-119">stop_h_action?</label>
+			<label kind="assignment" x="-272" y="-102">t = 0, Fp=F, 
+tUpd=0, get_rates()</label>
+			<nail x="-281" y="-153"/>
+			<nail x="-281" y="-43"/>
+		</transition>
+		<transition>
+			<source ref="id34"/>
+			<target ref="id42"/>
+			<label kind="guard" x="-417" y="-128">from_office</label>
+			<label kind="synchronisation" x="-442" y="-111">start_h_action?</label>
+			<label kind="assignment" x="-442" y="-94">t = 0,  tUpd=0, 
+Fp=1-F, 
+get_rates(),
+r=true</label>
+		</transition>
+		<transition>
+			<source ref="id41"/>
+			<target ref="id40"/>
+			<label kind="assignment" x="16" y="-315">tUpd=0</label>
+			<nail x="76" y="-306"/>
+		</transition>
+		<transition>
+			<source ref="id40"/>
+			<target ref="id41"/>
+			<label kind="guard" x="101" y="-332">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="101" y="-315">updateF(-mi, 0), 
+tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id40"/>
+			<target ref="id35"/>
+			<label kind="synchronisation" x="16" y="-128">start_h_action?</label>
+			<label kind="assignment" x="42" y="-111">t = 0,  tUpd=0, 
+Fp=1-F, get_rates()</label>
+			<nail x="93" y="-179"/>
+			<nail x="186" y="-43"/>
+		</transition>
+		<transition>
+			<source ref="id35"/>
+			<target ref="id40"/>
+			<label kind="guard" x="169" y="-170">in_waiting_room</label>
+			<label kind="synchronisation" x="186" y="-153">stop_h_action?</label>
+			<label kind="assignment" x="203" y="-136">t = 0, Fp=F, 
+tUpd=0, get_rates()</label>
+		</transition>
+		<transition>
+			<source ref="id34"/>
+			<target ref="id35"/>
+			<label kind="guard" x="-111" y="-43">!from_office</label>
+			<label kind="synchronisation" x="-111" y="-26">start_h_action?</label>
+			<label kind="assignment" x="-111" y="-9">t = 0,  tUpd=0, Fp=1-F, get_rates()</label>
+		</transition>
+		<transition>
+			<source ref="id35"/>
+			<target ref="id34"/>
+			<label kind="guard" x="-111" y="42">!in_waiting_room</label>
+			<label kind="synchronisation" x="-111" y="59">stop_h_action?</label>
+			<label kind="assignment" x="-111" y="76">t = 0, Fp=F, tUpd=0, get_rates()</label>
+			<nail x="178" y="59"/>
+			<nail x="-204" y="59"/>
+		</transition>
+		<transition>
+			<source ref="id38"/>
+			<target ref="id34"/>
+			<label kind="assignment" x="-323" y="84">tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id39"/>
+			<target ref="id35"/>
+			<label kind="assignment" x="246" y="85">tUpd=0</label>
+		</transition>
+		<transition>
+			<source ref="id35"/>
+			<target ref="id39"/>
+			<label kind="guard" x="322" y="93">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="305" y="110">updateF(-lambda, 1),
+updateP(), tUpd=0</label>
+			<nail x="314" y="85"/>
+		</transition>
+		<transition>
+			<source ref="id34"/>
+			<target ref="id38"/>
+			<label kind="guard" x="-442" y="76">tUpd&gt;=Tpoll</label>
+			<label kind="assignment" x="-459" y="93">updateF(-mi, 0), 
+tUpd=0</label>
+			<nail x="-349" y="76"/>
+		</transition>
+		<transition>
+			<source ref="id35"/>
+			<target ref="id37"/>
+			<label kind="guard" x="298" y="-9">F &gt;= passout_th</label>
+			<label kind="synchronisation" x="323" y="8">pass_out!</label>
+			<label kind="assignment" x="374" y="25">t = 0</label>
+		</transition>
+		<transition>
+			<source ref="id37"/>
+			<target ref="id37"/>
+			<nail x="408" y="59"/>
+			<nail x="450" y="59"/>
+		</transition>
+		<transition>
+			<source ref="id36"/>
+			<target ref="id34"/>
+			<label kind="assignment" x="-485" y="17">initHuman()</label>
+		</transition>
+	</template>
+	<template>
+		<name>Fake_o</name>
+		<declaration>clock x;
+
+int th = 30;
+int curr = 0;
+int next; 
+
+void next_act() {
+    bool in_waiting_room, in_office;
+    in_waiting_room = humanPositionX[currH-1]&gt;=2000.0 &amp;&amp; humanPositionX[currH-1]&lt;=3000.0;
+    in_office = humanPositionX[currH-1]&lt;=2000.0 &amp;&amp; humanPositionY[currH-1]&gt;=1000.0 &amp;&amp; humanPositionY[currH-1]&lt;=3000.0;
+
+    if(force_exe &amp;&amp; curr!=MAX_E &amp;&amp; force_act[curr]!=-1) {
+        next = force_act[curr];        
+        curr++;
+    } else {
+        if(next==0 &amp;&amp; in_office) next = 3;
+        else if(next==0 &amp;&amp; !in_office) next = 1;
+        else if(next==1 || next == 3) {
+            next = fint(random(100));
+            if(next&gt;50.0) next = 0;
+            else next = 2;
+        } 
+        else if(next==2) next = 1;
+    }
+}
+
+bool can_fire() {
+    bool in_waiting_room, in_office;
+    in_waiting_room = humanPositionX[currH-1]&gt;=2000.0 &amp;&amp; humanPositionX[currH-1]&lt;=3000.0;
+    in_office = humanPositionX[currH-1]&lt;=2000.0 &amp;&amp; humanPositionY[currH-1]&gt;=1000.0 &amp;&amp; humanPositionY[currH-1]&lt;=3000.0;
+
+    if (next==0) return !in_waiting_room;
+    else if(next==2) return in_waiting_room;
+    else if(next==1) return !in_office;
+    else if(next==3) return in_office;
+    else return false;
+}</declaration>
+		<location id="id44" x="-867" y="-59">
+			<label kind="invariant" x="-892" y="-25">x&lt;=th</label>
+		</location>
+		<location id="id45" x="-867" y="-323">
+			<committed/>
+		</location>
+		<location id="id46" x="-620" y="-59">
+			<label kind="exponentialrate" x="-603" y="-68">1</label>
+		</location>
+		<location id="id47" x="-867" y="170">
+			<committed/>
+		</location>
+		<location id="id48" x="-1113" y="-136">
+			<label kind="exponentialrate" x="-1096" y="-153">1</label>
+		</location>
+		<location id="id49" x="-663" y="144">
+			<committed/>
+		</location>
+		<init ref="id47"/>
+		<transition>
+			<source ref="id49"/>
+			<target ref="id44"/>
+			<label kind="guard" x="-612" y="76">!can_fire()</label>
+			<label kind="assignment" x="-620" y="93">x=0</label>
+			<nail x="-612" y="85"/>
+		</transition>
+		<transition>
+			<source ref="id45"/>
+			<target ref="id44"/>
+			<label kind="guard" x="-858" y="-246">!can_fire()</label>
+			<label kind="assignment" x="-858" y="-229">x=0</label>
+		</transition>
+		<transition>
+			<source ref="id49"/>
+			<target ref="id44"/>
+			<label kind="guard" x="-688" y="170">can_fire()</label>
+			<label kind="synchronisation" x="-705" y="187">start_h_action!</label>
+			<label kind="assignment" x="-714" y="204">x=0, next_act()</label>
+			<nail x="-714" y="195"/>
+		</transition>
+		<transition>
+			<source ref="id44"/>
+			<target ref="id49"/>
+			<label kind="guard" x="-765" y="59">x&gt;=th &amp;&amp;
+next==3</label>
+		</transition>
+		<transition>
+			<source ref="id48"/>
+			<target ref="id44"/>
+			<label kind="guard" x="-1181" y="-212">can_fire()</label>
+			<label kind="synchronisation" x="-1215" y="-195">stop_h_action!</label>
+			<label kind="assignment" x="-1224" y="-178">x=0, next_act()</label>
+			<nail x="-1113" y="-187"/>
+		</transition>
+		<transition>
+			<source ref="id44"/>
+			<target ref="id48"/>
+			<label kind="guard" x="-1190" y="-110">x&gt;=th &amp;&amp;
+next==2</label>
+			<nail x="-1113" y="-76"/>
+		</transition>
+		<transition>
+			<source ref="id47"/>
+			<target ref="id44"/>
+			<label kind="assignment" x="-858" y="110">x=0,
+next_act()</label>
+		</transition>
+		<transition>
+			<source ref="id46"/>
+			<target ref="id44"/>
+			<label kind="guard" x="-612" y="-42">can_fire()</label>
+			<label kind="synchronisation" x="-612" y="-25">stop_h_action!</label>
+			<label kind="assignment" x="-612" y="-8">x=0, next_act()</label>
+			<nail x="-620" y="-8"/>
+		</transition>
+		<transition>
+			<source ref="id44"/>
+			<target ref="id46"/>
+			<label kind="guard" x="-612" y="-119">x&gt;=th &amp;&amp;
+next==0</label>
+			<nail x="-620" y="-110"/>
+		</transition>
+		<transition>
+			<source ref="id44"/>
+			<target ref="id44"/>
+			<label kind="guard" x="-1020" y="-59">x&gt;=th &amp;&amp; 
+next==-1</label>
+			<label kind="assignment" x="-1054" y="-25">x=0, next_act()</label>
+			<nail x="-943" y="-59"/>
+			<nail x="-943" y="-8"/>
+		</transition>
+		<transition>
+			<source ref="id45"/>
+			<target ref="id44"/>
+			<label kind="guard" x="-799" y="-331">can_fire()</label>
+			<label kind="synchronisation" x="-807" y="-314">start_h_action!</label>
+			<label kind="assignment" x="-807" y="-297">x=0, next_act()</label>
+			<nail x="-807" y="-323"/>
+		</transition>
+		<transition>
+			<source ref="id44"/>
+			<target ref="id45"/>
+			<label kind="guard" x="-994" y="-340">x&gt;=th &amp;&amp;
+next==1</label>
+			<nail x="-926" y="-323"/>
+		</transition>
+	</template>
+	<system>
+amy = HFoll_5(1, 48, 2, 3, -1);
+
+fake_o = Fake_o();
+
+system 
+amy, 
+fake_o
+;
+    </system>
+	<queries>
+		<query>
+			<formula>Pr[&lt;=5](&lt;&gt; humanPositionX[0] == 220.0)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=5](&lt;&gt; scs)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate[&lt;=TAU; 1]{amy.F, humanFatigue[0]}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate[&lt;=TAU; 10]{amy.mi}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate[&lt;=TAU; 10]{amy.lambda}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate[&lt;=TAU; 10]{humanFatigue[currH-1],
+humanPositionX[currH-1], humanPositionY[currH-1],
+amy.idle or amy.p_1,
+amy.busy or amy.p_2,
+amy.sit or amy.p_3,
+amy.run or amy.p_4,
+amy.in_waiting_room, amy.from_office,
+amy.ort, fake_o.next
+}</formula>
+			<comment>amy_bis.F, amy_bis.lambda, amy_bis.mi,
+internalRobX, internalRobY,
+amy_bis.idle or amy_bis.p_1 or amy_bis.p_2 or amy_bis.c1 or amy_bis.c2,
+amy_bis.busy or amy_bis.p_3 or amy_bis.p_4 or amy_bis.c3,
+robPositionX, robPositionY,
+rob.idle, rob.starting or rob.moving or rob.turning or rob.stopping or rob.c_1 or rob.c_2 or rob.c_3 or rob.c_4,
+</comment>
+		</query>
+		<query>
+			<formula>simulate[&lt;=TAU]{humanFatigue[currH-1]*10, 
+humanPositionX[currH-1]/100, humanPositionY[currH-1]/100, 
+served[0], served[1],
+dX/100, dY/100, currH,
+robPositionX/100, robPositionY/100, 
+fail, scs
+}</formula>
+			<comment></comment>
+		</query>
+	</queries>
+</nta>

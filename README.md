@@ -14,14 +14,21 @@ The algorithm has the same structure as [L\*][angluin] which consists of:
 - a [Teacher](it/polimi/hri_learn/lstar_sha) that stores the collected traces and answers queries based on currently accumulated knowledge 
 - a [Learner](it/polimi/hri_learn/lstar_sha) that progressively refines the hypothesis automaton by asking queries to the Teacher
 
-Unlike [L\*][angluin], the L\*_sha Teacher relies on **samples** of the System Under Learning (SUL) not on perfect knowledge which is not feasible in practice.
-To generate traces for the specific use case of human-robot interaction, we exploit either [Uppaal][uppaal] or the [deployment framework][dep] to simulate the robotic application in a virtual environment.
+The L\*_sha Teacher relies on **samples** of the System Under Learning (SUL).
+To generate traces for the specific use case of human-robot interaction, we exploit either [Uppaal][uppaal] with manually drafted SHA to be learned or the [deployment framework][dep] to simulate the robotic application in a virtual environment and collect the simulation traces.
 
 Authors:
 
 | Name              | E-mail address           |
 |:----------------- |:-------------------------|
 | Lestingi Livia    | livia.lestingi@polimi.it |
+
+Configuration File Setup
+-----------
+
+The main L\*_sha
+
+
 
 
 Python Dependencies
@@ -33,7 +40,7 @@ Make sure you have the required dependencies installed:
 
 Finally, run the controller Python script:
 
-	python3 $REPO_PATH/it/polimi/hri_learn/learn_model.py
+	python3 $REPO_PATH/it/polimi/hri_learn/learn_model.py $CONFIG_FILE_PATH
 	
 ---
 
