@@ -44,11 +44,12 @@ Python Dependencies
 
 Install the required dependencies:
 
-	pip install -r $REPO_PATH/requirements.txt
+	pip install -r $LSHA_REPO_PATH/requirements.txt
 
 Run the main script specifying the path to your configuration file:
 
-	python3 $REPO_PATH/it/polimi/hri_learn/learn_model.py $CONFIG_FILE_PATH
+	export PYTHONPATH="${PYTHONPATH}:$LSHA_REPO_PATH"
+	python3 $LSHA_REPO_PATH/it/polimi/hri_learn/learn_model.py $CONFIG_FILE_PATH
 	
 ---
 
