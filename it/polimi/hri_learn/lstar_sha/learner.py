@@ -2,6 +2,13 @@ from typing import List, Tuple
 
 from it.polimi.hri_learn.domain.hafeatures import HybridAutomaton, Location, Edge
 from it.polimi.hri_learn.lstar_sha.logger import Logger
+import configparser
+import sys
+
+config = configparser.ConfigParser()
+config.sections()
+config.read(sys.argv[1])
+config.sections()
 
 EMPTY_STRING = '\u03B5'
 
@@ -436,7 +443,8 @@ class Learner:
         self.fill_table()
         counterexample = self.TEACHER.get_counterexample(self.get_table())
         while counterexample is not None or step0:
-            self.TEACHER.plot_distributions()
+            if config['DEFAULT']['PLOT_DISTR'] == 'True':
+                self.TEACHER.plot_distributions()
             step0 = False
             if counterexample is not None:
                 LOGGER.warn('FOUND COUNTEREXAMPLE: {}'.format(counterexample))

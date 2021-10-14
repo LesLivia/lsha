@@ -67,8 +67,9 @@ HA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH']
 SHA_NAME = '{}_{}_{}'.format(CS, RESAMPLE_STRATEGY, CS_VERSION)
 graphviz_sha = ha_pltr.to_graphviz(LEARNED_HA, SHA_NAME, HA_SAVE_PATH, view=True)
 
-TEACHER.plot_distributions()
+if config['DEFAULT']['PLOT_DISTR'] == 'True':
+    TEACHER.plot_distributions()
 
 report.save_data(TEACHER.get_symbols(), TEACHER.get_distributions(), LEARNER.get_table(),
                  len(TEACHER.get_signals()), datetime.now() - startTime, SHA_NAME)
-
+print('----> EXPERIMENTAL RESULTS SAVED IN: {}{}.txt'.format(config['SUL CONFIGURATION']['REPORT_SAVE_PATH'], SHA_NAME))
