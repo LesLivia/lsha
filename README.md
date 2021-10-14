@@ -46,9 +46,12 @@ Install the required dependencies:
 
 	pip install -r $LSHA_REPO_PATH/requirements.txt
 
-Run the main script specifying the path to your configuration file:
+Add the L\*\_SHA repo path to your Pytho path (fixes ModuleNotFoundError while trying to execute from command line):
 
 	export PYTHONPATH="${PYTHONPATH}:$LSHA_REPO_PATH"
+
+Run the main script specifying the path to your configuration file:
+
 	python3 $LSHA_REPO_PATH/it/polimi/hri_learn/learn_model.py $CONFIG_FILE_PATH
 	
 ---
