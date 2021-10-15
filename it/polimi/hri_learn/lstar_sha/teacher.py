@@ -1,4 +1,6 @@
+import configparser
 import math
+import sys
 from functools import reduce
 from typing import Tuple, List
 
@@ -19,6 +21,11 @@ from it.polimi.hri_learn.lstar_sha.trace_gen import TraceGenerator
 
 LOGGER = Logger()
 TG = TraceGenerator()
+
+config = configparser.ConfigParser()
+config.sections()
+config.read(sys.argv[1])
+config.sections()
 
 
 class Teacher:
@@ -398,7 +405,7 @@ class Teacher:
     # to gain more knowledge about the system under learning
     #############################################
     def ref_query(self, table: ObsTable):
-        n_resample = 10
+        n_resample = int(config['LSHA PARAMETERS']['N_min'])
         S = table.get_S()
         upp_obs = table.get_upper_observations()
         lS = table.get_low_S()

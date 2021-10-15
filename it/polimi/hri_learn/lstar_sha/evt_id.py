@@ -93,7 +93,7 @@ class EventFactory:
             '''
             Repeat for every guard in the system
             '''
-            if CS_VERSION in [2, 3, 4, 5]:
+            if CS_VERSION in [2, 3, 5] or (CS_VERSION in [4] and RESAMPLE_STRATEGY == 'UPPAAL'):
                 posY = self.get_signals()[trace][3]
                 curr_posx = list(filter(lambda x: x.timestamp <= timestamp, posX))[-1]
                 curr_posy = list(filter(lambda x: x.timestamp <= timestamp, posY))[-1]
@@ -103,15 +103,17 @@ class EventFactory:
                     in_waiting = 16 <= curr_posx.value <= 23.0 and 1.0 <= curr_posy.value <= 10.0
                 identified_guard += self.get_guards()[0] if in_waiting else '!' + self.get_guards()[0]
 
-            if CS_VERSION in [3, 4, 5]:
+            if CS_VERSION in [3, 5] or (CS_VERSION in [4] and RESAMPLE_STRATEGY == 'UPPAAL'):
                 posY = self.get_signals()[trace][3]
                 curr_posx = list(filter(lambda x: x.timestamp <= timestamp, posX))[-1]
                 curr_posy = list(filter(lambda x: x.timestamp <= timestamp, posY))[-1]
-                in_office = curr_posx.value <= 2000.0 and 1000.0 <= curr_posy.value <= 3000.0
-                # in_office = 1.0 <= curr_posx.value <= 11.0 and 1.0 <= curr_posy.value <= 10.0
+                if RESAMPLE_STRATEGY == 'UPPAAL':
+                    in_office = curr_posx.value <= 2000.0 and 1000.0 <= curr_posy.value <= 3000.0
+                else:
+                    in_office = 1.0 <= curr_posx.value <= 11.0 and 1.0 <= curr_posy.value <= 10.0
                 identified_guard += self.get_guards()[1] if in_office else '!' + self.get_guards()[1]
 
-            if CS_VERSION in ['x']:
+            if CS_VERSION in [4] and RESAMPLE_STRATEGY == 'SIMULATIONS':
                 posY = self.get_signals()[trace][3]
                 curr_posx = list(filter(lambda x: x.timestamp <= timestamp, posX))[-1]
                 curr_posy = list(filter(lambda x: x.timestamp <= timestamp, posY))[-1]
@@ -244,7 +246,7 @@ class EventFactory:
             return self.parse_traces_uppaal(path)
 
     def parse_traces_sim(self, path: str):
-        if CS_VERSION == 'x':
+        if CS_VERSION in [4]:
             logs = ['humanFatigue.log', 'humanPosition.log', 'environmentData.log']
         else:
             logs = ['humanFatigue.log', 'humanPosition.log']

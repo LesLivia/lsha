@@ -33,10 +33,10 @@ PROB_DISTR = [N_0, N_1]
 if CS_VERSION in [1]:
     UNCONTR_EVTS = {}
 elif CS_VERSION in [2]:
-    UNCONTR_EVTS = {'w': 'in_waiting_room'}  # , 'o': 'in_office'}
-elif CS_VERSION in [3, 4, 5]:
+    UNCONTR_EVTS = {'w': 'in_waiting_room'}
+elif CS_VERSION in [3, 5] or (CS_VERSION in [4] and RESAMPLE_STRATEGY == 'UPPAAL'):
     UNCONTR_EVTS = {'w': 'in_waiting_room', 'o': 'in_office'}
-elif CS_VERSION == 'x':
+elif CS_VERSION in [4] and RESAMPLE_STRATEGY == 'SIMULATIONS':
     UNCONTR_EVTS = {'s': 'sat', 'r': 'ran', 'h': 'harsh_env', 'l': 'load', 'a': 'assisted_walk'}
 
 CONTR_EVTS = {'u': 'start_moving', 'd': 'stop_moving'}
@@ -65,7 +65,7 @@ LEARNED_HA = LEARNER.run_lsha(filter_empty=True)
 # PLOT (AND SAVE) RESULT
 HA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH']
 
-SHA_NAME = '{}_{}_{}'.format(CS, RESAMPLE_STRATEGY, CS_VERSION)
+SHA_NAME = '{}_{}_{}'.format(CS, RESAMPLE_STRATEGY, config['SUL CONFIGURATION']['CS_VERSION'])
 graphviz_sha = ha_pltr.to_graphviz(LEARNED_HA, SHA_NAME, HA_SAVE_PATH, view=True)
 
 if config['DEFAULT']['PLOT_DISTR'] == 'True':
