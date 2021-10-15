@@ -21,7 +21,7 @@ config.read(sys.argv[1])
 config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'])
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'][0])
 RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 
 N_0 = (0.003, 0.0001, 100)
@@ -30,8 +30,9 @@ N_1 = (0.004, 0.0004, 100)
 LOGGER = Logger()
 PROB_DISTR = [N_0, N_1]
 
-UNCONTR_EVTS = {}
-if CS_VERSION in [1, 2]:
+if CS_VERSION in [1]:
+    UNCONTR_EVTS = {}
+elif CS_VERSION in [2]:
     UNCONTR_EVTS = {'w': 'in_waiting_room'}  # , 'o': 'in_office'}
 elif CS_VERSION in [3, 4, 5]:
     UNCONTR_EVTS = {'w': 'in_waiting_room', 'o': 'in_office'}

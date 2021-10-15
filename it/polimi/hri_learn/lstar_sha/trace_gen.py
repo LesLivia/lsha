@@ -1,9 +1,9 @@
+import configparser
 import os
 import random
 import subprocess
 import sys
 from typing import List
-import configparser
 
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 
@@ -13,13 +13,13 @@ config.read(sys.argv[1])
 config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'])
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'][0])
 
 UPP_EXE_PATH = config['TRACE GENERATION']['UPPAAL_PATH']
 UPP_OUT_PATH = config['TRACE GENERATION']['UPPAAL_OUT_PATH']
 SCRIPT_PATH = config['TRACE GENERATION']['UPPAAL_SCRIPT_PATH']
 
-SIM_LOGS_PATH = '/Users/lestingi/PycharmProjects/hritoolchain/resources/sim_logs/refinement/full-exp/'
+SIM_LOGS_PATH = config['TRACE GENERATION']['SIM_LOGS_PATH']
 LOG_FILES = ['humanFatigue.log', 'humanPosition.log']
 
 if CS == 'HRI':
@@ -38,6 +38,8 @@ else:
 
 UPP_MODEL_PATH = config['TRACE GENERATION']['UPPAAL_MODEL_PATH']
 UPP_QUERY_PATH = config['TRACE GENERATION']['UPPAAL_QUERY_PATH'].format(CS_VERSION)
+
+RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 
 MAX_E = 15
 LOGGER = Logger()
@@ -134,7 +136,7 @@ class TraceGenerator:
         m_w.close()
 
     def get_traces(self):
-        if CS == 'hri_sim':
+        if RESAMPLE_STRATEGY == 'SIMULATIONS':
             return self.get_traces_sim()
         else:
             return self.get_traces_uppaal()
@@ -143,13 +145,13 @@ class TraceGenerator:
         if self.ONCE:
             return []
 
-        sims = os.listdir(SIM_LOGS_PATH)
+        sims = os.listdir(SIM_LOGS_PATH.format(config['SUL CONFIGURATION']['CS_VERSION']))
         sims = list(filter(lambda s: s.startswith('SIM'), sims))
         paths = []
         for i in range(len(sims)):
             # rand_sel = random.randint(0, 100)
             # rand_sel = rand_sel % len(sims)
-            paths.append(SIM_LOGS_PATH + sims[i] + '/')
+            paths.append(SIM_LOGS_PATH.format(config['SUL CONFIGURATION']['CS_VERSION']) + sims[i] + '/')
         self.ONCE = True
         return paths
 

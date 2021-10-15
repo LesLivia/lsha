@@ -71,12 +71,12 @@ const double ORT_VALS[4] = {0.0, 90.0, 180.0, -90.0};
 const int MAX_E = 15;
 
 bool force_exe = true;
-int force_act[MAX_E] = {1, 2, 1, 2, 1, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1};
+int force_act[MAX_E] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
 // -&gt; DEFINE BOUND FOR QUERIES 
 // (you can refine it by examining simulations)
-const int TAU = 1350;
-const int VERSION = 4;
+const int TAU = 600;
+const int VERSION = 0;
 //</declaration>
 	<template>
 		<name>HFoll_1</name>
@@ -1464,7 +1464,7 @@ next==1</label>
 		</transition>
 	</template>
 	<system>
-amy = HFoll_5(1, 48, 2, 3, -1);
+amy = HFoll_1(1, 48, 2, 3, -1);
 
 fake_o = Fake_o();
 

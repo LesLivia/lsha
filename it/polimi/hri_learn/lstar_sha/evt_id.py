@@ -18,7 +18,8 @@ config.read(sys.argv[1])
 config.sections()
 
 CASE_STUDY = config['SUL CONFIGURATION']['CASE_STUDY']
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'])
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'][0])
+RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 MAIN_SIGNAL = None
 
 if CASE_STUDY == 'HRI':
@@ -92,12 +93,14 @@ class EventFactory:
             '''
             Repeat for every guard in the system
             '''
-            if CS_VERSION in [1, 2, 3, 4, 5]:
+            if CS_VERSION in [2, 3, 4, 5]:
                 posY = self.get_signals()[trace][3]
                 curr_posx = list(filter(lambda x: x.timestamp <= timestamp, posX))[-1]
                 curr_posy = list(filter(lambda x: x.timestamp <= timestamp, posY))[-1]
-                in_waiting = 2000.0 < curr_posx.value <= 3000.0
-                # in_waiting = 16 <= curr_posx.value <= 23.0 and 1.0 <= curr_posy.value <= 10.0
+                if RESAMPLE_STRATEGY == 'UPPAAL':
+                    in_waiting = 2000.0 < curr_posx.value <= 3000.0
+                else:
+                    in_waiting = 16 <= curr_posx.value <= 23.0 and 1.0 <= curr_posy.value <= 10.0
                 identified_guard += self.get_guards()[0] if in_waiting else '!' + self.get_guards()[0]
 
             if CS_VERSION in [3, 4, 5]:
@@ -235,7 +238,7 @@ class EventFactory:
             return None
 
     def parse_traces(self, path: str):
-        if CASE_STUDY == 'hri_sim':
+        if RESAMPLE_STRATEGY == 'SIMULATIONS':
             return self.parse_traces_sim(path)
         else:
             return self.parse_traces_uppaal(path)
