@@ -11,7 +11,8 @@ WARNING!
         These constants may change if the system changes:
         default model and distr. for empty string.
 '''
-LOGGER = Logger()
+LOGGER = Logger('EVENT FACTORY')
+
 config = configparser.ConfigParser()
 config.sections()
 config.read(sys.argv[1])
@@ -203,7 +204,13 @@ class EventFactory:
         except ValueError:
             return None
 
-    def get_thermo_param(self, segment: List[SignalPoint], model: int):
+    def parse_traces(self, path: str):
+        if RESAMPLE_STRATEGY == 'SIMULATIONS':
+            return self.parse_traces_sim(path)
+        else:
+            return self.parse_traces_uppaal(path)
+
+    def get_thermo_param(segment: List[SignalPoint], model: int):
         try:
             val = [pt.value for pt in segment]
             if model in [1, 2]:
@@ -238,12 +245,6 @@ class EventFactory:
             return est_rate
         except ValueError:
             return None
-
-    def parse_traces(self, path: str):
-        if RESAMPLE_STRATEGY == 'SIMULATIONS':
-            return self.parse_traces_sim(path)
-        else:
-            return self.parse_traces_uppaal(path)
 
     def parse_traces_sim(self, path: str):
         if CS_VERSION in [4]:
@@ -280,38 +281,4 @@ class EventFactory:
                     harsh.append(temp <= 12.0 or temp >= 32.0 or hum <= 30.0 or hum >= 60.0)
                 new_traces[0].append([SignalPoint(x, 0, harsh[j]) for (j, x) in enumerate(t)])
 
-        return new_traces
-
-    def parse_traces_uppaal(self, path: str):
-        # support method to parse traces sampled by ref query
-        f = open(path, 'r')
-        if CASE_STUDY == 'HRI':
-            if CS_VERSION in [1, 2]:
-                variables = ['humanFatigue[currH - 1]', 'humanPositionX[currH - 1]',
-                             'amy.busy || amy.p_2', 'humanPositionY[currH - 1]']
-            else:
-                variables = ['humanFatigue[currH - 1]', 'humanPositionX[currH - 1]',
-                             'amy.busy || amy.p_2 || amy.run || amy.p_4', 'humanPositionY[currH - 1]']
-        else:
-            variables = ['t.ON', 'T_r', 'r.open']
-        lines = f.readlines()
-        split_indexes = [lines.index(k + ':\n') for k in variables]
-        split_lines = [lines[i + 1:split_indexes[ind + 1]] for (ind, i) in enumerate(split_indexes) if
-                       i != split_indexes[-1]]
-        split_lines.append(lines[split_indexes[-1] + 1:len(lines)])
-        traces = len(split_lines[0])
-        new_traces = []
-        for trace in range(traces):
-            new_traces.append([])
-            for (i, v) in enumerate(variables):
-                entries = split_lines[i][trace].split(' ')
-                entries = entries[1:]
-                for e in entries:
-                    new = e.replace('(', '')
-                    new = new.replace(')', '')
-                    entries[entries.index(e)] = new
-                t = [float(x.split(',')[0]) for x in entries]
-                v = [float(x.split(',')[1]) for x in entries]
-                signal = [SignalPoint(t[i], 1, v[i]) for i in range(len(t))]
-                new_traces[-1].append(signal)
         return new_traces

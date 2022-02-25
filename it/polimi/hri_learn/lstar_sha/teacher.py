@@ -19,7 +19,7 @@ from it.polimi.hri_learn.lstar_sha.learner import ObsTable
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 from it.polimi.hri_learn.lstar_sha.trace_gen import TraceGenerator
 
-LOGGER = Logger()
+LOGGER = Logger('TEACHER')
 TG = TraceGenerator()
 
 config = configparser.ConfigParser()
@@ -52,33 +52,6 @@ class Teacher:
 
     def get_symbols(self):
         return self.symbols
-
-    def compute_symbols(self, guards: List[str], syncs: List[str]):
-        symbols = {}
-        self.evt_factory.set_guards(guards)
-        self.evt_factory.set_channels(syncs)
-
-        # Compute all guards combinations
-        guards_comb = [''] * 2 ** len(guards)
-        for (i, g) in enumerate(guards):
-            pref = ''
-            for j in range(2 ** len(guards)):
-                guards_comb[j] += pref + g
-                if (j + 1) % ((2 ** len(guards)) / (2 ** (i + 1))) == 0:
-                    pref = '!' if pref == '' else ''
-
-        # Combine all guards with channels
-        for chn in syncs:
-            for (index, g) in enumerate(guards_comb):
-                identifier = ''
-                if index > 9:
-                    identifier = chr(index + 87)
-                else:
-                    identifier = str(index)
-                symbols[chn + '_' + identifier] = g + ' and ' + chn
-
-        self.set_symbols(symbols)
-        self.evt_factory.set_symbols(symbols)
 
     # CHANGE POINTS
     def set_chg_pts(self, chg_pts: List[float]):

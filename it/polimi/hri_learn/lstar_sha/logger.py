@@ -55,26 +55,27 @@ else:
 #
 
 class Logger:
-    def __init__(self):
-        self.format = "\nHL* ({})\t{}"
+    def __init__(self, speaker: str):
+        self.speaker = speaker
+        self.format = "\n[{}] ({})\t{}"
         pass
 
     def info(self, msg):
         if MIN_LOG_LEVEL <= LogLevel.INFO.value:
-            print(self.format.format(str(LogLevel.INFO), msg))
+            print(self.format.format(self.speaker, str(LogLevel.INFO), msg))
 
     def debug(self, msg):
         if MIN_LOG_LEVEL <= LogLevel.DEBUG.value:
-            print(self.format.format(str(LogLevel.DEBUG), msg))
+            print(self.format.format(self.speaker, str(LogLevel.DEBUG), msg))
 
     def warn(self, msg):
         if MIN_LOG_LEVEL <= LogLevel.WARNING.value:
-            print(self.format.format(str(LogLevel.WARNING), msg))
+            print(self.format.format(self.speaker, str(LogLevel.WARNING), msg))
 
     def error(self, msg):
         if MIN_LOG_LEVEL <= LogLevel.ERROR.value:
-            print(self.format.format(str(LogLevel.ERROR), msg))
+            print(self.format.format(self.speaker, str(LogLevel.ERROR), msg))
 
     def msg(self, msg):
         if MIN_LOG_LEVEL <= LogLevel.MSG.value:
-            print(self.format.format(str(LogLevel.MSG), msg))
+            print(self.format.format(self.speaker, str(LogLevel.MSG), msg))

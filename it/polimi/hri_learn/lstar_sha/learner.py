@@ -4,124 +4,21 @@ from it.polimi.hri_learn.domain.hafeatures import HybridAutomaton, Location, Edg
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 import configparser
 import sys
+from it.polimi.hri_learn.domain.obstable import ObsTable
 
 config = configparser.ConfigParser()
 config.sections()
 config.read(sys.argv[1])
 config.sections()
 
-EMPTY_STRING = '\u03B5'
-
-MODEL_FORMATTER = 'f_{}'
-DISTR_FORMATTER = 'N_{}'
-LOCATION_FORMATTER = 'q_{}'
-LOGGER = Logger()
-
-
-class ObsTable:
-    def __init__(self, s: List[str], e: List[str], low_s: List[str]):
-        self.__S = s
-        self.__low_S = low_s
-        self.__E = e
-        self.__upp_obs: List[List[Tuple]] = [[(None, None)] * len(e)] * len(s)
-        self.__low_obs: List[List[Tuple]] = [[(None, None)] * len(e)] * len(low_s)
-
-    def get_S(self):
-        return self.__S
-
-    def add_S(self, word: str):
-        self.__S.append(word)
-
-    def get_E(self):
-        return self.__E
-
-    def add_E(self, word: str):
-        self.__E.append(word)
-
-    def get_low_S(self):
-        return self.__low_S
-
-    def add_low_S(self, word: str):
-        self.__low_S.append(word)
-
-    def del_low_S(self, index: int):
-        self.get_low_S().pop(index)
-
-    def get_upper_observations(self):
-        return self.__upp_obs
-
-    def set_upper_observations(self, obs_table: List[List[Tuple]]):
-        self.__upp_obs = obs_table
-
-    def get_lower_observations(self):
-        return self.__low_obs
-
-    def set_lower_observations(self, obs_table: List[List[Tuple]]):
-        self.__low_obs = obs_table
-
-    @staticmethod
-    def tuple_to_str(tup):
-        if tup[0] is None and tup[1] is None:
-            return '(∅, ∅)\t'
-        else:
-            return '({}, {})'.format(MODEL_FORMATTER.format(tup[0]), DISTR_FORMATTER.format(tup[1]))
-
-    def to_str(self, filter_empty=False):
-        result = ''
-        max_s = max([len(word) / 3 for word in self.get_S()])
-        max_low_s = max([len(word) / 3 for word in self.get_low_S()])
-        max_tabs = int(max(max_s, max_low_s))
-
-        HEADER = '\t' * max_tabs + '|\t\t'
-        for t_word in self.get_E():
-            HEADER += t_word if t_word != '' else EMPTY_STRING
-            HEADER += '\t\t|\t\t'
-        result += HEADER + '\n'
-
-        SEPARATOR = '----' * max_tabs + '+' + '---------------+' * len(self.get_E())
-        result += SEPARATOR + '\n'
-
-        for (i, s_word) in enumerate(self.get_S()):
-            row = self.get_upper_observations()[i]
-            row_is_populated = any([row[j][0] is not None and row[j][1] is not None for j in range(len(self.get_E()))])
-            if filter_empty and not row_is_populated:
-                pass
-            else:
-                ROW = s_word if s_word != '' else EMPTY_STRING
-                len_word = int(len(s_word) / 3) if s_word != '' else 1
-                ROW += '\t' * (max_tabs + 1 - len_word) + '|\t' if len_word < max_tabs - 1 or max_tabs <= 4 \
-                    else '\t' * (max_tabs + 2 - len_word) + '|\t'
-                for (j, t_word) in enumerate(self.get_E()):
-                    ROW += ObsTable.tuple_to_str(self.get_upper_observations()[i][j])
-                    ROW += '\t|\t'
-                result += ROW + '\n'
-        result += SEPARATOR + '\n'
-        for (i, s_word) in enumerate(self.get_low_S()):
-            row = self.get_lower_observations()[i]
-            row_is_populated = any([row[j][0] is not None and row[j][1] is not None for j in range(len(self.get_E()))])
-            if filter_empty and not row_is_populated:
-                pass
-            else:
-                ROW = s_word if s_word != '' else EMPTY_STRING
-                len_word = int(len(s_word) / 3)
-                ROW += '\t' * (max_tabs + 1 - len_word) + '|\t' if len_word < max_tabs - 1 or max_tabs <= 4 \
-                    else '\t' * (max_tabs + 2 - len_word) + '|\t'
-                for (j, t_word) in enumerate(self.get_E()):
-                    ROW += ObsTable.tuple_to_str(self.get_lower_observations()[i][j])
-                    ROW += '\t|\t'
-                result += ROW + '\n'
-        result += SEPARATOR + '\n'
-        return result
-
-    def print(self, filter_empty=False):
-        print(self.to_str(filter_empty))
+LOGGER = Logger('LEARNER')
 
 
 class Learner:
     def __init__(self, teacher, table: ObsTable = None):
         self.symbols = teacher.get_symbols()
         self.TEACHER = teacher
-        self.obs_table = table if table is not None else ObsTable([''], [''], list(self.symbols.keys()))
+        self.obs_table = table if table is not None else ObsTable([], [], list(self.symbols.keys()))
 
     def set_symbols(self, symbols):
         self.symbols = symbols

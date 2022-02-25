@@ -1,61 +1,78 @@
-from enum import Enum
 from typing import List
 
+DAYS_PER_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
-class Position:
-    def __init__(self, x: float, y: float):
-        self.x = x
-        self.y = y
+
+class Timestamp:
+    def __init__(self, y: int, m: int, d: int, h: int, min: int, sec: float):
+        self.year = y
+        self.month = m
+        self.day = d
+        self.hour = h
+        self.min = min
+        self.sec = sec
+
+    def to_secs(self):
+        days = sum(DAYS_PER_MONTH[:self.month - 1]) + self.day - 1
+        minutes = self.hour * 60 + self.min
+        seconds = minutes * 60 + self.sec
+        return days * 24 * 60 + seconds
 
     def __str__(self):
-        return '({}, {})'.format(self.x, self.y)
+        return '{}/{}/{} {}:{}:{}'.format(self.day, self.month, self.year, self.hour, self.min, self.sec)
 
-    @staticmethod
-    def parse_pos(s: str):
-        fields = s.split('#')
-        return Position(float(fields[0]), float(fields[1]))
+    def __hash__(self):
+        return hash(str(self))
+
+    def __eq__(self, other):
+        return self.to_secs() == other.to_secs()
+
+    def __ge__(self, other):
+        return self.to_secs() >= other.to_secs()
+
+    def __lt__(self, other):
+        return self.to_secs() < other.to_secs()
 
 
 class SignalPoint:
-    def __init__(self, t: float, humId: int, val):
+    def __init__(self, t: Timestamp, val: float):
         self.timestamp = t
-        self.humId = humId
         self.value = val
-        self.notes: List[str] = []
 
     def __str__(self):
-        return '(hum {}) {}: {}'.format(self.humId, self.timestamp, self.value)
+        return '{}: {}'.format(self.timestamp, self.value)
+
+    def __eq__(self, other):
+        return self.timestamp == other.timestamp and self.value == other.value
 
 
-class SignalType(Enum):
-    NUMERIC = 'float'
-    POSITION = 'pos'
-
-
-class TimeInterval:
-    def __init__(self, t_min: float, t_max: float):
-        self.t_min = t_min
-        self.t_max = t_max
-
-
-class Labels(Enum):
-    STARTED = 'walk'
-    STOPPED = 'stop'
-
-
-class ChangePoint:
-    def __init__(self, t: TimeInterval, label: Labels):
-        self.dt = t
-        self.event = label
-
-    def __str__(self):
-        return '({}, {}) -> {}'.format(self.dt.t_min, self.dt.t_max, self.event)
+class SampledSignal:
+    def __init__(self, pts: List[SignalPoint], label=None):
+        self.label = label
+        self.points = pts
 
 
 class Event:
-    def __init__(self, timestamp, label):
-        self.timestamp = timestamp
-        self.label = label
+    def __init__(self, guard, chan):
+        self.guard = guard
+        self.chan = chan
+        self.label = guard + '\n' + chan
 
     def __str__(self):
-        return '{:.2f}: {}'.format(self.timestamp, self.label)
+        return self.label
+
+    def __eq__(self, other):
+        return self.guard == other.guard and self.label == other.label
+
+
+class ChangePoint:
+    def __init__(self, t: Timestamp, evts: Event):
+        self.t = t
+        # we restrict to one event per changepoint
+        self.event = evts
+
+    def __str__(self):
+        return '{} -> {}'.format(self.t, self.event)
+
+    def __eq__(self, other):
+        return self.t == other.t and self.event == other.event
