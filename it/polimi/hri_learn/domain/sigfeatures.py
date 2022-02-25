@@ -13,7 +13,8 @@ class Timestamp:
         self.sec = sec
 
     def to_secs(self):
-        days = sum(DAYS_PER_MONTH[:self.month - 1]) + self.day - 1
+        months = sum(DAYS_PER_MONTH[:self.month - 1]) if self.month > 0 else 0
+        days = months + self.day - 1 if self.day > 0 else 0
         minutes = self.hour * 60 + self.min
         seconds = minutes * 60 + self.sec
         return days * 24 * 60 + seconds
@@ -66,10 +67,12 @@ class Event:
 
 
 class ChangePoint:
-    def __init__(self, t: Timestamp, evts: Event):
+    def __init__(self, t: Timestamp):
         self.t = t
-        # we restrict to one event per changepoint
-        self.event = evts
+        self.event = None
+
+    def set_event(self, e: Event):
+        self.event = e
 
     def __str__(self):
         return '{} -> {}'.format(self.t, self.event)

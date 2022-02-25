@@ -9,6 +9,7 @@ from it.polimi.hri_learn.domain.sigfeatures import Event
 CLOSED_R = 100.0
 OFF_DISTR = (100.0, 1.0, 200)
 ON_DISTR = (0.7, 0.01, 200)
+DRIVER_SIG = 't.ON'
 
 
 def off_model(interval: List[float], T_0: float):
@@ -28,6 +29,9 @@ temperature = RealValuedVar([on_fc, off_fc], [], label='T')
 on_event = Event('', 'on')
 off_event = Event('', 'off')
 
-thermostat_cs = SystemUnderLearning('thermostat', [temperature], [on_event, off_event], parse_data, label_event)
-thermostat_cs.compute_symbols()
+thermostat_cs = SystemUnderLearning([temperature], [on_event, off_event], parse_data, label_event,
+                                    args={'name': 'thermostat', 'driver': DRIVER_SIG})
 print(thermostat_cs.symbols)
+thermostat_cs.process_data('./resources/traces/uppaal/THERMO_1.txt')
+for e in thermostat_cs.traces:
+    print(e)

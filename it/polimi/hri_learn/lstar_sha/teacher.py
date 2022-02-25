@@ -18,6 +18,7 @@ from it.polimi.hri_learn.lstar_sha.evt_id import EventFactory, DEFAULT_DISTR, DE
 from it.polimi.hri_learn.lstar_sha.learner import ObsTable
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 from it.polimi.hri_learn.lstar_sha.trace_gen import TraceGenerator
+from it.polimi.hri_learn.domain.lshafeatures import SystemUnderLearning
 
 LOGGER = Logger('TEACHER')
 TG = TraceGenerator()
@@ -29,29 +30,19 @@ config.sections()
 
 
 class Teacher:
-    def __init__(self, models, distributions: List[Tuple]):
+    def __init__(self, sul: SystemUnderLearning):
         # System-Dependent Attributes
-        self.symbols = None
-        self.models = models
-        self.distributions = distributions
-        self.evt_factory = EventFactory(None, None, None)
+        self.symbols = sul.symbols
+        self.models = sul.flows
+        self.distributions = [v.distr for v in sul.vars]
 
         # Trace-Dependent Attributes
         self.chg_pts: List[List[float]] = []
-        self.events = []
+        self.events = sul.events
         self.signals: List[List[List[SignalPoint]]] = []
 
     def reset(self):
         self.signals.append([])
-        self.evt_factory.clear()
-
-    # SYMBOLS
-    def set_symbols(self, symbols):
-        self.symbols = symbols
-        self.evt_factory.set_symbols(symbols)
-
-    def get_symbols(self):
-        return self.symbols
 
     # CHANGE POINTS
     def set_chg_pts(self, chg_pts: List[float]):
@@ -60,18 +51,6 @@ class Teacher:
     def get_chg_pts(self):
         return self.chg_pts
 
-    def find_chg_pts(self, timestamps: List[float], values: List[float]):
-        chg_pts: List[float] = []
-
-        # IDENTIFY CHANGE PTS IN DRIVER OVERLAY
-        prev = values[0]
-        for i in range(1, len(values)):
-            curr = values[i]
-            if curr != prev:
-                chg_pts.append(timestamps[i])
-            prev = curr
-
-        self.set_chg_pts(chg_pts)
 
     # SIGNALS
     def get_signals(self):
@@ -79,15 +58,8 @@ class Teacher:
 
     def add_signal(self, signal: List[SignalPoint], trace: int):
         self.signals[trace].append(signal)
-        self.evt_factory.add_signal(signal, trace)
 
     # EVENTS
-    def set_events(self, events):
-        self.events.append(events)
-
-    def get_events(self):
-        return self.events
-
     def identify_events(self, trace):
         events = {}
 
