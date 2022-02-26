@@ -115,16 +115,11 @@ class Learner:
         upp_obs: List[Row] = self.obs_table.get_upper_observations()
         low_S = self.obs_table.get_low_S()
         low_obs: List[Row] = self.obs_table.get_lower_observations()
-        for (index, row) in enumerate(low_obs):
-            row_is_populated = any([cell[0] is not None and cell[1] is not None for cell in row])
+        for index, row in enumerate(low_obs):
             # if there is a populated row in lower portion that is not in the upper portion
             # the corresponding word is added to the S word set
-            row_present = False
-            for (s_i, s_word) in enumerate(self.obs_table.get_S()):
-                if self.TEACHER.eqr_query(row, upp_obs[s_i]):
-                    row_present = True
-                    break
-            if row_is_populated and not row_present:
+            row_present = any([self.TEACHER.eqr_query(row, row_2) for row_2 in upp_obs])
+            if row.is_populated() and not row_present:
                 upp_obs.append(row)
                 new_s_word = low_S[index]
                 self.obs_table.add_S(new_s_word)
@@ -132,14 +127,13 @@ class Learner:
                 self.obs_table.del_low_S(index)
                 # lower portion is then updated with all combinations of
                 # new S word and all possible symbols
-                for symbol in self.symbols:
-                    self.obs_table.add_low_S(new_s_word + symbol)
+                for event in self.TEACHER.sul.events:
+                    self.obs_table.add_low_S(new_s_word + Trace([event]))
                     empty_state = State([(None, None)])
                     new_row: Row = Row([empty_state] * len(self.obs_table.get_E()))
                     low_obs.append(new_row)
         self.obs_table.set_upper_observations(upp_obs)
         self.obs_table.set_lower_observations(low_obs)
-        self.fill_table()
 
     def make_consistent(self, discr_sym: Trace):
         self.obs_table.add_E(discr_sym)
@@ -149,7 +143,6 @@ class Learner:
             upp_obs[s_i].append((None, None))
         for s_i in range(len(low_obs)):
             low_obs[s_i].append((None, None))
-        self.fill_table()
 
     def add_counterexample(self, counterexample: str):
         upp_obs = self.obs_table.get_upper_observations()
@@ -322,13 +315,16 @@ class Learner:
         while counterexample is not None or step0:
             if config['DEFAULT']['PLOT_DISTR'] == 'True':
                 self.TEACHER.sul.plot_distributions()
-            step0 = False
+
             if counterexample is not None:
                 LOGGER.warn('FOUND COUNTEREXAMPLE: {}'.format(counterexample))
                 self.add_counterexample(counterexample)
+                # self.fill_table()
+            if not step0:
+                self.TEACHER.ref_query(self.obs_table)
                 self.fill_table()
-            self.TEACHER.ref_query(self.obs_table)
-            self.fill_table()
+
+            step0 = False
 
             if debug_print:
                 LOGGER.info('OBSERVATION TABLE')
@@ -342,6 +338,7 @@ class Learner:
                     LOGGER.warn('!!TABLE IS NOT CLOSED!!')
                     # If not, make closed
                     self.make_closed()
+                    self.fill_table()
                     LOGGER.msg('CLOSED OBSERVATION TABLE')
                     self.obs_table.print(filter_empty)
 
@@ -350,6 +347,7 @@ class Learner:
                     LOGGER.warn('!!TABLE IS NOT CONSISTENT!!')
                     # If not, make consistent
                     self.make_consistent(discriminating_symbol)
+                    self.fill_table()
                     LOGGER.msg('CONSISTENT OBSERVATION TABLE')
                     self.obs_table.print(filter_empty)
 

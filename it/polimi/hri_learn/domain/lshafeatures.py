@@ -103,6 +103,15 @@ class Trace:
     def __add__(self, other):
         return Trace(events=self.events + other.events)
 
+    def get_prefixes(self):
+        prefixes: List[Trace] = []
+        for i in range(len(self)):
+            if i == 0:
+                prefixes.append(Trace([self[0]]))
+            else:
+                prefixes.append(Trace(self[:i + 1]))
+        return prefixes
+
 
 class State:
     def __init__(self, vars: List[Tuple[FlowCondition, ProbDistribution]]):

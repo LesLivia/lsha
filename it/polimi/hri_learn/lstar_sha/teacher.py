@@ -126,7 +126,7 @@ class Teacher:
     # a new one is added
     # If available data are not enough to draw a conclusion, returns None
     #############################################
-    def ht_query(self, word: str, flow: FlowCondition, save=True):
+    def ht_query(self, word: Trace, flow: FlowCondition, save=True):
         if flow is None:
             return None
 
@@ -252,7 +252,7 @@ class Teacher:
         for word in tqdm(uq, total=len(uq)):
             for e in table.get_E():
                 TG.set_word(word + e)
-                path = TG.get_traces()
+                path = TG.get_traces(n_resample)
                 if path is not None:
                     for sim in path:
                         self.sul.process_data(sim)
@@ -274,45 +274,32 @@ class Teacher:
         S = table.get_S()
         low_S = table.get_low_S()
 
-        trace_events: List[str] = [str(t) for t in self.sul.traces]
-        max_events = int(max([len(t) for t in trace_events]))
-
-        not_counter = []
-        for (i, event_str) in tqdm(enumerate(trace_events), total=len(trace_events)):
-            for j in range(3, max_events + 1, 3):
-                # event_str[:j] not in S and event_str[:j] not in low_S and
-                if event_str[:j] not in S and event_str[:j] not in low_S and event_str[:j] not in not_counter:
+        traces: List[Trace] = self.sul.traces
+        not_counter: List[Trace] = []
+        for (i, trace) in tqdm(enumerate(traces), total=len(traces)):
+            for prefix in trace.get_prefixes():
+                # prefix is still not in table
+                if prefix not in S and prefix not in low_S and prefix not in not_counter:
                     # fills hypothetical new row
                     new_row = Row([])
                     for (e_i, e_word) in enumerate(table.get_E()):
-                        word = event_str[:j] + e_word
+                        word = prefix + e_word
                         id_model = self.mi_query(word)
                         id_distr = self.ht_query(word, id_model, save=False)
                         if id_model is not None and id_distr is not None:
                             new_row.state.append(State([(id_model, id_distr)]))
                         else:
-                            new_row.state.append(State([]))
+                            new_row.state.append(State([(None, None)]))
                     # if there are sufficient data to fill the new row
                     if new_row.is_populated():
-                        new_row_is_present = False
-                        eq_rows = []
-                        for (s_i, s_word) in enumerate(S):
-                            row = table.get_upper_observations()[s_i]
-                            # checks if there are weakly equal rows (-> row is present)
-                            if self.eqr_query(new_row, row):
-                                new_row_is_present = True
-                                eq_rows.append(row)
-                        uq = []
-                        for e in eq_rows:
-                            # checks if new row would be ambiguous (-> not ambiguous)
-                            if e not in uq:
-                                uq.append(e)
+                        eq_rows = [row for row in table.get_upper_observations() if self.eqr_query(new_row, row)]
+                        uq = set(eq_rows)
                         not_ambiguous = len(uq) <= 1
 
-                        if new_row and not new_row_is_present:
+                        if len(eq_rows) == 0:
                             # found non-closedness
                             LOGGER.warn("!! MISSED NON-CLOSEDNESS !!")
-                            return event_str[:j]
+                            return prefix
                         elif not_ambiguous:
                             # checks non-consistency only for rows that are not ambiguous
                             for (s_i, s_word) in enumerate(S):
@@ -336,8 +323,8 @@ class Teacher:
                                         row_1_filled = old_row_a[0] != (None, None)
                                         row_2 = Row([])
                                         for e in table.get_E():
-                                            id_model_2 = self.mi_query(event_str[:j] + a + e)
-                                            id_distr_2 = self.ht_query(event_str[:j] + a + e, id_model_2, save=False)
+                                            id_model_2 = self.mi_query(prefix + a + e)
+                                            id_distr_2 = self.ht_query(prefix + a + e, id_model_2, save=False)
                                             if id_model_2 is None or id_distr_2 is None:
                                                 row_2.state.append(State([]))
                                             else:
@@ -346,8 +333,8 @@ class Teacher:
                                         if row_1_filled and row_2_filled and not discr_is_prefix and \
                                                 not self.eqr_query(row_2, old_row_a):
                                             LOGGER.warn("!! MISSED NON-CONSISTENCY ({}, {}) !!".format(a, s_word))
-                                            return event_str[:j]
+                                            return prefix
                             else:
-                                not_counter.append(event_str[:j])
+                                not_counter.append(prefix)
         else:
             return None

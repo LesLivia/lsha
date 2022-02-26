@@ -134,11 +134,11 @@ class TraceGenerator:
         m_w.writelines(lines)
         m_w.close()
 
-    def get_traces(self):
+    def get_traces(self, n: int = 1):
         if RESAMPLE_STRATEGY == 'SIMULATIONS':
             return self.get_traces_sim()
         else:
-            return self.get_traces_uppaal()
+            return self.get_traces_uppaal(n)
 
     def get_traces_sim(self):
         # if self.ONCE:
@@ -154,20 +154,23 @@ class TraceGenerator:
         # self.ONCE = True
         return paths
 
-    def get_traces_uppaal(self):
+    def get_traces_uppaal(self, n: int):
         # sample new traces through uppaal command line tool
         self.fix_model()
-        random.seed()
-        n = random.randint(0, 2 ** 32)
-        s = '{}_{}_{}'.format(CS, CS_VERSION, n)
-        FNULL = open(os.devnull, 'w')
         LOGGER.debug('!! GENERATING NEW TRACES FOR: {} !!'.format(self.word))
-        p = subprocess.Popen([SCRIPT_PATH, UPP_EXE_PATH, UPP_MODEL_PATH, UPP_QUERY_PATH, UPP_OUT_PATH.format(s)],
-                             stdout=FNULL)
-        p.wait()
-        if p.returncode == 0:
-            LOGGER.info('TRACES SAVED TO ' + s)
-            # returns out file where new traces are stored
-            return [UPP_OUT_PATH.format(s)]
-        else:
-            return None
+        new_traces: List[str] = []
+
+        for i in range(n):
+            random.seed()
+            n = random.randint(0, 2 ** 32)
+            s = '{}_{}_{}'.format(CS, CS_VERSION, n)
+            FNULL = open(os.devnull, 'w')
+            p = subprocess.Popen([SCRIPT_PATH, UPP_EXE_PATH, UPP_MODEL_PATH,
+                                  UPP_QUERY_PATH, UPP_OUT_PATH.format(s)], stdout=FNULL)
+            p.wait()
+            if p.returncode == 0:
+                LOGGER.info('TRACES SAVED TO ' + s)
+                # returns out file where new traces are stored
+                new_traces.append(UPP_OUT_PATH.format(s))
+
+        return new_traces

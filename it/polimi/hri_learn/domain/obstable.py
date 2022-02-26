@@ -60,8 +60,14 @@ class ObsTable:
 
     def __str__(self, filter_empty=False):
         result = ''
-        max_s = max([len(word) / 3 for word in self.get_S()])
-        max_low_s = max([len(word) / 3 for word in self.get_low_S()])
+        try:
+            max_s = max([len(word) for word in self.get_S()])
+        except ValueError:
+            max_s = 0
+        try:
+            max_low_s = max([len(word) for word in self.get_low_S()])
+        except ValueError:
+            max_low_s = 0
         max_tabs = int(max(max_s, max_low_s))
 
         HEADER = '\t' * max_tabs + '|\t\t'
@@ -85,6 +91,7 @@ class ObsTable:
                 ROW += '\t' * (max_tabs + 1 - len_word) + '|\t' if len_word < max_tabs - 1 or max_tabs <= 4 \
                     else '\t' * (max_tabs + 2 - len_word) + '|\t'
                 ROW += str(row) + '\n'
+                result += ROW
         result += SEPARATOR + '\n'
 
         # print long words row labels
@@ -98,6 +105,7 @@ class ObsTable:
                 ROW += '\t' * (max_tabs + 1 - len_word) + '|\t' if len_word < max_tabs - 1 or max_tabs <= 4 \
                     else '\t' * (max_tabs + 2 - len_word) + '|\t'
                 ROW += str(row) + '\n'
+                result += ROW
         result += SEPARATOR + '\n'
         return result
 
