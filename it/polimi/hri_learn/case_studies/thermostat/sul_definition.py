@@ -45,7 +45,7 @@ if test:
     print(thermostat_cs.symbols)
 
     # test trace processing
-    thermostat_cs.process_data('./resources/traces/uppaal/THERMO_1.txt')
+    thermostat_cs.process_data('./resources/traces/uppaal/THERMO_1_4278330661.txt')
 
     # test visualization
     for t in thermostat_cs.traces:

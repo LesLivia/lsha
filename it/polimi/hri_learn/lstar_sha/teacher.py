@@ -7,7 +7,8 @@ import scipy.stats as stats
 from scipy.stats.stats import KstestResult
 from tqdm import tqdm
 
-from it.polimi.hri_learn.domain.lshafeatures import TimedTrace, FlowCondition, ProbDistribution, NormalDistribution
+from it.polimi.hri_learn.domain.lshafeatures import TimedTrace, FlowCondition, ProbDistribution, NormalDistribution, \
+    Trace
 from it.polimi.hri_learn.domain.obstable import ObsTable, Row, State
 from it.polimi.hri_learn.domain.sigfeatures import SampledSignal, Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning
@@ -60,7 +61,7 @@ class Teacher:
     # and returns the flow condition that best fits such segments
     # If not enough data are available to draw a conclusion, returns None
     #############################################
-    def mi_query(self, word: str):
+    def mi_query(self, word: Trace):
         if word == '':
             return self.flows[0][self.sul.default_m]
         else:
@@ -212,7 +213,7 @@ class Teacher:
 
         # find all words which are ambiguous
         # (equivalent to multiple rows)
-        amb_words = []
+        amb_words: List[Trace] = []
         for (i, row) in enumerate(upp_obs + low_obs):
             # if there are not enough observations of a word,
             # it needs a refinement query
@@ -225,11 +226,11 @@ class Teacher:
                 continue
 
             # find equivalent rows
-            eq_rows = []
+            eq_rows: List[Row] = []
             for (j, row_2) in enumerate(upp_obs):
                 if row_2.is_populated() and i != j and self.eqr_query(row, row_2):
                     eq_rows.append(row_2)
-            uq = []
+            uq: List[Row] = []
             for eq in eq_rows:
                 if eq not in uq:
                     uq.append(eq)
@@ -243,7 +244,7 @@ class Teacher:
         for (i, w) in enumerate(amb_words):
             is_prefix = False
             for (j, w2) in enumerate(amb_words):
-                if i != j and w2.startswith(w):
+                if i != j and str(w2).startswith(str(w)):
                     is_prefix = True
             if not is_prefix:
                 uq.append(w)

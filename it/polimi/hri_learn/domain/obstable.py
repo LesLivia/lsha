@@ -19,11 +19,11 @@ class Row:
 
 class ObsTable:
     def __init__(self, s: List[Trace], e: List[Trace], low_s: List[Trace]):
-        self.__S = s
-        self.__low_S = low_s
-        self.__E = e
-        self.__upp_obs: List[Row] = [Row([] * len(e))] * len(s)
-        self.__low_obs: List[Row] = [Row([] * len(e))] * len(low_s)
+        self.__S: List[Trace] = s
+        self.__low_S: List[Trace] = low_s
+        self.__E: List[Trace] = e
+        self.__upp_obs: List[Row] = [Row([State([(None, None)])] * len(e))] * len(s)
+        self.__low_obs: List[Row] = [Row([State([(None, None)])] * len(e))] * len(low_s)
 
     def get_S(self):
         return self.__S

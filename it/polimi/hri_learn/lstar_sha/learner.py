@@ -1,5 +1,4 @@
 import configparser
-import sys
 from typing import List, Tuple
 
 from it.polimi.hri_learn.domain.hafeatures import HybridAutomaton, Location, Edge
@@ -17,10 +16,11 @@ LOGGER = Logger('LEARNER')
 
 
 class Learner:
-    def __init__(self, teacher: Teacher, table: ObsTable = None):
+    def __init__(self, teacher: Teacher, table: ObsTable):
         self.symbols = teacher.symbols
         self.TEACHER = teacher
-        self.obs_table = table if table is not None else ObsTable([], [], [])
+        default_table = table
+        self.obs_table = table if table is not None else default_table
 
     def fill_row(self, row: Row, i: int, s_word: str, obs: List[Row]):
         for (j, t_word) in enumerate(self.obs_table.get_E()):
@@ -135,7 +135,7 @@ class Learner:
                 for symbol in self.symbols:
                     self.obs_table.add_low_S(new_s_word + symbol)
                     empty_state = State([(None, None)])
-                    new_row: Row =  Row([empty_state] * len(self.obs_table.get_E()))
+                    new_row: Row = Row([empty_state] * len(self.obs_table.get_E()))
                     low_obs.append(new_row)
         self.obs_table.set_upper_observations(upp_obs)
         self.obs_table.set_lower_observations(low_obs)

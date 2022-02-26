@@ -7,6 +7,8 @@ import it.polimi.hri_learn.pltr.lsha_report as report
 from it.polimi.hri_learn.case_studies.thermostat.sul_definition import thermostat_cs
 from it.polimi.hri_learn.lstar_sha.learner import Learner
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
+from it.polimi.hri_learn.domain.obstable import ObsTable
+from it.polimi.hri_learn.domain.lshafeatures import Trace
 
 # LEARNING PROCEDURE SETUP
 warnings.filterwarnings('ignore')
@@ -21,8 +23,12 @@ CS = config['SUL CONFIGURATION']['CASE_STUDY']
 CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'][0])
 RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 
-TEACHER = Teacher(thermostat_cs)
-LEARNER = Learner(TEACHER)
+SUL = thermostat_cs
+TEACHER = Teacher(SUL)
+
+long_traces = [Trace(events=[e]) for e in SUL.events]
+obs_table = ObsTable([], [Trace(events=[])], long_traces)
+LEARNER = Learner(TEACHER, obs_table)
 
 # RUN LEARNING ALGORITHM:
 LEARNED_HA = LEARNER.run_lsha(filter_empty=True)

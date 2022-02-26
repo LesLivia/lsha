@@ -82,20 +82,39 @@ class TimedTrace:
 
 
 class Trace:
-    def __init__(self, tt: TimedTrace):
-        self.events = tt.e
+    def __init__(self, events: List[Event] = None, tt: TimedTrace = None):
+        if tt is not None:
+            self.events = tt.e
+        else:
+            self.events = events
 
     def __str__(self):
-        return ''.join([e.symbol for e in self.events])
+        if len(self.events) == 0:
+            return EMPTY_STRING
+        else:
+            return ''.join([e.symbol for e in self.events])
 
     def __len__(self):
         return len(self.events)
+
+    def __getitem__(self, item):
+        return self.events[item]
+
+    def __add__(self, other):
+        return Trace(events=self.events + other.events)
 
 
 class State:
     def __init__(self, vars: List[Tuple[FlowCondition, ProbDistribution]]):
         self.vars = vars
-        self.label = ';'.join(['(' + str(pair[0]) + ',' + str(pair[1]) + ')' for pair in vars])
+        self.label = ''
+        for i, v in enumerate(vars):
+            if v[0] is not None and v[1] is not None:
+                self.label += '({},{})'.format(v[0], v[1])
+            else:
+                self.label += '({},{})'.format(EMPTY_STRING, EMPTY_STRING)
+            if i < len(vars) - 1:
+                self.label += ';'
 
     def __str__(self):
         return self.label
@@ -104,4 +123,4 @@ class State:
         return self.label == other.label
 
     def observed(self):
-        return any([pair[0].f is not None and pair[1] is not None for pair in self.vars])
+        return any([pair[0] is not None and pair[1] is not None for pair in self.vars])

@@ -61,16 +61,16 @@ class SystemUnderLearning:
         events = [self.label_f(self.events, new_signals, pt.t) for pt in chg_pts]
         new_tt = TimedTrace([pt.t for pt in chg_pts], events)
         self.timed_traces.append(new_tt)
-        self.traces.append(Trace(new_tt))
+        self.traces.append(Trace(tt=new_tt))
 
     def get_ht_params(self, segment: List[SignalPoint], flow: FlowCondition):
         return self.param_f(segment, flow)
 
-    def get_segments(self, word: str):
+    def get_segments(self, word: Trace):
         trace_events: List[str] = [str(t) for t in self.traces]
         traces = []
-        for (i, event_str) in enumerate(trace_events):
-            if event_str.startswith(word):
+        for (i, event) in enumerate(trace_events):
+            if str(event).startswith(str(word)):
                 traces.append(i)
         if len(traces) == 0:
             return []
@@ -142,5 +142,3 @@ class SystemUnderLearning:
                 plt.plot(x, stats.norm.pdf(x, mu, sigma), label='{}({:.6f}, {:.6f})'.format(d, mu, sigma))
             plt.legend()
             plt.show()
-
-
