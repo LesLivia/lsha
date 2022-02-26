@@ -42,10 +42,13 @@ class FlowCondition:
         self.label = self.MODEL_FORMATTER.format(f_id)
 
     def __eq__(self, other):
-        return self.f == other.f
+        return self.f_id == other.f_id
 
     def __str__(self):
         return self.label if self.f is not None else EMPTY_STRING
+
+    def __hash__(self):
+        return self.f_id
 
 
 class RealValuedVar:

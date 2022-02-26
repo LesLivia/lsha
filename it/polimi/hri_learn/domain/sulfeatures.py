@@ -40,6 +40,7 @@ class SystemUnderLearning:
 
         self.name = args['args']['name']
         self.driver = args['args']['driver']
+        self.default_m = args['args']['default_m']
 
     #
     # TRACE PROCESSING METHODS

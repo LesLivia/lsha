@@ -2,14 +2,13 @@ import configparser
 import os
 import random
 import subprocess
-import sys
 from typing import List
 
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 
 config = configparser.ConfigParser()
 config.sections()
-config.read(sys.argv[1])
+config.read('./resources/config/config.ini')
 config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
@@ -42,7 +41,7 @@ UPP_QUERY_PATH = config['TRACE GENERATION']['UPPAAL_QUERY_PATH'].format(CS_VERSI
 RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 
 MAX_E = 15
-LOGGER = Logger()
+LOGGER = Logger('TRACE GENERATOR')
 
 
 class TraceGenerator:
@@ -142,7 +141,7 @@ class TraceGenerator:
             return self.get_traces_uppaal()
 
     def get_traces_sim(self):
-        #if self.ONCE:
+        # if self.ONCE:
         #    return []
 
         sims = os.listdir(SIM_LOGS_PATH.format(config['SUL CONFIGURATION']['CS_VERSION']))
@@ -152,7 +151,7 @@ class TraceGenerator:
             # rand_sel = random.randint(0, 100)
             # rand_sel = rand_sel % len(sims)
             paths.append(SIM_LOGS_PATH.format(config['SUL CONFIGURATION']['CS_VERSION']) + sims[i] + '/')
-        #self.ONCE = True
+        # self.ONCE = True
         return paths
 
     def get_traces_uppaal(self):

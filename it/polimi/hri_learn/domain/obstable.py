@@ -1,6 +1,6 @@
 from typing import List
 
-from lshafeatures import Trace, State
+from it.polimi.hri_learn.domain.lshafeatures import Trace, State
 
 
 class Row:

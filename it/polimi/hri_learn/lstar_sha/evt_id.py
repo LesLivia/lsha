@@ -1,6 +1,5 @@
 import configparser
 import math
-import sys
 from typing import List
 
 from it.polimi.hri_learn.domain.sigfeatures import SignalPoint
@@ -15,7 +14,7 @@ LOGGER = Logger('EVENT FACTORY')
 
 config = configparser.ConfigParser()
 config.sections()
-config.read(sys.argv[1])
+config.read('./resources/config/config.ini')
 config.sections()
 
 CASE_STUDY = config['SUL CONFIGURATION']['CASE_STUDY']

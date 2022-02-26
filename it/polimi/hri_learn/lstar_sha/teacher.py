@@ -11,10 +11,9 @@ from tqdm import tqdm
 
 from it.polimi.hri_learn.domain.lshafeatures import TimedTrace
 from it.polimi.hri_learn.domain.obstable import ObsTable
-from it.polimi.hri_learn.domain.sigfeatures import SampledSignal
+from it.polimi.hri_learn.domain.sigfeatures import SampledSignal, Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning
-from it.polimi.hri_learn.lstar_sha.evt_id import DEFAULT_DISTR, DEFAULT_MODEL, MAIN_SIGNAL, \
-    MODEL_TO_DISTR_MAP, \
+from it.polimi.hri_learn.lstar_sha.evt_id import DEFAULT_DISTR, DEFAULT_MODEL, MODEL_TO_DISTR_MAP, \
     DRIVER_SIG
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 from it.polimi.hri_learn.lstar_sha.trace_gen import TraceGenerator
@@ -34,7 +33,7 @@ class Teacher:
 
         # System-Dependent Attributes
         self.symbols = sul.symbols
-        self.models = sul.flows
+        self.flows = sul.flows
         self.distributions = [v.distr for v in sul.vars]
 
         # Trace-Dependent Attributes
@@ -42,11 +41,11 @@ class Teacher:
         self.signals: List[List[SampledSignal]] = sul.signals
 
     # QUERIES
-
     @staticmethod
-    def derivative(t: List[float], values: List[float]):
+    def derivative(t: List[Timestamp], values: List[float]):
         # returns point-to-point increments for a given time-series
         # (derivative approximation)
+        t = [x.to_secs() for x in t]
         increments = []
         try:
             increments = [(v - values[i - 1]) / (t[i] - t[i - 1]) for (i, v) in enumerate(values) if i > 0]
@@ -57,16 +56,16 @@ class Teacher:
             return increments
 
     #############################################
-    # MODEL FITTING QUERY:
+    # MODEL IDENTIFICATION QUERY:
     # for a given prefix (word), gets all corresponding segments
     # and returns the flow condition that best fits such segments
     # If not enough data are available to draw a conclusion, returns None
     #############################################
     def mi_query(self, word: str):
         if word == '':
-            return DEFAULT_MODEL
+            return self.flows[self.sul.default_m]
         else:
-            segments = self.get_segments(word)
+            segments = self.sul.get_segments(word)
             if len(segments) > 0:
                 fits = []
                 for segment in segments:
@@ -81,8 +80,8 @@ class Teacher:
                     best_fit = None
 
                     # for each model from the given input set
-                    for (m_i, model) in enumerate(self.get_models()):
-                        ideal_model = model(interval, segment[0].value)
+                    for flow in self.flows[0]:
+                        ideal_model = flow.f(interval, segment[0].value)
                         distances = [abs(i - real_behavior[index]) for (index, i) in enumerate(ideal_model)]
                         avg_distance = sum(distances) / len(distances)
 
@@ -98,7 +97,7 @@ class Teacher:
                         if dist_is_closer and der_is_closer and der_same_sign:
                             min_distance = avg_distance
                             min_der_distance = avg_der_distance
-                            best_fit = m_i
+                            best_fit = flow
                     else:
                         fits.append(best_fit)
 
