@@ -49,11 +49,17 @@ for t in thermostat_cs.traces:
     thermostat_cs.plot_trace(title='test', xlabel='time [s]', ylabel='degrees C°')
 thermostat_cs.plot_distributions()
 # test segment identification
-segments = thermostat_cs.get_segments('h_0c_0')
+segments = thermostat_cs.get_segments('h_0')
 print(len(segments))
 # test model identification query
 teacher = Teacher(thermostat_cs)
 print(teacher.mi_query(''))
 # test hypothesis testing query
-metrics = [get_thermo_param(s, off_fc) for s in segments]
+metrics = [get_thermo_param(s, on_fc) for s in segments]
 print(metrics)
+print(thermostat_cs.vars[0].model2distr[0])
+print(teacher.ht_query('h_0', on_fc, save=True))
+print(thermostat_cs.vars[0].model2distr[0])
+print(thermostat_cs.vars[0].model2distr[1])
+print(teacher.ht_query('h_0c_0', off_fc, save=True))
+print(thermostat_cs.vars[0].model2distr[1])

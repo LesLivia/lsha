@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as stats
 
-from it.polimi.hri_learn.domain.lshafeatures import Trace, TimedTrace, RealValuedVar, FlowCondition
+from it.polimi.hri_learn.domain.lshafeatures import Trace, TimedTrace, RealValuedVar, FlowCondition, ProbDistribution
 from it.polimi.hri_learn.domain.sigfeatures import ChangePoint, Event, SampledSignal, Timestamp, SignalPoint
 
 
@@ -43,6 +43,10 @@ class SystemUnderLearning:
         self.driver = args['args']['driver']
         self.default_m = args['args']['default_m']
         self.default_d = args['args']['default_d']
+
+    def add_distribution(self, d: ProbDistribution, f: FlowCondition):
+        self.vars[0].distr.append(d)
+        self.vars[0].model2distr[f.f_id].append(d.d_id)
 
     #
     # TRACE PROCESSING METHODS

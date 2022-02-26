@@ -9,12 +9,11 @@ import scipy.stats as stats
 from scipy.stats.stats import KstestResult
 from tqdm import tqdm
 
-from it.polimi.hri_learn.domain.lshafeatures import TimedTrace, FlowCondition
+from it.polimi.hri_learn.domain.lshafeatures import TimedTrace, FlowCondition, ProbDistribution, NormalDistribution
 from it.polimi.hri_learn.domain.obstable import ObsTable
 from it.polimi.hri_learn.domain.sigfeatures import SampledSignal, Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning
-from it.polimi.hri_learn.lstar_sha.evt_id import DEFAULT_DISTR, DEFAULT_MODEL, MODEL_TO_DISTR_MAP, \
-    DRIVER_SIG
+from it.polimi.hri_learn.lstar_sha.evt_id import DRIVER_SIG
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 from it.polimi.hri_learn.lstar_sha.trace_gen import TraceGenerator
 
@@ -39,6 +38,9 @@ class Teacher:
         # Trace-Dependent Attributes
         self.timed_traces: List[TimedTrace] = sul.timed_traces
         self.signals: List[List[SampledSignal]] = sul.signals
+
+    def add_distribution(self, d: ProbDistribution, f: FlowCondition):
+        self.sul.add_distribution(d, f)
 
     # QUERIES
     @staticmethod
@@ -147,27 +149,30 @@ class Teacher:
         else:
             segments = self.sul.get_segments(word)
             if len(segments) > 0:
+                # distr associated with selected flow
                 eligible_distributions = self.sul.vars[0].get_distr_for_flow(flow.f_id)
 
+                # randomly distributed metrics for each segment
                 metrics = [self.sul.get_ht_params(segment, flow) for segment in segments]
                 metrics = [met for met in metrics if met is not None]
-                alpha = 0.1
-                m = len(metrics)
-                max_scs = 0
-                D_min = 1000
-                best_fit = None
                 avg_metrics = sum(metrics) / len(metrics)
-                for (i, d) in enumerate(eligible_distributions):
-                    distr: Tuple[float, float, float] = self.get_distributions()[d]
+
+                # statistical parameters
+                alpha, m, max_scs, D_min, best_fit = (0.1, len(metrics), 0, 1000, None)
+
+                # for each eligible distribution, determine if metrics value are a likely sample set
+                for (i, distr) in enumerate(eligible_distributions):
                     scs = 0
                     for i in range(100):
-                        y = list(np.random.normal(distr[0], distr[1], m))
+                        y = list(np.random.normal(distr.params['avg'], distr.params['var'], m))
                         res: KstestResult = stats.ks_2samp(metrics, y)
+                        # counts number of successes with 100 different d populations
                         if res.pvalue > alpha:
                             scs += 1
-                    if abs(avg_metrics - distr[0]) < D_min and scs > 0:
-                        best_fit = d
-                        D_min = abs(avg_metrics - distr[0])
+                    # if d has the best statistic, d becomes the best fit
+                    if abs(avg_metrics - distr.params['avg']) < D_min and scs > 0:
+                        best_fit = distr
+                        D_min = abs(avg_metrics - distr.params['avg'])
                         max_scs = scs
 
                 if max_scs > 0:
@@ -176,22 +181,17 @@ class Teacher:
                 else:
                     # rejects H0
                     # if no distribution passes the hyp. test, a new one is created
-                    for d in eligible_distributions:
-                        distr: Tuple[float, float, float] = self.get_distributions()[d]
-                        old_avg: float = distr[0]
+                    for distr in eligible_distributions:
+                        old_avg: float = distr.params['avg']
                         if abs(avg_metrics - old_avg) < old_avg / 5:
-                            return d
-                    if save:
+                            return distr
+                    else:
                         var_metrics = sum([(m - avg_metrics) ** 2 for m in metrics]) / len(metrics)
                         std_dev_metrics = math.sqrt(var_metrics) if var_metrics != 0 else avg_metrics / 10
-                        self.get_distributions().append((avg_metrics, std_dev_metrics, len(metrics)))
-                        # and added to the map of eligible distr. for the selected model
-                        new_distr_index = len(self.get_distributions()) - 1
-                        MODEL_TO_DISTR_MAP[new_distr_index] = model
-                    else:
-                        new_distr_index = len(self.get_distributions()) + 1
-
-                    return new_distr_index
+                        new_distr = NormalDistribution(len(self.distributions[0]), avg_metrics, std_dev_metrics)
+                        if save:
+                            self.add_distribution(new_distr, flow)
+                        return new_distr
             else:
                 return None
 
