@@ -1,8 +1,7 @@
 import math
 from typing import List
 
-from it.polimi.hri_learn.case_studies.thermostat.label_fcn import label_event
-from it.polimi.hri_learn.case_studies.thermostat.parser import parse_data
+from it.polimi.hri_learn.case_studies.thermostat.sul_functions import label_event, parse_data, get_thermo_param
 from it.polimi.hri_learn.domain.lshafeatures import RealValuedVar, FlowCondition
 from it.polimi.hri_learn.domain.sigfeatures import Event, Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning
@@ -13,6 +12,7 @@ OFF_DISTR = (100.0, 1.0, 200)
 ON_DISTR = (0.7, 0.01, 200)
 DRIVER_SIG = 't.ON'
 DEFAULT_M = 1
+DEFAULT_DISTR = 1
 
 
 def off_model(interval: List[Timestamp], T_0: float):
@@ -35,8 +35,9 @@ temperature = RealValuedVar([on_fc, off_fc], [], model_to_distr, label='T_r')
 on_event = Event('', 'on', 'h_0')
 off_event = Event('', 'off', 'c_0')
 
-thermostat_cs = SystemUnderLearning([temperature], [on_event, off_event], parse_data, label_event,
-                                    args={'name': 'thermostat', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M})
+args = {'name': 'thermostat', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
+thermostat_cs = SystemUnderLearning([temperature], [on_event, off_event],
+                                    parse_data, label_event, get_thermo_param, args=args)
 
 # test event correct configuration
 print(thermostat_cs.symbols)
@@ -48,8 +49,11 @@ for t in thermostat_cs.traces:
     thermostat_cs.plot_trace(title='test', xlabel='time [s]', ylabel='degrees C°')
 thermostat_cs.plot_distributions()
 # test segment identification
-segments = thermostat_cs.get_segments('h_0')
-print(segments)
+segments = thermostat_cs.get_segments('h_0c_0')
+print(len(segments))
 # test model identification query
 teacher = Teacher(thermostat_cs)
-print(teacher.mi_query('h_0c_0h_0c_0'))
+print(teacher.mi_query(''))
+# test hypothesis testing query
+metrics = [get_thermo_param(s, off_fc) for s in segments]
+print(metrics)

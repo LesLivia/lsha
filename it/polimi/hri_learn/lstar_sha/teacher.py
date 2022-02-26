@@ -9,7 +9,7 @@ import scipy.stats as stats
 from scipy.stats.stats import KstestResult
 from tqdm import tqdm
 
-from it.polimi.hri_learn.domain.lshafeatures import TimedTrace
+from it.polimi.hri_learn.domain.lshafeatures import TimedTrace, FlowCondition
 from it.polimi.hri_learn.domain.obstable import ObsTable
 from it.polimi.hri_learn.domain.sigfeatures import SampledSignal, Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning
@@ -63,7 +63,7 @@ class Teacher:
     #############################################
     def mi_query(self, word: str):
         if word == '':
-            return self.flows[self.sul.default_m]
+            return self.flows[0][self.sul.default_m]
         else:
             segments = self.sul.get_segments(word)
             if len(segments) > 0:
@@ -138,19 +138,18 @@ class Teacher:
     # a new one is added
     # If available data are not enough to draw a conclusion, returns None
     #############################################
-    def ht_query(self, word: str, model=DEFAULT_MODEL, save=True):
-        if model is None:
+    def ht_query(self, word: str, flow: FlowCondition, save=True):
+        if flow is None:
             return None
 
         if word == '':
-            return DEFAULT_DISTR
+            return self.distributions[self.sul.default_d]
         else:
-            segments = self.get_segments(word)
+            segments = self.sul.get_segments(word)
             if len(segments) > 0:
-                eligible_distributions = [k for k in MODEL_TO_DISTR_MAP.keys() if
-                                          MODEL_TO_DISTR_MAP[k] == model]
+                eligible_distributions = self.sul.vars[0].get_distr_for_flow(flow.f_id)
 
-                metrics = [self.evt_factory.get_ht_param(segment, model) for segment in segments]
+                metrics = [self.sul.get_ht_params(segment, flow) for segment in segments]
                 metrics = [met for met in metrics if met is not None]
                 alpha = 0.1
                 m = len(metrics)

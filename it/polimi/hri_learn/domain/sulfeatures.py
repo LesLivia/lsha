@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as stats
 
-from it.polimi.hri_learn.domain.lshafeatures import Trace, TimedTrace, RealValuedVar
-from it.polimi.hri_learn.domain.sigfeatures import ChangePoint, Event, SampledSignal, Timestamp
+from it.polimi.hri_learn.domain.lshafeatures import Trace, TimedTrace, RealValuedVar, FlowCondition
+from it.polimi.hri_learn.domain.sigfeatures import ChangePoint, Event, SampledSignal, Timestamp, SignalPoint
 
 
 class SystemUnderLearning:
@@ -25,7 +25,7 @@ class SystemUnderLearning:
 
         return chg_pts
 
-    def __init__(self, rv_vars: List[RealValuedVar], events: List[Event], parse_f, label_f, **args):
+    def __init__(self, rv_vars: List[RealValuedVar], events: List[Event], parse_f, label_f, param_f, **args):
         #
         self.vars = rv_vars
         self.flows = [v.flows for v in rv_vars]
@@ -33,6 +33,7 @@ class SystemUnderLearning:
         self.symbols = {e.symbol: e.label for e in events}
         self.parse_f = parse_f
         self.label_f = label_f
+        self.param_f = param_f
         #
         self.signals: List[List[SampledSignal]] = []
         self.timed_traces: List[TimedTrace] = []
@@ -41,6 +42,7 @@ class SystemUnderLearning:
         self.name = args['args']['name']
         self.driver = args['args']['driver']
         self.default_m = args['args']['default_m']
+        self.default_d = args['args']['default_d']
 
     #
     # TRACE PROCESSING METHODS
@@ -56,6 +58,9 @@ class SystemUnderLearning:
         new_tt = TimedTrace([pt.t for pt in chg_pts], events)
         self.timed_traces.append(new_tt)
         self.traces.append(Trace(new_tt))
+
+    def get_ht_params(self, segment: List[SignalPoint], flow: FlowCondition):
+        return self.param_f(segment, flow)
 
     def get_segments(self, word: str):
         trace_events: List[str] = [str(t) for t in self.traces]

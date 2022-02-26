@@ -18,7 +18,7 @@ config.read('./resources/config/config.ini')
 config.sections()
 
 CASE_STUDY = config['SUL CONFIGURATION']['CASE_STUDY']
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'][0])
+CS_VERSION = config['SUL CONFIGURATION']['CS_VERSION'][0]
 RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 MAIN_SIGNAL = None
 
@@ -52,30 +52,6 @@ class EventFactory:
 
     def clear(self):
         self.signals.append([])
-
-    def set_guards(self, guards):
-        self.guards = guards
-
-    def set_channels(self, channels):
-        self.channels = channels
-
-    def set_symbols(self, symbols):
-        self.symbols = symbols
-
-    def add_signal(self, signal, trace):
-        self.signals[trace].append(signal)
-
-    def get_guards(self):
-        return self.guards
-
-    def get_channels(self):
-        return self.channels
-
-    def get_symbols(self):
-        return self.symbols
-
-    def get_signals(self):
-        return self.signals
 
     '''
     WARNING! 
@@ -175,12 +151,6 @@ class EventFactory:
             returns metric for HT queries.
     '''
 
-    def get_ht_param(self, segment: List[SignalPoint], model=None):
-        if CASE_STUDY == 'HRI':
-            return self.get_ftg_param(segment, model)
-        else:
-            return self.get_thermo_param(segment, model)
-
     def get_ftg_param(self, segment: List[SignalPoint], model: int):
         try:
             val = [pt.value for pt in segment]
@@ -200,48 +170,6 @@ class EventFactory:
                 est_rate = sum(mus) / len(mus) if len(mus) > 0 else None
 
             return abs(est_rate) if est_rate is not None else None
-        except ValueError:
-            return None
-
-    def parse_traces(self, path: str):
-        if RESAMPLE_STRATEGY == 'SIMULATIONS':
-            return self.parse_traces_sim(path)
-        else:
-            return self.parse_traces_uppaal(path)
-
-    def get_thermo_param(segment: List[SignalPoint], model: int):
-        try:
-            val = [pt.value for pt in segment]
-            if model in [1, 2]:
-                if CS_VERSION != 'c' or (CS_VERSION == 'c' and model == 1):
-                    increments = []
-                    for (i, pt) in enumerate(val):
-                        if i > 0 and pt != val[i - 1]:
-                            increments.append(pt - val[i - 1] * math.exp(-1 / ON_R))
-                    Ks = [delta_t / (ON_R * (1 - math.exp(-1 / ON_R))) for delta_t in increments if delta_t != 0]
-
-                    LOGGER.info('Estimating rate with heat on ({})'.format(model))
-                    est_rate = sum(Ks) / len(Ks) if len(Ks) > 0 else None
-                else:
-                    increments = []
-                    for (i, pt) in enumerate(val):
-                        if i > 0:
-                            increments.append(pt - val[i - 1])
-                    increments = [i for i in increments if i != 0]
-                    LOGGER.info('Estimating rate with heat on ({})'.format(model))
-                    est_rate = sum(increments) / len(increments) if len(increments) > 0 else None
-            else:
-                increments = []
-                for (i, pt) in enumerate(val):
-                    if i > 0:
-                        increments.append(pt / val[i - 1])
-
-                Rs = [-1 / math.log(delta_t) for delta_t in increments if delta_t != 1]
-
-                LOGGER.info('Estimating rate with heat off ({})'.format(model))
-                est_rate = sum(Rs) / len(Rs) if len(Rs) > 0 else None
-
-            return est_rate
         except ValueError:
             return None
 
