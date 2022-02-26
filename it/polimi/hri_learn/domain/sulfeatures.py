@@ -67,11 +67,7 @@ class SystemUnderLearning:
         return self.param_f(segment, flow)
 
     def get_segments(self, word: Trace):
-        trace_events: List[str] = [str(t) for t in self.traces]
-        traces = []
-        for (i, event) in enumerate(trace_events):
-            if str(event).startswith(str(word)):
-                traces.append(i)
+        traces: List[int] = [i for i, t in enumerate(self.traces) if str(t).startswith(str(word))]
         if len(traces) == 0:
             return []
 
@@ -80,17 +76,14 @@ class SystemUnderLearning:
         for trace in traces:
             main_sig_index = [i for i, s in enumerate(self.signals[0]) if s.label == self.vars[0].label][0]
             main_sig = self.signals[trace][main_sig_index]
-            events_in_word = []
-            for i in range(0, len(word), 3):
-                events_in_word.append(word[i:i + 3])
 
             if word != '':
-                start_timestamp = self.timed_traces[trace].t[max(len(events_in_word) - 1, 0)].to_secs()
+                start_timestamp = self.timed_traces[trace].t[max(len(word) - 1, 0)].to_secs()
             else:
                 start_timestamp = Timestamp(0, 0, 0, 0, 0, 0).to_secs()
 
-            if len(events_in_word) < len(self.timed_traces[trace]):
-                end_timestamp = self.timed_traces[trace].t[len(events_in_word)].to_secs()
+            if len(word) < len(self.timed_traces[trace]):
+                end_timestamp = self.timed_traces[trace].t[len(word)].to_secs()
             else:
                 end_timestamp = main_sig.points[-1].timestamp.to_secs()
 

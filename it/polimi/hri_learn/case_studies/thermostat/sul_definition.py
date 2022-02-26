@@ -1,8 +1,8 @@
 import math
 from typing import List
-
+import os
 from it.polimi.hri_learn.case_studies.thermostat.sul_functions import label_event, parse_data, get_thermo_param
-from it.polimi.hri_learn.domain.lshafeatures import RealValuedVar, FlowCondition
+from it.polimi.hri_learn.domain.lshafeatures import RealValuedVar, FlowCondition, Trace
 from it.polimi.hri_learn.domain.sigfeatures import Event, Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
@@ -45,28 +45,30 @@ if test:
     print(thermostat_cs.symbols)
 
     # test trace processing
-    thermostat_cs.process_data('./resources/traces/uppaal/THERMO_1_4278330661.txt')
+    thermo_traces = [file for file in os.listdir('./resources/traces/uppaal') if file.startswith('THERMO')]
+    for trace in thermo_traces:
+        thermostat_cs.process_data('./resources/traces/uppaal/'+trace)
 
     # test visualization
     for t in thermostat_cs.traces:
         print(t)
-        thermostat_cs.plot_trace(title='test', xlabel='time [s]', ylabel='degrees C°')
+        # thermostat_cs.plot_trace(title='test', xlabel='time [s]', ylabel='degrees C°')
 
     # test segment identification
-    segments = thermostat_cs.get_segments('h_0')
+    segments = thermostat_cs.get_segments(Trace([on_event]))
     print(len(segments))
 
     # test model identification query
     teacher = Teacher(thermostat_cs)
-    print(teacher.mi_query(''))
+    print(teacher.mi_query(Trace([])))
 
     # test hypothesis testing query
     metrics = [get_thermo_param(s, on_fc) for s in segments]
     print(metrics)
     print(thermostat_cs.vars[0].model2distr[0])
-    print(teacher.ht_query('h_0', on_fc, save=True))
+    print(teacher.ht_query(Trace([on_event]), on_fc, save=True))
     print(thermostat_cs.vars[0].model2distr[0])
     print(thermostat_cs.vars[0].model2distr[1])
-    print(teacher.ht_query('h_0c_0', off_fc, save=True))
+    print(teacher.ht_query(Trace([on_event, off_event]), off_fc, save=True))
     print(thermostat_cs.vars[0].model2distr[1])
     thermostat_cs.plot_distributions()

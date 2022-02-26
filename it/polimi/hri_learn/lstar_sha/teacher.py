@@ -293,7 +293,10 @@ class Teacher:
                     # if there are sufficient data to fill the new row
                     if new_row.is_populated():
                         eq_rows = [row for row in table.get_upper_observations() if self.eqr_query(new_row, row)]
-                        uq = set(eq_rows)
+                        uq = []
+                        for eq in eq_rows:
+                            if eq not in uq:
+                                uq.append(eq)
                         not_ambiguous = len(uq) <= 1
 
                         if len(eq_rows) == 0:
@@ -302,37 +305,41 @@ class Teacher:
                             return prefix
                         elif not_ambiguous:
                             # checks non-consistency only for rows that are not ambiguous
-                            for (s_i, s_word) in enumerate(S):
+                            for s_i, s_word in enumerate(S):
                                 old_row = table.get_upper_observations()[s_i] if s_i < len(S) else \
                                     table.get_lower_observations()[s_i - len(S)]
                                 # finds weakly equal rows in S
                                 if self.eqr_query(old_row, new_row):
-                                    for a in self.symbols:
-                                        # if the hypothetical discrimating event is already in E
+                                    for event in self.sul.events:
+                                        # if the hypothetical discriminating event is already in E
                                         discr_is_prefix = False
                                         for e in table.get_E():
-                                            if e.startswith(a):
+                                            if str(e).startswith(event.symbol):
                                                 continue
                                         # else checks all 1-step distant rows
-                                        if s_word + a in S:
-                                            old_row_a = table.get_upper_observations()[S.index(s_word + a)]
-                                        elif s_word + a in low_S:
-                                            old_row_a = table.get_lower_observations()[low_S.index(s_word + a)]
+                                        if s_word + Trace([event]) in S:
+                                            old_row_a: Row = table.get_upper_observations()[
+                                                S.index(s_word + Trace([event]))]
+                                        elif s_word + Trace([event]) in low_S:
+                                            old_row_a: Row = table.get_lower_observations()[
+                                                low_S.index(s_word + Trace([event]))]
                                         else:
                                             continue
-                                        row_1_filled = old_row_a[0] != (None, None)
+                                        row_1_filled = old_row_a.state[0].observed()
                                         row_2 = Row([])
                                         for e in table.get_E():
-                                            id_model_2 = self.mi_query(prefix + a + e)
-                                            id_distr_2 = self.ht_query(prefix + a + e, id_model_2, save=False)
+                                            id_model_2 = self.mi_query(prefix + Trace([event]) + e)
+                                            id_distr_2 = self.ht_query(prefix + Trace([event]) + e, id_model_2,
+                                                                       save=False)
                                             if id_model_2 is None or id_distr_2 is None:
-                                                row_2.state.append(State([]))
+                                                row_2.state.append(State([(None, None)]))
                                             else:
                                                 row_2.state.append(State([(id_model_2, id_distr_2)]))
                                         row_2_filled = row_2.state[0].observed()
                                         if row_1_filled and row_2_filled and not discr_is_prefix and \
                                                 not self.eqr_query(row_2, old_row_a):
-                                            LOGGER.warn("!! MISSED NON-CONSISTENCY ({}, {}) !!".format(a, s_word))
+                                            LOGGER.warn(
+                                                "!! MISSED NON-CONSISTENCY ({}, {}) !!".format(Trace([event]), s_word))
                                             return prefix
                             else:
                                 not_counter.append(prefix)
