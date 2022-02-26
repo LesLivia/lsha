@@ -28,15 +28,17 @@ off_fc = FlowCondition(1, off_model)
 model_to_distr = {on_fc.f_id: [], off_fc.f_id: []}
 temperature = RealValuedVar([on_fc, off_fc], [], model_to_distr, label='T_r')
 
-on_event = Event('', 'on')
-off_event = Event('', 'off')
+on_event = Event('', 'on', 'h_0')
+off_event = Event('', 'off', 'c_0')
 
 thermostat_cs = SystemUnderLearning([temperature], [on_event, off_event], parse_data, label_event,
                                     args={'name': 'thermostat', 'driver': DRIVER_SIG})
 print(thermostat_cs.symbols)
 thermostat_cs.process_data('./resources/traces/uppaal/THERMO_1.txt')
-for e in thermostat_cs.traces:
-    print(e)
+for t in thermostat_cs.traces:
+    print(t)
     thermostat_cs.plot_trace(title='test', xlabel='time [s]', ylabel='degrees C°')
 
 thermostat_cs.plot_distributions()
+segments = thermostat_cs.get_segments('h_0')
+print(segments)

@@ -54,10 +54,11 @@ class SampledSignal:
 
 
 class Event:
-    def __init__(self, guard, chan):
+    def __init__(self, guard, chan, symb):
         self.guard = guard
         self.chan = chan
-        self.label = guard + '\n' + chan
+        self.symbol = symb
+        self.label = guard + ',' + chan if len(guard) > 0 else chan
 
     def __str__(self):
         return self.label

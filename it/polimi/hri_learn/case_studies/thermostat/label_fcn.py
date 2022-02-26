@@ -1,6 +1,5 @@
 import configparser
-import sys
-from typing import List, Dict
+from typing import List
 
 from it.polimi.hri_learn.domain.sigfeatures import SampledSignal, Timestamp, Event
 

@@ -5,36 +5,10 @@ import numpy as np
 import scipy.stats as stats
 
 from it.polimi.hri_learn.domain.lshafeatures import Trace, TimedTrace, RealValuedVar
-from it.polimi.hri_learn.domain.sigfeatures import ChangePoint, Event, SampledSignal
+from it.polimi.hri_learn.domain.sigfeatures import ChangePoint, Event, SampledSignal, Timestamp
 
 
 class SystemUnderLearning:
-    @staticmethod
-    def compute_symbols(events: List[Event]):
-        symbols = {}
-        guards = [e.guard for e in events if len(e.guard) > 1]
-        syncs = [e.chan for e in events]
-
-        # Compute all guards combinations
-        guards_comb = [''] * 2 ** len(guards)
-        for (i, g) in enumerate(guards):
-            pref = ''
-            for j in range(2 ** len(guards)):
-                guards_comb[j] += pref + g
-                if (j + 1) % ((2 ** len(guards)) / (2 ** (i + 1))) == 0:
-                    pref = '!' if pref == '' else ''
-
-        # Combine all guards with channels
-        for chn in syncs:
-            for (index, g) in enumerate(guards_comb):
-                if index > 9:
-                    identifier = chr(index + 87)
-                else:
-                    identifier = str(index)
-                symbols[chn + '_' + identifier] = g + ' and ' + chn
-
-        return symbols
-
     @staticmethod
     def find_chg_pts(driver: SampledSignal):
         timestamps = [pt.timestamp for pt in driver.points]
@@ -56,7 +30,7 @@ class SystemUnderLearning:
         self.vars = rv_vars
         self.flows = [v.flows for v in rv_vars]
         self.events = events
-        self.symbols = SystemUnderLearning.compute_symbols(events)
+        self.symbols = {e.symbol: e.label for e in events}
         self.parse_f = parse_f
         self.label_f = label_f
         #
@@ -67,6 +41,9 @@ class SystemUnderLearning:
         self.name = args['args']['name']
         self.driver = args['args']['driver']
 
+    #
+    # TRACE PROCESSING METHODS
+    #
     def process_data(self, path: str):
         new_signals: List[SampledSignal] = self.parse_f(path)
         self.signals.append(new_signals)
@@ -79,6 +56,42 @@ class SystemUnderLearning:
         self.timed_traces.append(new_tt)
         self.traces.append(Trace(new_tt))
 
+    def get_segments(self, word: str):
+        trace_events: List[str] = [str(t) for t in self.traces]
+        traces = []
+        for (i, event_str) in enumerate(trace_events):
+            if event_str.startswith(word):
+                traces.append(i)
+        if len(traces) == 0:
+            return []
+
+        segments = []
+        # for all traces, get signal segment from last(word) to the following event
+        for trace in traces:
+            main_sig_index = [i for i, s in enumerate(self.signals[0]) if s.label == self.vars[0].label][0]
+            main_sig = self.signals[trace][main_sig_index]
+            events_in_word = []
+            for i in range(0, len(word), 3):
+                events_in_word.append(word[i:i + 3])
+
+            if word != '':
+                start_timestamp = self.timed_traces[trace].t[max(len(events_in_word) - 1, 0)].to_secs()
+            else:
+                start_timestamp = Timestamp(0, 0, 0, 0, 0, 0).to_secs()
+
+            if len(events_in_word) < len(self.timed_traces[trace]):
+                end_timestamp = self.timed_traces[trace].t[len(events_in_word)].to_secs()
+            else:
+                end_timestamp = main_sig.points[-1].timestamp.to_secs()
+
+            segment = [pt for pt in main_sig.points if start_timestamp <= pt.timestamp.to_secs() <= end_timestamp]
+            segments.append(segment)
+        else:
+            return segments
+
+    #
+    # VISUALIZATION METHODS
+    #
     def plot_trace(self, i=None, title=None, xlabel=None, ylabel=None):
         plt.figure(figsize=(10, 5))
 

@@ -83,7 +83,7 @@ class Trace:
         self.events = tt.e
 
     def __str__(self):
-        return ','.join([str(e) for e in self.events])
+        return ''.join([e.symbol for e in self.events])
 
     def __len__(self):
         return len(self.events)

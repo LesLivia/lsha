@@ -1,6 +1,5 @@
 import configparser
 import math
-import sys
 from functools import reduce
 from typing import Tuple, List
 
@@ -25,7 +24,7 @@ TG = TraceGenerator()
 
 config = configparser.ConfigParser()
 config.sections()
-config.read(sys.argv[1])
+config.read('./resources/config/config.ini')
 config.sections()
 
 
@@ -43,43 +42,6 @@ class Teacher:
         self.signals: List[List[SampledSignal]] = sul.signals
 
     # QUERIES
-
-    def get_segments(self, word: str):
-        trace_events: List[str] = []
-        # converts all trace dicts ({time: evt}) to strings (e_1e_2...)
-        for trace in range(len(self.get_events())):
-            if len(list(self.get_events()[trace].values())) > 0:
-                trace_events.append(reduce(lambda x, y: x + y, list(self.get_events()[trace].values())))
-            else:
-                trace_events.append('')
-        traces = []
-        for (i, event_str) in enumerate(trace_events):
-            if event_str.startswith(word):
-                traces.append(i)
-        if len(traces) == 0:
-            return []
-
-        segments = []
-        # for all traces, get signal segment from last(word) to the following event
-        for trace in traces:
-            main_sig = self.get_signals()[trace][MAIN_SIGNAL]
-            events_in_word = []
-            for i in range(0, len(word), 3):
-                events_in_word.append(word[i:i + 3])
-
-            if word != '':
-                start_timestamp = list(self.get_events()[trace].keys())[max(len(events_in_word) - 1, 0)]
-            else:
-                start_timestamp = 0
-            if len(events_in_word) < len(self.get_events()[trace]):
-                end_timestamp = list(self.get_events()[trace].keys())[len(events_in_word)]
-            else:
-                end_timestamp = main_sig[-1].timestamp
-
-            segment = list(filter(lambda pt: start_timestamp <= pt.timestamp <= end_timestamp, main_sig))
-            segments.append(segment)
-        else:
-            return segments
 
     @staticmethod
     def derivative(t: List[float], values: List[float]):
