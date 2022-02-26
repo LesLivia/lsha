@@ -5,7 +5,7 @@ from it.polimi.hri_learn.lstar_sha.learner import ObsTable
 
 config = configparser.ConfigParser()
 config.sections()
-config.read(sys.argv[1])
+config.read('./resources/config/config.ini')
 config.sections()
 
 SAVE_PATH = config['SUL CONFIGURATION']['REPORT_SAVE_PATH']

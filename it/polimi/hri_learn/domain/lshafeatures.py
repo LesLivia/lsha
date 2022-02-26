@@ -100,5 +100,8 @@ class State:
     def __str__(self):
         return self.label
 
+    def __eq__(self, other):
+        return self.label == other.label
+
     def observed(self):
         return any([pair[0].f is not None and pair[1] is not None for pair in self.vars])

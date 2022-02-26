@@ -77,19 +77,19 @@ class TraceGenerator:
             else:
                 # for thermo example: associates a specific value
                 # to variable open for each event in the requested trace
-                if CS_VERSION < 8:
-                    if evt in ['h_1', 'c_1']:
+                if int(CS_VERSION) < 8:
+                    if evt in ['h_0', 'c_0']:
                         self.evt_int.append(1)
-                    elif evt in ['h_2', 'c_2']:
+                    elif evt in ['h_1', 'c_1']:
                         self.evt_int.append(0)
                 else:
-                    if evt in ['h_1', 'c_1']:
+                    if evt in ['h_0', 'c_0']:
                         self.evt_int.append(-1)
-                    elif evt in ['h_2', 'c_2']:
+                    elif evt in ['h_1', 'c_1']:
                         self.evt_int.append(1)
-                    elif evt in ['h_3', 'c_3']:
+                    elif evt in ['h_2', 'c_2']:
                         self.evt_int.append(2)
-                    elif evt in ['h_4', 'c_4']:
+                    elif evt in ['h_3', 'c_3']:
                         self.evt_int.append(0)
 
     def get_evt_str(self):
@@ -117,7 +117,7 @@ class TraceGenerator:
         tau = max(len(self.evt_int) * 150, 200)
         new_line_3 = LINE_3[0].format(tau)
         new_line_4 = LINE_4[0].format(CS_VERSION)
-        new_line_5 = LINE_5[0].format(CS_VERSION - 1) if CS == 'HRI' else None
+        new_line_5 = LINE_5[0].format(int(CS_VERSION) - 1) if CS == 'HRI' else None
         new_lines = [new_line_1, new_line_2, new_line_3, new_line_4, new_line_5]
 
         lines = m_r.readlines()

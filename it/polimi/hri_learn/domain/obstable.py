@@ -13,6 +13,9 @@ class Row:
     def __str__(self):
         return '\t|\t'.join([str(s) for s in self.state])
 
+    def __eq__(self, other):
+        return all([s == other.state[i] for i, s in enumerate(self.state)])
+
 
 class ObsTable:
     def __init__(self, s: List[Trace], e: List[Trace], low_s: List[Trace]):
@@ -46,13 +49,13 @@ class ObsTable:
     def get_upper_observations(self):
         return self.__upp_obs
 
-    def set_upper_observations(self, obs_table: List[List[State]]):
+    def set_upper_observations(self, obs_table: List[Row]):
         self.__upp_obs = obs_table
 
     def get_lower_observations(self):
         return self.__low_obs
 
-    def set_lower_observations(self, obs_table: List[List[State]]):
+    def set_lower_observations(self, obs_table: List[Row]):
         self.__low_obs = obs_table
 
     def __str__(self, filter_empty=False):

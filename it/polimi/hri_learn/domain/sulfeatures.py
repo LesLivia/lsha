@@ -130,15 +130,17 @@ class SystemUnderLearning:
             plt.show()
 
     def plot_distributions(self):
-        for flow in self.flows:
+        for flow in self.flows[0]:
             plt.figure()
-            plt.title("Distributions for {}".format(flow[0].label))
-            related_distributions = self.vars[0].get_distr_for_flow(flow[0].f_id)
+            plt.title("Distributions for {}".format(flow.label))
+            related_distributions = self.vars[0].get_distr_for_flow(flow.f_id)
             for d in related_distributions:
                 distr: Dict[str, float] = d.params
                 mu: float = distr['avg']
                 sigma: float = distr['var']
                 x = np.linspace(mu - 3 * sigma, mu + 3 * sigma, 200)
-                plt.plot(x, stats.norm.pdf(x, mu, sigma), label='N_{}({:.6f}, {:.6f})'.format(d, mu, sigma))
+                plt.plot(x, stats.norm.pdf(x, mu, sigma), label='{}({:.6f}, {:.6f})'.format(d, mu, sigma))
             plt.legend()
             plt.show()
+
+

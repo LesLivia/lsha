@@ -39,27 +39,34 @@ args = {'name': 'thermostat', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'def
 thermostat_cs = SystemUnderLearning([temperature], [on_event, off_event],
                                     parse_data, label_event, get_thermo_param, args=args)
 
-# test event correct configuration
-print(thermostat_cs.symbols)
-# test trace processing
-thermostat_cs.process_data('./resources/traces/uppaal/THERMO_1.txt')
-# test visualization
-for t in thermostat_cs.traces:
-    print(t)
-    thermostat_cs.plot_trace(title='test', xlabel='time [s]', ylabel='degrees C°')
-thermostat_cs.plot_distributions()
-# test segment identification
-segments = thermostat_cs.get_segments('h_0')
-print(len(segments))
-# test model identification query
-teacher = Teacher(thermostat_cs)
-print(teacher.mi_query(''))
-# test hypothesis testing query
-metrics = [get_thermo_param(s, on_fc) for s in segments]
-print(metrics)
-print(thermostat_cs.vars[0].model2distr[0])
-print(teacher.ht_query('h_0', on_fc, save=True))
-print(thermostat_cs.vars[0].model2distr[0])
-print(thermostat_cs.vars[0].model2distr[1])
-print(teacher.ht_query('h_0c_0', off_fc, save=True))
-print(thermostat_cs.vars[0].model2distr[1])
+test = False
+if test:
+    # test event configuration
+    print(thermostat_cs.symbols)
+
+    # test trace processing
+    thermostat_cs.process_data('./resources/traces/uppaal/THERMO_1.txt')
+
+    # test visualization
+    for t in thermostat_cs.traces:
+        print(t)
+        thermostat_cs.plot_trace(title='test', xlabel='time [s]', ylabel='degrees C°')
+
+    # test segment identification
+    segments = thermostat_cs.get_segments('h_0')
+    print(len(segments))
+
+    # test model identification query
+    teacher = Teacher(thermostat_cs)
+    print(teacher.mi_query(''))
+
+    # test hypothesis testing query
+    metrics = [get_thermo_param(s, on_fc) for s in segments]
+    print(metrics)
+    print(thermostat_cs.vars[0].model2distr[0])
+    print(teacher.ht_query('h_0', on_fc, save=True))
+    print(thermostat_cs.vars[0].model2distr[0])
+    print(thermostat_cs.vars[0].model2distr[1])
+    print(teacher.ht_query('h_0c_0', off_fc, save=True))
+    print(thermostat_cs.vars[0].model2distr[1])
+    thermostat_cs.plot_distributions()

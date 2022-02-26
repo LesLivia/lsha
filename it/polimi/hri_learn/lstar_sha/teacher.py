@@ -1,19 +1,16 @@
 import configparser
 import math
-from functools import reduce
-from typing import Tuple, List
+from typing import List
 
 import numpy as np
-import scipy.special as sci
 import scipy.stats as stats
 from scipy.stats.stats import KstestResult
 from tqdm import tqdm
 
 from it.polimi.hri_learn.domain.lshafeatures import TimedTrace, FlowCondition, ProbDistribution, NormalDistribution
-from it.polimi.hri_learn.domain.obstable import ObsTable
+from it.polimi.hri_learn.domain.obstable import ObsTable, Row, State
 from it.polimi.hri_learn.domain.sigfeatures import SampledSignal, Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning
-from it.polimi.hri_learn.lstar_sha.evt_id import DRIVER_SIG
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 from it.polimi.hri_learn.lstar_sha.trace_gen import TraceGenerator
 
@@ -119,18 +116,6 @@ class Teacher:
             else:
                 return None
 
-    @staticmethod
-    def get_theta_th(P_0: float, N: int, alpha: float = 0.05):
-        # returns the maximum number of failures allowed by conf. level alpha
-        for theta in range(0, N, 1):
-            alpha_th = 0
-            for K in range(theta, N, 1):
-                binom = sci.binom(N, K)
-                alpha_th += binom * (P_0 ** K) * ((1 - P_0) ** (N - K))
-            if alpha_th <= alpha:
-                return theta
-        return None
-
     #############################################
     # HYPOTHESIS TESTING QUERY:
     # for a given prefix (word), gets all corresponding segments
@@ -200,33 +185,17 @@ class Teacher:
     # checks if two rows (row(s1), row(s2)) are weakly equal
     # returns true/false
     #############################################
-    def eqr_query(self, s1: str, s2: str, row1: List[Tuple], row2: List[Tuple], strict=False):
+    def eqr_query(self, row1: Row, row2: Row, strict=False):
         if strict:
             return row1 == row2
 
-        for (c_i, cell) in enumerate(row1):
-            cell_is_filled = cell[0] is not None and cell[1] is not None
-            cell2_is_filled = row2[c_i][0] is not None and row2[c_i][1] is not None
+        for i, state in enumerate(row1.state):
             # if both rows have filled cells which differ from each other,
             # weak equality is violated
-            if cell_is_filled and cell2_is_filled and cell != row2[c_i]:
+            if state.observed() and row2.state[i].observed() and state != row2.state[i]:
                 return False
-        return True
-
-    def process_trace(self, path: str):
-        prev_traces = len(self.get_signals())
-        new_traces = self.evt_factory.parse_traces(path)
-        for (t, trace) in enumerate(new_traces):
-            self.reset()
-            driver_t = []
-            driver_v = []
-            for (i, signal) in enumerate(trace):
-                self.add_signal(signal, t + prev_traces)
-                if i == DRIVER_SIG:
-                    driver_t = [pt.timestamp for pt in signal]
-                    driver_v = [pt.value for pt in signal]
-            self.find_chg_pts(driver_t, driver_v)
-            self.identify_events(t + prev_traces)
+        else:
+            return True
 
     #############################################
     # KNOWLEDGE REFINEMENT QUERY:
@@ -237,26 +206,28 @@ class Teacher:
     def ref_query(self, table: ObsTable):
         n_resample = int(config['LSHA PARAMETERS']['N_min'])
         S = table.get_S()
-        upp_obs = table.get_upper_observations()
+        upp_obs: List[Row] = table.get_upper_observations()
         lS = table.get_low_S()
-        low_obs = table.get_lower_observations()
+        low_obs: List[Row] = table.get_lower_observations()
 
         # find all words which are ambiguous
         # (equivalent to multiple rows)
         amb_words = []
         for (i, row) in enumerate(upp_obs + low_obs):
+            # if there are not enough observations of a word,
+            # it needs a refinement query
             s = S[i] if i < len(upp_obs) else lS[i - len(upp_obs)]
             for (e_i, e) in enumerate(table.get_E()):
-                if len(self.get_segments(s + e)) < n_resample:
+                if len(self.sul.get_segments(s + e)) < n_resample:
                     amb_words.append(s + e)
 
-            eq_rows = []
-            if row[0] == (None, None):
+            if not row.is_populated():
                 continue
 
+            # find equivalent rows
+            eq_rows = []
             for (j, row_2) in enumerate(upp_obs):
-                row_2_populated = row_2[0] != (None, None)
-                if row_2_populated and i != j and self.eqr_query(s, S[j], row, row_2):
+                if row_2.is_populated() and i != j and self.eqr_query(row, row_2):
                     eq_rows.append(row_2)
             uq = []
             for eq in eq_rows:
@@ -283,7 +254,7 @@ class Teacher:
                 path = TG.get_traces()
                 if path is not None:
                     for sim in path:
-                        self.process_trace(sim)
+                        self.sul.process_data(sim)
                 else:
                     LOGGER.debug('!! An error occurred while generating traces !!')
 
@@ -296,18 +267,13 @@ class Teacher:
     #############################################
     def get_counterexample(self, table: ObsTable):
         # FIXME
-        if len(self.get_signals()) >= 2000:
+        if len(self.timed_traces) >= 2000:
             return None
 
         S = table.get_S()
         low_S = table.get_low_S()
 
-        trace_events: List[str] = []
-        for trace in range(len(self.get_events())):
-            if len(list(self.get_events()[trace].values())) > 0:
-                trace_events.append(reduce(lambda x, y: x + y, list(self.get_events()[trace].values())))
-            else:
-                trace_events.append('')
+        trace_events: List[str] = [str(t) for t in self.sul.traces]
         max_events = int(max([len(t) for t in trace_events]))
 
         not_counter = []
@@ -316,24 +282,23 @@ class Teacher:
                 # event_str[:j] not in S and event_str[:j] not in low_S and
                 if event_str[:j] not in S and event_str[:j] not in low_S and event_str[:j] not in not_counter:
                     # fills hypothetical new row
-                    new_row = []
+                    new_row = Row([])
                     for (e_i, e_word) in enumerate(table.get_E()):
                         word = event_str[:j] + e_word
                         id_model = self.mi_query(word)
                         id_distr = self.ht_query(word, id_model, save=False)
                         if id_model is not None and id_distr is not None:
-                            new_row.append((id_model, id_distr))
+                            new_row.state.append(State([(id_model, id_distr)]))
                         else:
-                            new_row.append((None, None))
-                    new_row_is_filled = any([t[0] is not None and t[1] is not None for t in new_row])
+                            new_row.state.append(State([]))
                     # if there are sufficient data to fill the new row
-                    if new_row_is_filled:
+                    if new_row.is_populated():
                         new_row_is_present = False
                         eq_rows = []
                         for (s_i, s_word) in enumerate(S):
                             row = table.get_upper_observations()[s_i]
                             # checks if there are weakly equal rows (-> row is present)
-                            if self.eqr_query(event_str[:j], s_word, new_row, row):
+                            if self.eqr_query(new_row, row):
                                 new_row_is_present = True
                                 eq_rows.append(row)
                         uq = []
@@ -353,8 +318,8 @@ class Teacher:
                                 old_row = table.get_upper_observations()[s_i] if s_i < len(S) else \
                                     table.get_lower_observations()[s_i - len(S)]
                                 # finds weakly equal rows in S
-                                if self.eqr_query(s_word, event_str[:j], old_row, new_row):
-                                    for a in self.get_symbols():
+                                if self.eqr_query(old_row, new_row):
+                                    for a in self.symbols:
                                         # if the hypothetical discrimating event is already in E
                                         discr_is_prefix = False
                                         for e in table.get_E():
@@ -368,17 +333,17 @@ class Teacher:
                                         else:
                                             continue
                                         row_1_filled = old_row_a[0] != (None, None)
-                                        row_2 = []
+                                        row_2 = Row([])
                                         for e in table.get_E():
                                             id_model_2 = self.mi_query(event_str[:j] + a + e)
                                             id_distr_2 = self.ht_query(event_str[:j] + a + e, id_model_2, save=False)
                                             if id_model_2 is None or id_distr_2 is None:
-                                                row_2.append((None, None))
+                                                row_2.state.append(State([]))
                                             else:
-                                                row_2.append((id_model_2, id_distr_2))
-                                        row_2_filled = row_2[0] != (None, None)
+                                                row_2.state.append(State([(id_model_2, id_distr_2)]))
+                                        row_2_filled = row_2.state[0].observed()
                                         if row_1_filled and row_2_filled and not discr_is_prefix and \
-                                                not self.eqr_query(event_str[:j] + a, s_word + a, row_2, old_row_a):
+                                                not self.eqr_query(row_2, old_row_a):
                                             LOGGER.warn("!! MISSED NON-CONSISTENCY ({}, {}) !!".format(a, s_word))
                                             return event_str[:j]
                             else:
