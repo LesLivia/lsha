@@ -3,8 +3,9 @@ from typing import List
 
 from it.polimi.hri_learn.case_studies.thermostat.label_fcn import label_event
 from it.polimi.hri_learn.case_studies.thermostat.parser import parse_data
-from it.polimi.hri_learn.domain.lshafeatures import SystemUnderLearning, RealValuedVar, FlowCondition
+from it.polimi.hri_learn.domain.lshafeatures import RealValuedVar, FlowCondition
 from it.polimi.hri_learn.domain.sigfeatures import Event
+from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning
 
 CLOSED_R = 100.0
 OFF_DISTR = (100.0, 1.0, 200)
@@ -24,7 +25,8 @@ def on_model(interval: List[float], T_0: float):
 on_fc = FlowCondition(0, on_model)
 off_fc = FlowCondition(1, off_model)
 
-temperature = RealValuedVar([on_fc, off_fc], [], label='T')
+model_to_distr = {on_fc.f_id: [], off_fc.f_id: []}
+temperature = RealValuedVar([on_fc, off_fc], [], model_to_distr, label='T_r')
 
 on_event = Event('', 'on')
 off_event = Event('', 'off')
@@ -35,3 +37,6 @@ print(thermostat_cs.symbols)
 thermostat_cs.process_data('./resources/traces/uppaal/THERMO_1.txt')
 for e in thermostat_cs.traces:
     print(e)
+    thermostat_cs.plot_trace(title='test', xlabel='time [s]', ylabel='degrees C°')
+
+thermostat_cs.plot_distributions()

@@ -63,7 +63,7 @@ class Event:
         return self.label
 
     def __eq__(self, other):
-        return self.guard == other.guard and self.label == other.label
+        return self.guard == other.guard and self.chan == other.chan
 
 
 class ChangePoint:

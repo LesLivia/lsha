@@ -4,21 +4,21 @@ import sys
 from functools import reduce
 from typing import Tuple, List
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.special as sci
 import scipy.stats as stats
 from scipy.stats.stats import KstestResult
 from tqdm import tqdm
 
-from it.polimi.hri_learn.domain.sigfeatures import SignalPoint
-from it.polimi.hri_learn.lstar_sha.evt_id import EventFactory, DEFAULT_DISTR, DEFAULT_MODEL, MAIN_SIGNAL, \
+from it.polimi.hri_learn.domain.lshafeatures import TimedTrace
+from it.polimi.hri_learn.domain.obstable import ObsTable
+from it.polimi.hri_learn.domain.sigfeatures import SampledSignal
+from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning
+from it.polimi.hri_learn.lstar_sha.evt_id import DEFAULT_DISTR, DEFAULT_MODEL, MAIN_SIGNAL, \
     MODEL_TO_DISTR_MAP, \
     DRIVER_SIG
-from it.polimi.hri_learn.lstar_sha.learner import ObsTable
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 from it.polimi.hri_learn.lstar_sha.trace_gen import TraceGenerator
-from it.polimi.hri_learn.domain.lshafeatures import SystemUnderLearning
 
 LOGGER = Logger('TEACHER')
 TG = TraceGenerator()
@@ -31,93 +31,18 @@ config.sections()
 
 class Teacher:
     def __init__(self, sul: SystemUnderLearning):
+        self.sul = sul
+
         # System-Dependent Attributes
         self.symbols = sul.symbols
         self.models = sul.flows
         self.distributions = [v.distr for v in sul.vars]
 
         # Trace-Dependent Attributes
-        self.chg_pts: List[List[float]] = []
-        self.events = sul.events
-        self.signals: List[List[List[SignalPoint]]] = []
-
-    def reset(self):
-        self.signals.append([])
-
-    # CHANGE POINTS
-    def set_chg_pts(self, chg_pts: List[float]):
-        self.chg_pts.append(chg_pts)
-
-    def get_chg_pts(self):
-        return self.chg_pts
-
-
-    # SIGNALS
-    def get_signals(self):
-        return self.signals
-
-    def add_signal(self, signal: List[SignalPoint], trace: int):
-        self.signals[trace].append(signal)
-
-    # EVENTS
-    def identify_events(self, trace):
-        events = {}
-
-        for pt in self.get_chg_pts()[trace]:
-            events[pt] = self.evt_factory.label_event(pt, trace)
-
-        self.set_events(events)
-
-    def plot_trace(self, trace: int, title=None, xlabel=None, ylabel=None):
-        plt.figure(figsize=(10, 5))
-
-        if title is not None:
-            plt.title(title, fontsize=18)
-        if xlabel is not None:
-            plt.xlabel(xlabel, fontsize=18)
-        if ylabel is not None:
-            plt.ylabel(ylabel, fontsize=18)
-
-        t = [x.timestamp for x in self.get_signals()[trace][0]]
-        v = [x.value for x in self.get_signals()[trace][0]]
-
-        plt.xlim(min(t) - 5, max(t) + 5)
-        plt.ylim(0, max(v) + .05)
-        plt.plot(t, v, 'k', linewidth=.5)
-
-        x = list(self.events[trace].keys())
-        plt.vlines(x, [0] * len(x), [max(v)] * len(x), 'b', '--')
-        for (index, e) in enumerate(self.get_events()[trace].values()):
-            plt.text(x[index] - 7, max(v) + .01, e, fontsize=18, color='blue')
-
-        plt.show()
+        self.timed_traces: List[TimedTrace] = sul.timed_traces
+        self.signals: List[List[SampledSignal]] = sul.signals
 
     # QUERIES
-    def set_models(self, models):
-        self.models = models
-
-    def get_models(self):
-        return self.models
-
-    def set_distributions(self, distributions):
-        self.distributions = distributions
-
-    def get_distributions(self):
-        return self.distributions
-
-    def plot_distributions(self):
-        for (i_m, m) in enumerate(self.get_models()):
-            plt.figure()
-            plt.title("Distributions for f_{}".format(i_m))
-            related_distributions = list(filter(lambda k: MODEL_TO_DISTR_MAP[k] == i_m, MODEL_TO_DISTR_MAP.keys()))
-            for d in related_distributions:
-                distr: Tuple = self.get_distributions()[d]
-                mu: float = distr[0]
-                sigma: float = distr[1]
-                x = np.linspace(mu - 3 * sigma, mu + 3 * sigma, 200)
-                plt.plot(x, stats.norm.pdf(x, mu, sigma), label='N_{}({:.6f}, {:.6f})'.format(d, mu, sigma))
-            plt.legend()
-            plt.show()
 
     def get_segments(self, word: str):
         trace_events: List[str] = []

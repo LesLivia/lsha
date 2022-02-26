@@ -1,6 +1,6 @@
 from typing import List, Dict, Tuple
 
-from it.polimi.hri_learn.domain.sigfeatures import ChangePoint, Event, SampledSignal, Timestamp
+from it.polimi.hri_learn.domain.sigfeatures import Event, Timestamp
 
 LOCATION_FORMATTER = 'q_{}'
 EMPTY_STRING = '\u03B5'
@@ -49,15 +49,21 @@ class FlowCondition:
 
 
 class RealValuedVar:
-    def __init__(self, flows: List[FlowCondition], distr: List[ProbDistribution], label: str = None):
+    def __init__(self, flows: List[FlowCondition], distr: List[ProbDistribution],
+                 m2d: Dict[int, List[int]], label: str = None):
         self.flows = flows
         self.distr = distr
+        self.model2distr = m2d
         self.label = label
 
     def __eq__(self, other):
         same_flows = all([f in other.flows for f in self.flows])
         same_distr = all([d in other.distr for d in self.distr])
         return same_flows and same_distr
+
+    def get_distr_for_flow(self, x: int):
+        related_distr = self.model2distr[x]
+        return list(filter(lambda d: d.d_id in related_distr, self.distr))
 
 
 class TimedTrace:
@@ -93,72 +99,3 @@ class State:
 
     def observed(self):
         return any([pair[0].f is not None and pair[1] is not None for pair in self.vars])
-
-
-class SystemUnderLearning:
-    @staticmethod
-    def compute_symbols(events: List[Event]):
-        symbols = {}
-        guards = [e.guard for e in events if len(e.guard) > 1]
-        syncs = [e.chan for e in events]
-
-        # Compute all guards combinations
-        guards_comb = [''] * 2 ** len(guards)
-        for (i, g) in enumerate(guards):
-            pref = ''
-            for j in range(2 ** len(guards)):
-                guards_comb[j] += pref + g
-                if (j + 1) % ((2 ** len(guards)) / (2 ** (i + 1))) == 0:
-                    pref = '!' if pref == '' else ''
-
-        # Combine all guards with channels
-        for chn in syncs:
-            for (index, g) in enumerate(guards_comb):
-                if index > 9:
-                    identifier = chr(index + 87)
-                else:
-                    identifier = str(index)
-                symbols[chn + '_' + identifier] = g + ' and ' + chn
-
-        return symbols
-
-    @staticmethod
-    def find_chg_pts(driver: SampledSignal):
-        timestamps = [pt.timestamp for pt in driver.points]
-        values = [pt.value for pt in driver.points]
-        chg_pts: List[ChangePoint] = []
-
-        # IDENTIFY CHANGE PTS IN DRIVER OVERLAY
-        prev = values[0]
-        for i in range(1, len(values)):
-            curr = values[i]
-            if curr != prev:
-                chg_pts.append(ChangePoint(timestamps[i]))
-            prev = curr
-
-        return chg_pts
-
-    def __init__(self, rv_vars: List[RealValuedVar], events: List[Event], parse_f, label_f, **args):
-        self.name = args['args']['name']
-        self.driver = args['args']['driver']
-        self.vars = rv_vars
-        self.flows = [v.flows for v in rv_vars]
-        self.events = events
-        self.symbols = SystemUnderLearning.compute_symbols(events)
-        self.parse_f = parse_f
-        self.label_f = label_f
-        self.signals: List[List[SampledSignal]] = []
-        self.timed_traces: List[TimedTrace] = []
-        self.traces: List[Trace] = []
-
-    def process_data(self, path: str):
-        new_signals: List[SampledSignal] = self.parse_f(path)
-        self.signals.append(new_signals)
-
-        driver_sig = [sig for sig in new_signals if sig.label == self.driver][0]
-
-        chg_pts = SystemUnderLearning.find_chg_pts(driver_sig)
-        events = [self.label_f(self.events, new_signals, pt.t) for pt in chg_pts]
-        new_tt = TimedTrace([pt.t for pt in chg_pts], events)
-        self.timed_traces.append(new_tt)
-        self.traces.append(Trace(new_tt))
