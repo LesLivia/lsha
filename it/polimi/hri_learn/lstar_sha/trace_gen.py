@@ -4,6 +4,7 @@ import random
 import subprocess
 from typing import List
 
+from it.polimi.hri_learn.domain.lshafeatures import Trace, Event
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 
 config = configparser.ConfigParser()
@@ -45,32 +46,28 @@ LOGGER = Logger('TRACE GENERATOR')
 
 
 class TraceGenerator:
-    def __init__(self, word: str = None):
+    def __init__(self, word: Trace = Trace([])):
         self.word = word
-        self.events: List[str] = []
+        self.events: List[Event] = word.events
         self.evt_int: List[int] = []
 
         self.ONCE = False
 
-    def set_word(self, w: str):
-        self.events = []
+    def set_word(self, w: Trace):
+        self.events = w.events
         self.evt_int = []
         self.word = w
 
-    def split_word(self):
-        for i in range(0, len(self.word) - 2, 3):
-            self.events.append(self.word[i:i + 3])
-
     def evts_to_ints(self):
-        for evt in self.events:
+        for e in self.events:
             if CS == 'HRI':
-                if evt in ['u_2', 'u_4']:
+                if e.symbol in ['u_2', 'u_4']:
                     self.evt_int.append(1)
-                elif evt in ['u_3']:
+                elif e.symbol in ['u_3']:
                     self.evt_int.append(3)
-                elif evt in ['d_3', 'd_4']:
+                elif e.symbol in ['d_3', 'd_4']:
                     self.evt_int.append(0)
-                elif evt in ['d_2']:
+                elif e.symbol in ['d_2']:
                     self.evt_int.append(2)
                 else:
                     self.evt_int.append(-1)
@@ -78,22 +75,21 @@ class TraceGenerator:
                 # for thermo example: associates a specific value
                 # to variable open for each event in the requested trace
                 if int(CS_VERSION) < 8:
-                    if evt in ['h_0', 'c_0']:
+                    if e.symbol in ['h_0', 'c_0']:
                         self.evt_int.append(1)
-                    elif evt in ['h_1', 'c_1']:
+                    elif e.symbol in ['h_1', 'c_1']:
                         self.evt_int.append(0)
                 else:
-                    if evt in ['h_0', 'c_0']:
+                    if e.symbol in ['h_0', 'c_0']:
                         self.evt_int.append(-1)
-                    elif evt in ['h_1', 'c_1']:
+                    elif e.symbol in ['h_1', 'c_1']:
                         self.evt_int.append(1)
-                    elif evt in ['h_2', 'c_2']:
+                    elif e.symbol in ['h_2', 'c_2']:
                         self.evt_int.append(2)
-                    elif evt in ['h_3', 'c_3']:
+                    elif e.symbol in ['h_3', 'c_3']:
                         self.evt_int.append(0)
 
     def get_evt_str(self):
-        self.split_word()
         self.evts_to_ints()
 
         res = '{'

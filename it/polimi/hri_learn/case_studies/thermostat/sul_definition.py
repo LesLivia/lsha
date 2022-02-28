@@ -1,6 +1,8 @@
+import configparser
 import math
-from typing import List
 import os
+from typing import List
+
 from it.polimi.hri_learn.case_studies.thermostat.sul_functions import label_event, parse_data, get_thermo_param
 from it.polimi.hri_learn.domain.lshafeatures import RealValuedVar, FlowCondition, Trace
 from it.polimi.hri_learn.domain.sigfeatures import Event, Timestamp
@@ -13,6 +15,12 @@ ON_DISTR = (0.7, 0.01, 200)
 DRIVER_SIG = 't.ON'
 DEFAULT_M = 1
 DEFAULT_DISTR = 1
+
+config = configparser.ConfigParser()
+config.sections()
+config.read('./resources/config/config.ini')
+config.sections()
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'][0])
 
 
 def off_model(interval: List[Timestamp], T_0: float):
@@ -32,12 +40,19 @@ off_fc = FlowCondition(1, off_model)
 model_to_distr = {on_fc.f_id: [], off_fc.f_id: []}
 temperature = RealValuedVar([on_fc, off_fc], [], model_to_distr, label='T_r')
 
-on_event = Event('', 'on', 'h_0')
-off_event = Event('', 'off', 'c_0')
+if CS_VERSION == 1:
+    on_event = Event('', 'on', 'h_0')
+    off_event = Event('', 'off', 'c_0')
+    events = [on_event, off_event]
+if CS_VERSION >= 2:
+    on_event = Event('!open', 'on', 'h_0')
+    off_event = Event('!open', 'off', 'c_0')
+    on_event2 = Event('open', 'on', 'h_1')
+    off_event2 = Event('open', 'off', 'c_1')
+    events = [on_event, off_event, on_event2, off_event2]
 
 args = {'name': 'thermostat', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
-thermostat_cs = SystemUnderLearning([temperature], [on_event, off_event],
-                                    parse_data, label_event, get_thermo_param, args=args)
+thermostat_cs = SystemUnderLearning([temperature], events, parse_data, label_event, get_thermo_param, args=args)
 
 test = False
 if test:
@@ -47,7 +62,7 @@ if test:
     # test trace processing
     thermo_traces = [file for file in os.listdir('./resources/traces/uppaal') if file.startswith('THERMO')]
     for trace in thermo_traces:
-        thermostat_cs.process_data('./resources/traces/uppaal/'+trace)
+        thermostat_cs.process_data('./resources/traces/uppaal/' + trace)
 
     # test visualization
     for t in thermostat_cs.traces:

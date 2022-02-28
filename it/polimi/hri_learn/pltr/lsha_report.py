@@ -1,5 +1,4 @@
 import configparser
-import sys
 
 from it.polimi.hri_learn.lstar_sha.learner import ObsTable
 
@@ -22,14 +21,12 @@ def save_data(symbols, distr, obstable: ObsTable, traces, time, sha_name):
 
     # [LEARNED DISTRIBUTIONS]
     content += '\n\n--LEARNED DISTRIBUTIONS--\n\n'
-    for (i, d) in enumerate(distr):
-        mu: float = d[0]
-        sigma: float = d[1]
-        content += 'N_{}({:.6f}, {:.6f})\n'.format(i, mu, sigma)
+    for i, d in enumerate(distr[0]):
+        content += 'N_{}({:.6f}, {:.6f})\n'.format(i, d.params['avg'], d.params['var'])
 
     # [FINAL OBS TABLE]
     content += '\n\n--FINAL OBSERVATION TABLE--\n\n'
-    content += obstable.to_str(filter_empty=True) + '\n'
+    content += obstable.__str__(filter_empty=True) + '\n'
 
     content += '\n\n--PERFORMANCE DATA--\n\n'
     # [SAMPLED TRACES]

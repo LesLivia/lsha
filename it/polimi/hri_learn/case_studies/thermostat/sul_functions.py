@@ -11,25 +11,22 @@ config.sections()
 config.read('./resources/config/config.ini')
 config.sections()
 
-CS_VERSION = config['SUL CONFIGURATION']['CS_VERSION'][0]
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'][0])
 ON_R = 100.0
 LOGGER = Logger('SUL DATA HANDLER')
 
 
 def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp):
-    try:
-        wOpen = signals[2]
-    except IndexError:
-        wOpen: SampledSignal = SampledSignal([])
     heatOn = signals[0]
+    wOpen = signals[2]
     t = t.to_secs()
 
     identified_guard = ''
     curr_wOpen = list(filter(lambda x: x.timestamp.to_secs() <= t, wOpen.points))[-1]
-    if CS_VERSION == 'a':
-        identified_guard += events[0].guard if curr_wOpen.value == 1.0 else '!' + events[0].guard
-    if CS_VERSION == 'b' or CS_VERSION == 'c':
-        identified_guard += events[1].guard if curr_wOpen.value == 2.0 else '!' + events[1].guard
+    if CS_VERSION >= 2:
+        identified_guard += events[0].guard if curr_wOpen.value == 1.0 else events[2].guard
+    if CS_VERSION >= 3 or CS_VERSION == 5:
+        identified_guard += events[1].guard if curr_wOpen.value == 2.0 else events[3].guard
         # identified_guard += self.get_guards()[2] if curr_wOpen.value == 0.0 else '!' + self.get_guards()[2]
 
     curr_heatOn = list(filter(lambda x: x.timestamp.to_secs() <= t, heatOn.points))[-1]
@@ -53,7 +50,7 @@ def parse_data(path: str):
         entries = [line.split(' ') for line in split_lines[i]][0][1:]
         entries = [entry.replace('(', '').replace(')', '').replace('\n', '') for entry in entries]
         t = [float(x.split(',')[0]) for x in entries]
-        values = [float(x.split(',')[1])  for x in entries]
+        values = [float(x.split(',')[1]) for x in entries]
         ts = [Timestamp(0, 0, 0, 0, 0, i) for i in t]
         signal_pts: List[SignalPoint] = [SignalPoint(ts[i], values[i]) for i in range(len(ts))]
         new_signal: SampledSignal = SampledSignal(signal_pts, v)
