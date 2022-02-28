@@ -94,6 +94,9 @@ class Trace:
         else:
             return ''.join([e.symbol for e in self.events])
 
+    def __eq__(self, other):
+        return str(self) == str(other)
+
     def __len__(self):
         return len(self.events)
 

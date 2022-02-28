@@ -46,6 +46,8 @@ class Edge:
 
 
 class HybridAutomaton:
+    LOCATION_FORMATTER = 'q_{}'
+
     def __init__(self, loc: List[Location], edges: List[Edge]):
         self.locations = loc
         self.edges = edges

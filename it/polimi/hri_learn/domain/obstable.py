@@ -1,6 +1,7 @@
 from typing import List
 
-from it.polimi.hri_learn.domain.lshafeatures import Trace, State
+from it.polimi.hri_learn.domain.hafeatures import HybridAutomaton, Location, Edge
+from it.polimi.hri_learn.domain.lshafeatures import Trace, State, EMPTY_STRING
 
 
 class Row:
@@ -111,3 +112,127 @@ class ObsTable:
 
     def print(self, filter_empty=False):
         print(self.__str__(filter_empty))
+
+    def to_sha(self, teacher):
+        locations: List[Location] = []
+        upp_obs: List[Row] = self.get_upper_observations()
+        low_obs: List[Row] = self.get_lower_observations()
+        # each unique sequence in the upper observations
+        # constitutes an automaton location
+        unique_sequences: List[Trace] = []
+        for i, row in enumerate(upp_obs):
+            row_already_present = False
+            for seq in unique_sequences:
+                row_2 = upp_obs[self.get_S().index(seq)]
+                if teacher.eqr_query(row, row_2):
+                    row_already_present = True
+                    break
+            if not row_already_present:
+                unique_sequences.append(self.get_S()[i])
+        for index, seq in enumerate(unique_sequences):
+            row = upp_obs[index]
+            new_name = HybridAutomaton.LOCATION_FORMATTER.format(index)
+            new_flow = row.state[0].vars[0][0].label + ', ' + row.state[0].vars[0][1].label
+            locations.append(Location(new_name, new_flow))
+
+        # start building edges list for upper part of the table
+        edges: List[Edge] = []
+        for s_i, s_word in enumerate(self.get_S()):
+
+            for t_i, t_word in enumerate(self.get_E()):
+                if upp_obs[s_i].state[t_i].observed():
+                    word: Trace = s_word + t_word
+                    entry_word = Trace(word[:len(word) - 1])
+                    try:
+                        start_row = unique_sequences.index(entry_word)
+                    except ValueError:
+                        if entry_word in self.get_low_S():
+                            start_row_index = self.get_low_S().index(entry_word)
+                            if low_obs[start_row_index].is_populated():
+                                start_row = unique_sequences.index(entry_word)
+                            else:
+                                continue
+                        else:
+                            continue
+                    start_loc = locations[start_row]
+
+                    if len(t_word) == 0:
+                        eq_rows = []
+                        for seq in unique_sequences:
+                            if teacher.eqr_query(upp_obs[s_i], upp_obs[self.get_S().index(seq)]):
+                                eq_rows.append(seq)
+                        eq_row = eq_rows[0]
+                        dest_row = unique_sequences.index(eq_row)
+                        dest_loc = locations[dest_row]
+                    else:
+                        try:
+                            dest_row_index = self.get_S().index(word)
+                            eq_rows = []
+                            for seq in unique_sequences:
+                                if teacher.eqr_query(upp_obs[dest_row_index], upp_obs[self.get_S().index(seq)]):
+                                    eq_rows.append(seq)
+                            eq_row = eq_rows[0]
+                        except ValueError:
+                            if word in self.get_low_S():
+                                dest_row_index = self.get_low_S().index(word)
+                                eq_rows = []
+                                for seq in unique_sequences:
+                                    if teacher.eqr_query(low_obs[dest_row_index], upp_obs[self.get_S().index(seq)]):
+                                        eq_rows.append(seq)
+                                eq_row = eq_rows[0]
+                            else:
+                                continue
+                        dest_row = unique_sequences.index(eq_row)
+                        dest_loc = locations[dest_row]
+                    labels = str(Trace(word[1:]))
+                    new_edge = Edge(start_loc, dest_loc, sync=labels)
+                    if new_edge not in edges:
+                        edges.append(new_edge)
+
+        # start building edges list for lower part of the table
+        for s_i, s_word in enumerate(self.get_low_S()):
+            for t_i, t_word in enumerate(self.get_E()):
+                if low_obs[s_i].state[t_i].observed():
+                    word: Trace = s_word + t_word
+                    entry_word = Trace(word[:len(word) - 1])
+                    try:
+                        start_row = self.get_S().index(entry_word)
+                    except ValueError:
+                        if entry_word in self.get_low_S():
+                            start_row_index = self.get_low_S().index(entry_word)
+                            eq_rows = []
+                            for seq in unique_sequences:
+                                if teacher.eqr_query(upp_obs[self.get_S().index(seq)], low_obs[start_row_index]):
+                                    eq_rows.append(seq)
+                            start_row = unique_sequences.index(eq_rows[0])
+                        else:
+                            continue
+                    start_loc = locations[start_row]
+
+                    try:
+                        dest_row_index = self.get_S().index(word)
+                        eq_rows = []
+                        for seq in unique_sequences:
+                            if teacher.eqr_query(upp_obs[dest_row_index], upp_obs[self.get_S().index(seq)]):
+                                eq_rows.append(seq)
+                        eq_row = eq_rows[0]
+                    except ValueError:
+                        if word in self.get_low_S():
+                            dest_row_index = self.get_low_S().index(word)
+                            eq_rows = []
+                            for seq in unique_sequences:
+                                if teacher.eqr_query(low_obs[dest_row_index], upp_obs[self.get_S().index(seq)]):
+                                    eq_rows.append(seq)
+                            eq_row = eq_rows[0]
+                        else:
+                            continue
+                    dest_loc = locations[unique_sequences.index(eq_row)]
+                    if word != '':
+                        labels = str(word).replace(str(entry_word), '')
+                    else:
+                        labels = EMPTY_STRING
+                    new_edge = Edge(start_loc, dest_loc, sync=labels)
+                    if new_edge not in edges:
+                        edges.append(new_edge)
+
+        return HybridAutomaton(locations, edges)
