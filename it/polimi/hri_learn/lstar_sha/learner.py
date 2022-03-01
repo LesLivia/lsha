@@ -173,24 +173,24 @@ class Learner:
 
     def run_lsha(self, debug_print=True, filter_empty=False):
         # Fill Observation Table with Answers to Queries (from TEACHER)
-        step0 = True
+        step0 = True  # work around to implement a do-while structure
+
         self.fill_table()
+
         self.TEACHER.ref_query(self.obs_table)
         self.fill_table()
+
         counterexample = self.TEACHER.get_counterexample(self.obs_table)
+
         while counterexample is not None or step0:
+            step0 = False
+            # plots currently known distributions
             if config['DEFAULT']['PLOT_DISTR'] == 'True':
                 self.TEACHER.sul.plot_distributions()
-
+            # if a counterexample was found, it (and all of its prefixes) are added to set S
             if counterexample is not None:
                 LOGGER.warn('FOUND COUNTEREXAMPLE: {}'.format(counterexample))
                 self.add_counterexample(counterexample)
-                # self.fill_table()
-            if not step0:
-                self.TEACHER.ref_query(self.obs_table)
-                self.fill_table()
-
-            step0 = False
 
             if debug_print:
                 LOGGER.info('OBSERVATION TABLE')
@@ -220,6 +220,8 @@ class Learner:
                 closedness_check = self.is_closed()
                 consistency_check, discriminating_symbol = self.is_consistent(self.symbols)
 
+            self.TEACHER.ref_query(self.obs_table)
+            self.fill_table()
             counterexample = self.TEACHER.get_counterexample(self.obs_table)
 
         if debug_print:

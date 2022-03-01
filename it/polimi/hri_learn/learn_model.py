@@ -31,7 +31,7 @@ obs_table = ObsTable([], [Trace(events=[])], long_traces)
 LEARNER = Learner(TEACHER, obs_table)
 
 # RUN LEARNING ALGORITHM:
-LEARNED_HA = LEARNER.run_lsha(filter_empty=True)
+LEARNED_HA = LEARNER.run_lsha(filter_empty=False)
 
 # PLOT (AND SAVE) RESULT
 HA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH']

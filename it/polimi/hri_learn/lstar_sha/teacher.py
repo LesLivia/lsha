@@ -214,11 +214,11 @@ class Teacher:
         # find all words which are ambiguous
         # (equivalent to multiple rows)
         amb_words: List[Trace] = []
-        for (i, row) in enumerate(upp_obs + low_obs):
+        for i, row in enumerate(upp_obs + low_obs):
             # if there are not enough observations of a word,
             # it needs a refinement query
             s = S[i] if i < len(upp_obs) else lS[i - len(upp_obs)]
-            for (e_i, e) in enumerate(table.get_E()):
+            for e_i, e in enumerate(table.get_E()):
                 if len(self.sul.get_segments(s + e)) < n_resample:
                     amb_words.append(s + e)
 
@@ -250,6 +250,7 @@ class Teacher:
                 uq.append(w)
 
         for word in tqdm(uq, total=len(uq)):
+            LOGGER.debug('Requesting new traces for {}'.format(str(word)))
             for e in table.get_E():
                 TG.set_word(word + e)
                 path = TG.get_traces(n_resample)

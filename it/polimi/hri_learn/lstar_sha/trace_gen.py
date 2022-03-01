@@ -76,9 +76,9 @@ class TraceGenerator:
                 # to variable open for each event in the requested trace
                 if int(CS_VERSION) < 8:
                     if e.symbol in ['h_0', 'c_0']:
-                        self.evt_int.append(1)
-                    elif e.symbol in ['h_1', 'c_1']:
                         self.evt_int.append(0)
+                    elif e.symbol in ['h_1', 'c_1']:
+                        self.evt_int.append(1)
                 else:
                     if e.symbol in ['h_0', 'c_0']:
                         self.evt_int.append(-1)
