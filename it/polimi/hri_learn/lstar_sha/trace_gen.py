@@ -112,7 +112,7 @@ class TraceGenerator:
         new_line_1 = LINE_1[0]
         values = self.get_evt_str()
         new_line_2 = LINE_2[0] + values
-        tau = max(len(self.evt_int) * 150, 200)
+        tau = max(len(self.evt_int) * 50, 200)
         new_line_3 = LINE_3[0].format(tau)
         new_line_4 = LINE_4[0].format(CS_VERSION)
         new_line_5 = LINE_5[0].format(int(CS_VERSION) - 1) if CS == 'HRI' else None

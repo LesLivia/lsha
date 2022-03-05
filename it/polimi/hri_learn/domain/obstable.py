@@ -153,7 +153,9 @@ class ObsTable:
                         if entry_word in self.get_low_S():
                             start_row_index = self.get_low_S().index(entry_word)
                             if low_obs[start_row_index].is_populated():
-                                start_row = unique_sequences.index(entry_word)
+                                corresponding_location = upp_obs.index(low_obs[start_row_index])
+                                start_row = [i for i, seq in enumerate(unique_sequences) if
+                                             upp_obs[self.get_S().index(seq)] == upp_obs[corresponding_location]][0]
                             else:
                                 continue
                         else:

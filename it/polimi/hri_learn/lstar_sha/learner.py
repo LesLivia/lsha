@@ -101,8 +101,8 @@ class Learner:
                     rows_different = not self.TEACHER.eqr_query(new_row_1, new_row_2)
                     if new_row_1.is_populated() and new_row_2.is_populated() and rows_different:
                         for e_i, e_word in enumerate(self.obs_table.get_E()):
-                            if new_row_1[e_i] != new_row_2[e_i]:
-                                LOGGER.warn('INCONSISTENCY: {}-{}'.format(Trace([pair[0] + e]), Trace([pair[1] + e])))
+                            if new_row_1.state[e_i] != new_row_2.state[e_i]:
+                                LOGGER.warn('INCONSISTENCY: {}-{}'.format(pair[0] + Trace([e]), pair[1] + Trace([e])))
                                 return False, Trace([e]) + e_word
             else:
                 return True, None
@@ -133,12 +133,12 @@ class Learner:
 
     def make_consistent(self, discr_sym: Trace):
         self.obs_table.add_E(discr_sym)
-        upp_obs = self.obs_table.get_upper_observations()
-        low_obs = self.obs_table.get_lower_observations()
+        upp_obs: List[Row] = self.obs_table.get_upper_observations()
+        low_obs: List[Row] = self.obs_table.get_lower_observations()
         for s_i in range(len(upp_obs)):
-            upp_obs[s_i].append((None, None))
+            upp_obs[s_i].state.append(State([(None, None)]))
         for s_i in range(len(low_obs)):
-            low_obs[s_i].append((None, None))
+            low_obs[s_i].state.append(State([(None, None)]))
 
     def add_counterexample(self, counterexample: Trace):
         upp_obs = self.obs_table.get_upper_observations()
