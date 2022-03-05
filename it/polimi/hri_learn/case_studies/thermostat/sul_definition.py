@@ -50,17 +50,17 @@ off4 = NormalDistribution(7, 60.0, 1.0)
 model_to_distr = {on_fc.f_id: [0, 1, 2, 3], off_fc.f_id: [4, 5, 6, 7]}
 temperature = RealValuedVar([on_fc, off_fc], [on1, on2, on3, on4, off1, off2, off3, off4], model_to_distr, label='T_r')
 
-if CS_VERSION == 1:
+if CS_VERSION in [1]:
     on_event = Event('', 'on', 'h_0')
     off_event = Event('', 'off', 'c_0')
     events = [on_event, off_event]
-if CS_VERSION >= 2:
+if CS_VERSION in [2, 4, 5]:
     on_event = Event('!open', 'on', 'h_0')
     off_event = Event('!open', 'off', 'c_0')
     on_event2 = Event('open', 'on', 'h_1')
     off_event2 = Event('open', 'off', 'c_1')
     events = [on_event, off_event, on_event2, off_event2]
-if CS_VERSION >= 3:
+if CS_VERSION in [3]:
     on_event3 = Event('open2', 'on', 'h_2')
     off_event3 = Event('open2', 'off', 'c_2')
     events += [on_event3, off_event3]

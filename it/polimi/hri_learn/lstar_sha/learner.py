@@ -68,14 +68,14 @@ class Learner:
         else:
             return True
 
-    def is_consistent(self, symbols):
-        # FIXME
-        return True, None
+    def is_consistent(self):
+        events = self.TEACHER.sul.events
         upp_obs = self.obs_table.get_upper_observations()
-        pairs: List[Tuple] = []
+        pairs: List[Tuple[Trace, Trace]] = []
         # FIXME: each pair shows up twice, duplicates should be cleared
-        for (index, row) in enumerate(upp_obs):
-            equal_rows = [i for (i, r) in enumerate(upp_obs) if index != i and r == row]
+        for index, row in enumerate(upp_obs):
+            equal_rows = [i for (i, r) in enumerate(upp_obs) if
+                          index != i and self.TEACHER.eqr_query(row, r, strict=True)]
             S = self.obs_table.get_S()
             equal_pairs = [(S[index], S[equal_i]) for equal_i in equal_rows]
             pairs += equal_pairs
@@ -83,32 +83,27 @@ class Learner:
             return True, None
         else:
             for pair in pairs:
-                for symbol in symbols.keys():
+                for e in events:
                     try:
-                        new_pair_1 = self.obs_table.get_S().index(pair[0] + symbol)
+                        new_pair_1 = self.obs_table.get_S().index(pair[0] + Trace([e]))
                         new_row_1 = self.obs_table.get_upper_observations()[new_pair_1]
                     except ValueError:
-                        new_pair_1 = self.obs_table.get_low_S().index(pair[0] + symbol)
+                        new_pair_1 = self.obs_table.get_low_S().index(pair[0] + Trace([e]))
                         new_row_1 = self.obs_table.get_lower_observations()[new_pair_1]
 
                     try:
-                        new_pair_2 = self.obs_table.get_S().index(pair[1] + symbol)
+                        new_pair_2 = self.obs_table.get_S().index(pair[1] + Trace([e]))
                         new_row_2 = self.obs_table.get_upper_observations()[new_pair_2]
                     except ValueError:
-                        new_pair_2 = self.obs_table.get_low_S().index(pair[1] + symbol)
+                        new_pair_2 = self.obs_table.get_low_S().index(pair[1] + Trace([e]))
                         new_row_2 = self.obs_table.get_lower_observations()[new_pair_2]
 
-                    new_1_populated = all([new_row_1[i][0] is not None and new_row_1[i][1] is not None
-                                           for i in range(len(self.obs_table.get_E()))])
-                    new_2_populated = all([new_row_2[i][0] is not None and new_row_2[i][1] is not None
-                                           for i in range(len(self.obs_table.get_E()))])
-
                     rows_different = not self.TEACHER.eqr_query(new_row_1, new_row_2)
-                    if new_1_populated and new_2_populated and rows_different:
-                        for (e_i, e_word) in enumerate(self.obs_table.get_E()):
+                    if new_row_1.is_populated() and new_row_2.is_populated() and rows_different:
+                        for e_i, e_word in enumerate(self.obs_table.get_E()):
                             if new_row_1[e_i] != new_row_2[e_i]:
-                                LOGGER.warn('INCONSISTENCY: {}-{}'.format(pair[0] + symbol, pair[1] + symbol))
-                                return False, symbol + e_word
+                                LOGGER.warn('INCONSISTENCY: {}-{}'.format(Trace([pair[0] + e]), Trace([pair[1] + e])))
+                                return False, Trace([e]) + e_word
             else:
                 return True, None
 
@@ -207,7 +202,7 @@ class Learner:
 
             # Check if obs. table is closed
             closedness_check = self.is_closed()
-            consistency_check, discriminating_symbol = self.is_consistent(self.symbols)
+            consistency_check, discriminating_symbol = self.is_consistent()
             while not (closedness_check and consistency_check):
                 if not closedness_check:
                     LOGGER.warn('!!TABLE IS NOT CLOSED!!')
@@ -227,7 +222,7 @@ class Learner:
                     self.obs_table.print(filter_empty)
 
                 closedness_check = self.is_closed()
-                consistency_check, discriminating_symbol = self.is_consistent(self.symbols)
+                consistency_check, discriminating_symbol = self.is_consistent()
 
             self.TEACHER.ref_query(self.obs_table)
             self.fill_table()

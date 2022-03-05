@@ -301,9 +301,6 @@ class Teacher:
                             LOGGER.warn("!! MISSED NON-CLOSEDNESS !!")
                             return prefix
                         elif not_ambiguous:
-                            # FIXME
-                            not_counter.append(prefix)
-                            continue
                             # checks non-consistency only for rows that are not ambiguous
                             for s_i, s_word in enumerate(S):
                                 old_row = table.get_upper_observations()[s_i] if s_i < len(S) else \

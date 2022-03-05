@@ -133,8 +133,9 @@ class ObsTable:
             if not row_already_present:
                 unique_sequences.append(self.get_S()[i])
         for index, seq in enumerate(unique_sequences):
-            row = upp_obs[index]
-            new_name = HybridAutomaton.LOCATION_FORMATTER.format(index)
+            seq_index = self.get_S().index(seq)
+            row = upp_obs[seq_index]
+            new_name = HybridAutomaton.LOCATION_FORMATTER.format(seq_index)
             new_flow = row.state[0].vars[0][0].label + ', ' + row.state[0].vars[0][1].label
             locations.append(Location(new_name, new_flow))
 

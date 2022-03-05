@@ -23,9 +23,9 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
 
     identified_guard = ''
     curr_wOpen = list(filter(lambda x: x.timestamp.to_secs() <= t, wOpen.points))[-1]
-    if CS_VERSION in [2]:
+    if CS_VERSION in [2, 4, 5]:
         identified_guard += events[0].guard if curr_wOpen.value == 1.0 else events[2].guard
-    if CS_VERSION >= 3 or CS_VERSION == 5:
+    if CS_VERSION in [3]:
         if curr_wOpen.value == 2.0:
             identified_guard += events[4].guard
         elif curr_wOpen.value == 1.0:
@@ -66,7 +66,7 @@ def get_thermo_param(segment: List[SignalPoint], flow: FlowCondition):
     try:
         val = [pt.value for pt in segment]
         if flow.f_id in [0, 2]:
-            if CS_VERSION != 'c' or (CS_VERSION == 'c' and flow.f_id == 0):
+            if CS_VERSION in [1, 2, 3, 4, 5]:
                 increments = []
                 for (i, pt) in enumerate(val):
                     if i > 0 and pt != val[i - 1]:
