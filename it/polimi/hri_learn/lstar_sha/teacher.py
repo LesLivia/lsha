@@ -169,7 +169,7 @@ class Teacher:
                     # if no distribution passes the hyp. test, a new one is created
                     for distr in eligible_distributions:
                         old_avg: float = distr.params['avg']
-                        if abs(avg_metrics - old_avg) < old_avg / 5:
+                        if abs(avg_metrics - old_avg) < old_avg * 0.1:
                             return distr
                     else:
                         var_metrics = sum([(m - avg_metrics) ** 2 for m in metrics]) / len(metrics)

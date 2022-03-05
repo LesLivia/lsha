@@ -4,7 +4,7 @@ import os
 from typing import List
 
 from it.polimi.hri_learn.case_studies.thermostat.sul_functions import label_event, parse_data, get_thermo_param
-from it.polimi.hri_learn.domain.lshafeatures import RealValuedVar, FlowCondition, Trace
+from it.polimi.hri_learn.domain.lshafeatures import RealValuedVar, FlowCondition, Trace, NormalDistribution
 from it.polimi.hri_learn.domain.sigfeatures import Event, Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
@@ -37,8 +37,18 @@ def on_model(interval: List[Timestamp], T_0: float):
 on_fc = FlowCondition(0, on_model)
 off_fc = FlowCondition(1, off_model)
 
-model_to_distr = {on_fc.f_id: [], off_fc.f_id: []}
-temperature = RealValuedVar([on_fc, off_fc], [], model_to_distr, label='T_r')
+on1 = NormalDistribution(0, 0.9, 0.01)
+on2 = NormalDistribution(1, 0.7, 0.01)
+on3 = NormalDistribution(2, 0.5, 0.01)
+on4 = NormalDistribution(3, 0.3, 0.01)
+
+off1 = NormalDistribution(4, 120.0, 1.0)
+off2 = NormalDistribution(5, 100.0, 1.0)
+off3 = NormalDistribution(6, 80.0, 1.0)
+off4 = NormalDistribution(7, 60.0, 1.0)
+
+model_to_distr = {on_fc.f_id: [0, 1, 2, 3], off_fc.f_id: [4, 5, 6, 7]}
+temperature = RealValuedVar([on_fc, off_fc], [on1, on2, on3, on4, off1, off2, off3, off4], model_to_distr, label='T_r')
 
 if CS_VERSION == 1:
     on_event = Event('', 'on', 'h_0')
