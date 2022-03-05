@@ -17,6 +17,9 @@ class Row:
     def __eq__(self, other):
         return all([s == other.state[i] for i, s in enumerate(self.state)])
 
+    def __hash__(self):
+        return hash(str(self))
+
 
 class ObsTable:
     def __init__(self, s: List[Trace], e: List[Trace], low_s: List[Trace]):
@@ -207,7 +210,8 @@ class ObsTable:
                             start_row = unique_sequences.index(eq_rows[0])
                         else:
                             continue
-                    start_loc = locations[start_row]
+                    start_loc = [l for l in locations if
+                                 upp_obs[start_row].state[0].label.__contains__(l.flow_cond.replace(' ', ''))][0]
 
                     try:
                         dest_row_index = self.get_S().index(word)

@@ -205,6 +205,8 @@ class Teacher:
     # to gain more knowledge about the system under learning
     #############################################
     def ref_query(self, table: ObsTable):
+        LOGGER.msg('Performing ref query...')
+
         n_resample = int(config['LSHA PARAMETERS']['N_min'])
         S = table.get_S()
         upp_obs: List[Row] = table.get_upper_observations()
@@ -230,27 +232,22 @@ class Teacher:
             for (j, row_2) in enumerate(upp_obs):
                 if row_2.is_populated() and i != j and self.eqr_query(row, row_2):
                     eq_rows.append(row_2)
-            uq: List[Row] = []
-            for eq in eq_rows:
-                if eq not in uq:
-                    uq.append(eq)
-
-            if len(uq) > 1:
+            if len(set(eq_rows)) > 1:
                 amb_words.append(s)
 
         # sample new traces only for ambiguous words which
         # are not prefixes of another ambiguous word
         uq = []
-        for (i, w) in enumerate(amb_words):
+        for i, w in enumerate(amb_words):
             is_prefix = False
-            for (j, w2) in enumerate(amb_words):
+            for j, w2 in enumerate(amb_words):
                 if i != j and str(w2).startswith(str(w)):
                     is_prefix = True
             if not is_prefix:
                 uq.append(w)
 
         for word in tqdm(uq, total=len(uq)):
-            LOGGER.debug('Requesting new traces for {}'.format(str(word)))
+            LOGGER.info('Requesting new traces for {}'.format(str(word)))
             for e in table.get_E():
                 TG.set_word(word + e)
                 path = TG.get_traces(n_resample)
@@ -268,6 +265,8 @@ class Teacher:
     # -> t highlights non-consistency
     #############################################
     def get_counterexample(self, table: ObsTable):
+        LOGGER.msg('Looking for counterexample...')
+
         # FIXME
         if len(self.timed_traces) >= 2000:
             return None
@@ -277,13 +276,14 @@ class Teacher:
 
         traces: List[Trace] = self.sul.traces
         not_counter: List[Trace] = []
-        for (i, trace) in tqdm(enumerate(traces), total=len(traces)):
+        for i, trace in tqdm(enumerate(traces), total=len(traces)):
             for prefix in trace.get_prefixes():
+                LOGGER.debug('Checking {}'.format(str(prefix)))
                 # prefix is still not in table
                 if prefix not in S and prefix not in low_S and prefix not in not_counter:
                     # fills hypothetical new row
                     new_row = Row([])
-                    for (e_i, e_word) in enumerate(table.get_E()):
+                    for e_i, e_word in enumerate(table.get_E()):
                         word = prefix + e_word
                         id_model = self.mi_query(word)
                         id_distr = self.ht_query(word, id_model, save=False)
@@ -294,17 +294,16 @@ class Teacher:
                     # if there are sufficient data to fill the new row
                     if new_row.is_populated():
                         eq_rows = [row for row in table.get_upper_observations() if self.eqr_query(new_row, row)]
-                        uq = []
-                        for eq in eq_rows:
-                            if eq not in uq:
-                                uq.append(eq)
-                        not_ambiguous = len(uq) <= 1
+                        not_ambiguous = len(set(eq_rows)) <= 1
 
                         if len(eq_rows) == 0:
                             # found non-closedness
                             LOGGER.warn("!! MISSED NON-CLOSEDNESS !!")
                             return prefix
                         elif not_ambiguous:
+                            # FIXME
+                            not_counter.append(prefix)
+                            continue
                             # checks non-consistency only for rows that are not ambiguous
                             for s_i, s_word in enumerate(S):
                                 old_row = table.get_upper_observations()[s_i] if s_i < len(S) else \

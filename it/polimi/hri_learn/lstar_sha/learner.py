@@ -21,8 +21,8 @@ class Learner:
         default_table = table
         self.obs_table = table if table is not None else default_table
 
-    def fill_row(self, row: Row, i: int, s_word: str, obs: List[Row]):
-        for (j, t_word) in enumerate(self.obs_table.get_E()):
+    def fill_row(self, row: Row, i: int, s_word: Trace, obs: List[Row]):
+        for j, t_word in enumerate(self.obs_table.get_E()):
             # if cell is yet to be filled,
             # asks teacher to answer queries
             # and fills cell with answers
@@ -39,27 +39,27 @@ class Learner:
 
     def fill_table(self):
         upp_obs: List[Row] = self.obs_table.get_upper_observations()
-        for (i, s_word) in enumerate(self.obs_table.get_S()):
+        for i, s_word in enumerate(self.obs_table.get_S()):
             row: Row = Row(upp_obs[i].state.copy())
             row = self.fill_row(row, i, s_word, upp_obs)
             upp_obs[i] = row
         self.obs_table.set_upper_observations(upp_obs)
 
         low_obs: List[Row] = self.obs_table.get_lower_observations()
-        for (i, s_word) in enumerate(self.obs_table.get_low_S()):
+        for i, s_word in enumerate(self.obs_table.get_low_S()):
             row: Row = Row(low_obs[i].state.copy())
             row = self.fill_row(row, i, s_word, low_obs)
             low_obs[i] = row
         self.obs_table.set_lower_observations(low_obs)
 
     def is_closed(self):
-        upp_obs = self.obs_table.get_upper_observations()
-        low_obs = self.obs_table.get_lower_observations()
-        for (l_i, row) in enumerate(low_obs):
+        upp_obs: List[Row] = self.obs_table.get_upper_observations()
+        low_obs: List[Row] = self.obs_table.get_lower_observations()
+        for l_i, row in enumerate(low_obs):
             if not row.is_populated():
                 continue
             row_is_in_upper = False
-            for (s_i, s_word) in enumerate(self.obs_table.get_S()):
+            for s_i, s_word in enumerate(self.obs_table.get_S()):
                 if self.TEACHER.eqr_query(row, upp_obs[s_i]):
                     row_is_in_upper = True
                     break
@@ -69,6 +69,8 @@ class Learner:
             return True
 
     def is_consistent(self, symbols):
+        # FIXME
+        return True, None
         upp_obs = self.obs_table.get_upper_observations()
         pairs: List[Tuple] = []
         # FIXME: each pair shows up twice, duplicates should be cleared
@@ -112,7 +114,7 @@ class Learner:
 
     def make_closed(self):
         upp_obs: List[Row] = self.obs_table.get_upper_observations()
-        low_S = self.obs_table.get_low_S()
+        low_S: List[Trace] = self.obs_table.get_low_S()
         low_obs: List[Row] = self.obs_table.get_lower_observations()
         for index, row in enumerate(low_obs):
             # if there is a populated row in lower portion that is not in the upper portion
@@ -120,7 +122,7 @@ class Learner:
             row_present = any([self.TEACHER.eqr_query(row, row_2) for row_2 in upp_obs])
             if row.is_populated() and not row_present:
                 upp_obs.append(row)
-                new_s_word = low_S[index]
+                new_s_word: Trace = low_S[index]
                 self.obs_table.add_S(new_s_word)
                 low_obs.pop(index)
                 self.obs_table.del_low_S(index)
@@ -143,33 +145,39 @@ class Learner:
         for s_i in range(len(low_obs)):
             low_obs[s_i].append((None, None))
 
-    def add_counterexample(self, counterexample: str):
+    def add_counterexample(self, counterexample: Trace):
         upp_obs = self.obs_table.get_upper_observations()
         low_obs = self.obs_table.get_lower_observations()
 
         # add counterexample and all its prefixes to S
-        for i in range(3, len(counterexample) + 1, 3):
-            if counterexample[:i] not in self.obs_table.get_S():
-                self.obs_table.get_S().append(counterexample[:i])
-                upp_obs.append([])
+        for i, e in enumerate(counterexample):
+            new_trace = Trace(counterexample[:i + 1])
+            if new_trace not in self.obs_table.get_S():
+                self.obs_table.get_S().append(new_trace)
+                new_state: List[State] = []
                 # add empty cells to T
                 for j in range(len(self.obs_table.get_E())):
-                    upp_obs[len(self.obs_table.get_S()) - 1].append((None, None))
+                    new_state.append(State([(None, None)]))
+                upp_obs.append(Row(new_state))
 
-            if counterexample[:i] in self.obs_table.get_low_S():
-                row_index = self.obs_table.get_low_S().index(counterexample[:i])
+            if new_trace in self.obs_table.get_low_S():
+                row_index = self.obs_table.get_low_S().index(new_trace)
                 self.obs_table.get_lower_observations().pop(row_index)
                 self.obs_table.get_low_S().pop(row_index)
 
             # add 1-step away words to low_S
-            for a in self.symbols:
-                if counterexample[:i] + a not in self.obs_table.get_low_S() \
-                        and counterexample[:i] + a not in self.obs_table.get_S():
-                    self.obs_table.get_low_S().append(counterexample[:i] + a)
-                    low_obs.append([])
+            for a in self.TEACHER.sul.events:
+                if new_trace + Trace([a]) not in self.obs_table.get_low_S() \
+                        and new_trace + Trace([a]) not in self.obs_table.get_S():
+                    self.obs_table.get_low_S().append(new_trace + Trace([a]))
+                    new_state: List[State] = []
                     # add empty cells to T
                     for j in range(len(self.obs_table.get_E())):
-                        low_obs[len(self.obs_table.get_low_S()) - 1].append((None, None))
+                        new_state.append(State([(None, None)]))
+                    low_obs.append(Row(new_state))
+
+        self.obs_table.set_upper_observations(upp_obs)
+        self.obs_table.set_lower_observations(low_obs)
 
     def run_lsha(self, debug_print=True, filter_empty=False):
         # Fill Observation Table with Answers to Queries (from TEACHER)
@@ -191,6 +199,7 @@ class Learner:
             if counterexample is not None:
                 LOGGER.warn('FOUND COUNTEREXAMPLE: {}'.format(counterexample))
                 self.add_counterexample(counterexample)
+                self.fill_table()
 
             if debug_print:
                 LOGGER.info('OBSERVATION TABLE')
@@ -222,6 +231,9 @@ class Learner:
 
             self.TEACHER.ref_query(self.obs_table)
             self.fill_table()
+            if debug_print:
+                LOGGER.info('OBSERVATION TABLE')
+                self.obs_table.print(filter_empty)
             counterexample = self.TEACHER.get_counterexample(self.obs_table)
 
         if debug_print:

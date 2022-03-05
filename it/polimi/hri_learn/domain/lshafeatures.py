@@ -106,6 +106,9 @@ class Trace:
     def __add__(self, other):
         return Trace(events=self.events + other.events)
 
+    def __hash__(self):
+        return hash(str(self))
+
     def get_prefixes(self):
         prefixes: List[Trace] = []
         for i in range(len(self)):
@@ -133,6 +136,9 @@ class State:
 
     def __eq__(self, other):
         return self.label == other.label
+
+    def __hash__(self):
+        return hash(self.label)
 
     def observed(self):
         return any([pair[0] is not None and pair[1] is not None for pair in self.vars])

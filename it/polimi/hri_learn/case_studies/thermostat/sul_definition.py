@@ -50,6 +50,10 @@ if CS_VERSION >= 2:
     on_event2 = Event('open', 'on', 'h_1')
     off_event2 = Event('open', 'off', 'c_1')
     events = [on_event, off_event, on_event2, off_event2]
+if CS_VERSION >= 3:
+    on_event3 = Event('open2', 'on', 'h_2')
+    off_event3 = Event('open2', 'off', 'c_2')
+    events += [on_event3, off_event3]
 
 args = {'name': 'thermostat', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 thermostat_cs = SystemUnderLearning([temperature], events, parse_data, label_event, get_thermo_param, args=args)

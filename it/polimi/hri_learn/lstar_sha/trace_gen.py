@@ -79,6 +79,8 @@ class TraceGenerator:
                         self.evt_int.append(0)
                     elif e.symbol in ['h_1', 'c_1']:
                         self.evt_int.append(1)
+                    elif e.symbol in ['h_2', 'c_2']:
+                        self.evt_int.append(2)
                 else:
                     if e.symbol in ['h_0', 'c_0']:
                         self.evt_int.append(-1)
