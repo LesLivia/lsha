@@ -16,7 +16,36 @@ LOGGER = Logger('SUL DATA HANDLER')
 
 
 def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp):
-    pass
+    speed_sig = signals[1]
+    speed = {pt.timestamp: (i, pt.value) for i, pt in enumerate(speed_sig.points)}
+
+    # FIXME: both need tuning
+    SPEED_RANGE = 100
+    SPEED_INTERVALS = [(100, 500), (500, 1000), (1000, 1500), (1500, 2000), (2000, None)]
+
+    curr_speed_index, curr_speed = speed[t]
+    if curr_speed_index > 0:
+        prev_speed = speed_sig.points[curr_speed_index - 1].value
+    else:
+        prev_speed = curr_speed
+
+    identified_event = None
+    # if spindle was moving previously and now it is idle, return "stop" event
+    if curr_speed <= 100 and prev_speed >= 100:
+        identified_event = events[0]
+    else:
+        # if spindle is now moving at a different speed than before,
+        # return 'new speed' event, which varies depending on current speed range
+        if abs(curr_speed - prev_speed) >= SPEED_RANGE:
+            for i, interval in enumerate(SPEED_INTERVALS):
+                if (i < len(SPEED_INTERVALS) - 1 and interval[0] <= curr_speed < interval[1]) or \
+                        (i == len(SPEED_INTERVALS) - 1 and curr_speed >= interval[0]):
+                    identified_event = events[i + 1]
+
+    if identified_event is None:
+        LOGGER.error("No event was identified at time {}.".format(t))
+
+    return identified_event
 
 
 def parse_ts(ts: str):
@@ -50,6 +79,7 @@ def parse_data(path: str):
                 # parse speed value: round to closest [100]
                 try:
                     speed_v = round(float(row[3].replace(',', '.')) / 100) * 100
+                    speed_v = max(speed_v, 0)
                 except ValueError:
                     speed_v = speed.points[-1].value
                 speed.points.append(SignalPoint(ts, speed_v))
@@ -65,13 +95,15 @@ def parse_data(path: str):
         # the difference betwen two consecutive measurements
         power_pts: List[SignalPoint] = [SignalPoint(energy.points[0].timestamp, 0.0)]
         last_reading = energy.points[0].value
+        last_power_value = 0.0
         for i, pt in enumerate(energy.points):
             if i == 0:
                 continue
             elif pt.value is None:
-                power_pts.append(SignalPoint(pt.timestamp, None))
+                power_pts.append(SignalPoint(pt.timestamp, last_power_value))
             else:
                 power_pts.append(SignalPoint(pt.timestamp, 60 * (pt.value - last_reading)))
+                last_power_value = 60 * (pt.value - last_reading)
                 last_reading = pt.value
         power.points = power_pts
 
@@ -79,4 +111,6 @@ def parse_data(path: str):
 
 
 def get_power_param(segment: List[SignalPoint], flow: FlowCondition):
-    pass
+    sum_power = sum([pt.value for pt in segment])
+    avg_power = sum_power / len(segment)
+    return avg_power

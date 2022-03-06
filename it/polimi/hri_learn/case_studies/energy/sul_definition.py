@@ -1,13 +1,14 @@
 from typing import List
 
 from it.polimi.hri_learn.case_studies.energy.sul_functions import label_event, parse_data, get_power_param
-from it.polimi.hri_learn.domain.lshafeatures import Event, NormalDistribution
+from it.polimi.hri_learn.domain.lshafeatures import Event, NormalDistribution, Trace
 from it.polimi.hri_learn.domain.sigfeatures import Timestamp, SampledSignal
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
+from it.polimi.hri_learn.lstar_sha.teacher import Teacher
 
 
 # FIXME: temporarily approximated to constant function
-def pwr_model(interval: List[Timestamp]):
+def pwr_model(interval: List[Timestamp], P_0):
     interval = [ts.to_secs() for ts in interval]
     AVG_PW = 1.0
     return [AVG_PW] * len(interval)
@@ -15,7 +16,8 @@ def pwr_model(interval: List[Timestamp]):
 
 on_fc: FlowCondition = FlowCondition(0, pwr_model)
 
-power = RealValuedVar([on_fc], [], {}, label='P')
+model2distr = {0: []}
+power = RealValuedVar([on_fc], [], model2distr, label='P')
 
 # define events
 spindle_on1 = Event('100<=w<500', 'start', 'm_0')
@@ -40,6 +42,31 @@ energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_po
 
 test = True
 if test:
+    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/W9_2019-10-31_6-8.csv'
     # testing data to signals conversion
-    new_signals: List[SampledSignal] = parse_data(
-        '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/W9_2019-10-31.csv')
+    new_signals: List[SampledSignal] = parse_data(TEST_PATH)
+
+    # testing chg pts identification
+    chg_pts = SystemUnderLearning.find_chg_pts([sig for sig in new_signals if sig.label == DRIVER_SIG][0])
+
+    # testing event labeling
+    id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
+
+    # testing signal to trace conversion
+    new_trace = energy_cs.process_data(TEST_PATH)
+    for trace in energy_cs.traces:
+        print(trace)
+
+    # test segment identification
+    test_trace = Trace([spindle_off, spindle_on1, spindle_off, spindle_on1])
+    segments = energy_cs.get_segments(test_trace)
+    print(segments)
+
+    # test model identification
+    TEACHER = Teacher(energy_cs)
+    identified_model: FlowCondition = TEACHER.mi_query(test_trace)
+    print(identified_model)
+    identified_distr = TEACHER.ht_query(test_trace, identified_model, save=True)
+    print(identified_distr)
+    for d in energy_cs.vars[0].distr:
+        print(d.params)

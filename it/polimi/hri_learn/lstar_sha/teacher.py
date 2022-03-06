@@ -94,7 +94,8 @@ class Teacher:
                         der_same_sign = sum([v * ideal_der[i] for (i, v) in enumerate(real_der)]) / len(real_der) > 0
 
                         # compares the observed behavior with the ideal one (values and derivatives)
-                        if dist_is_closer and der_is_closer and der_same_sign:
+                        # TODO: think of something to avoid the check on the name
+                        if dist_is_closer and der_is_closer and (der_same_sign or self.sul.name == 'energy'):
                             min_distance = avg_distance
                             min_der_distance = avg_der_distance
                             best_fit = flow
