@@ -2,7 +2,7 @@ from typing import List
 
 from it.polimi.hri_learn.case_studies.energy.sul_functions import label_event, parse_data, get_power_param
 from it.polimi.hri_learn.domain.lshafeatures import Event, NormalDistribution
-from it.polimi.hri_learn.domain.sigfeatures import Timestamp
+from it.polimi.hri_learn.domain.sigfeatures import Timestamp, SampledSignal
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 
 
@@ -31,7 +31,7 @@ events = [spindle_off, spindle_on1, spindle_on2, spindle_on3, spindle_on4, spind
 # define distributions
 off_distr = NormalDistribution(0, 0.0, 10.0)
 
-DRIVER_SIG = 'spindle_speed'
+DRIVER_SIG = 'w'
 DEFAULT_M = 0
 DEFAULT_DISTR = 0
 
@@ -40,4 +40,6 @@ energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_po
 
 test = True
 if test:
-    pass
+    # testing data to signals conversion
+    new_signals: List[SampledSignal] = parse_data(
+        '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/W9_2019-10-31.csv')
