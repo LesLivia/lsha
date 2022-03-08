@@ -5,6 +5,7 @@ from it.polimi.hri_learn.domain.lshafeatures import Event, NormalDistribution, T
 from it.polimi.hri_learn.domain.sigfeatures import Timestamp, SampledSignal
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
+from it.polimi.hri_learn.pltr.energy_pltr import double_plot
 
 
 # FIXME: temporarily approximated to constant function
@@ -48,7 +49,7 @@ energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_po
 
 test = False
 if test:
-    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/_W9_2019-10-31_6-8.csv'
+    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/W9_2019-10-28_6-7.csv'
     # testing data to signals conversion
     new_signals: List[SampledSignal] = parse_data(TEST_PATH)
 
@@ -59,9 +60,14 @@ if test:
     id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
 
     # testing signal to trace conversion
-    new_trace = energy_cs.process_data(TEST_PATH)
+    energy_cs.process_data(TEST_PATH)
     for trace in energy_cs.traces:
         print(trace)
+        power_pts = new_signals[0].points
+        speed_pts = new_signals[1].points
+        double_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
+                    [pt.timestamp for pt in speed_pts], [pt.value for pt in speed_pts],
+                    [pt.t for pt in chg_pts], title=str(trace), filtered=True)
 
     # test segment identification
     test_trace = Trace([spindle_on6])
