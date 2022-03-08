@@ -21,11 +21,13 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
 
     # FIXME: both need tuning
     SPEED_RANGE = 100
-    SPEED_INTERVALS = [(100, 500), (500, 1000), (1000, 1500), (1500, 2000), (2000, None)]
+    SPEED_INTERVALS = [(100, 250), (250, 500), (500, 750), (750, 1000),
+                       (1000, 1250), (1250, 1500), (1500, 1750), (1750, 5000), (2000, None)]
 
     curr_speed_index, curr_speed = speed[t]
     if curr_speed_index > 0:
-        prev_speed = speed_sig.points[curr_speed_index - 1].value
+        prev_index = [tup[0] for tup in speed.values() if tup[0] < curr_speed_index][-1]
+        prev_speed = speed_sig.points[prev_index].value
     else:
         prev_speed = curr_speed
 
@@ -81,7 +83,10 @@ def parse_data(path: str):
                     speed_v = round(float(row[3].replace(',', '.')) / 100) * 100
                     speed_v = max(speed_v, 0)
                 except ValueError:
-                    speed_v = speed.points[-1].value
+                    if len(speed.points) > 0:
+                        speed_v = speed.points[-1].value
+                    else:
+                        speed_v = 0.0
                 speed.points.append(SignalPoint(ts, speed_v))
 
                 # parse pallet pressure value
@@ -102,12 +107,28 @@ def parse_data(path: str):
             elif pt.value is None:
                 power_pts.append(SignalPoint(pt.timestamp, last_power_value))
             else:
-                power_pts.append(SignalPoint(pt.timestamp, 60 * (pt.value - last_reading)))
-                last_power_value = 60 * (pt.value - last_reading)
+                if last_reading is not None:
+                    power_pts.append(SignalPoint(pt.timestamp, 60 * (pt.value - last_reading)))
+                    last_power_value = 60 * (pt.value - last_reading)
+                else:
+                    power_pts.append(SignalPoint(pt.timestamp, 60 * (0.0)))
+                    last_power_value = 0.0
                 last_reading = pt.value
         power.points = power_pts
 
-        return [power, speed, pressure]
+        # filter speed signal
+        nosecs_speed_pts = [SignalPoint(Timestamp(pt.timestamp.year, pt.timestamp.month,
+                                                  pt.timestamp.day, pt.timestamp.hour,
+                                                  pt.timestamp.min, 0), pt.value) for pt in speed.points]
+        filtered_speed_ts = list(set([pt.timestamp for pt in nosecs_speed_pts]))
+        filtered_speed_ts.sort()
+        filtered_speed_pts: List[SignalPoint] = []
+        for ts in filtered_speed_ts:
+            batch_pts = list(filter(lambda pt: pt.timestamp == ts, nosecs_speed_pts))
+            filtered_speed_pts.extend([SignalPoint(ts, max([pt.value for pt in batch_pts]))] * len(batch_pts))
+        filtered_speed = SampledSignal(filtered_speed_pts, label='w')
+
+        return [power, filtered_speed, pressure]
 
 
 def get_power_param(segment: List[SignalPoint], flow: FlowCondition):

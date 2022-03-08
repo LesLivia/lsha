@@ -116,7 +116,7 @@ class Learner:
             # the corresponding word is added to the S word set
             row_present = any([self.TEACHER.eqr_query(row, row_2) for row_2 in upp_obs])
             if row.is_populated() and not row_present:
-                upp_obs.append(row)
+                upp_obs.append(Row(row.state))
                 new_s_word: Trace = low_S[index]
                 self.obs_table.add_S(new_s_word)
                 low_obs.pop(index)
@@ -148,12 +148,12 @@ class Learner:
         for i, e in enumerate(counterexample):
             new_trace = Trace(counterexample[:i + 1])
             if new_trace not in self.obs_table.get_S():
+                if new_trace in self.obs_table.get_low_S():
+                    to_copy: Row = low_obs[self.obs_table.get_low_S().index(new_trace)]
+                else:
+                    to_copy: Row = Row([State([(None, None)])] * len(self.obs_table.get_E()))
                 self.obs_table.get_S().append(new_trace)
-                new_state: List[State] = []
-                # add empty cells to T
-                for j in range(len(self.obs_table.get_E())):
-                    new_state.append(State([(None, None)]))
-                upp_obs.append(Row(new_state))
+                upp_obs.append(Row(to_copy.state))
 
             if new_trace in self.obs_table.get_low_S():
                 row_index = self.obs_table.get_low_S().index(new_trace)

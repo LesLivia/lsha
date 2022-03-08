@@ -190,7 +190,7 @@ class ObsTable:
                                 continue
                         dest_row = unique_sequences.index(eq_row)
                         dest_loc = locations[dest_row]
-                    labels = str(Trace(word[1:]))
+                    labels = str(Trace(word[-1:]))
                     new_edge = Edge(start_loc, dest_loc, sync=labels)
                     if new_edge not in edges:
                         edges.append(new_edge)

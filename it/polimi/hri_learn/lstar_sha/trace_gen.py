@@ -2,7 +2,7 @@ import configparser
 import os
 import random
 import subprocess
-from typing import List
+from typing import List, Set
 
 from it.polimi.hri_learn.domain.lshafeatures import Trace, Event
 from it.polimi.hri_learn.lstar_sha.logger import Logger
@@ -52,6 +52,7 @@ class TraceGenerator:
         self.evt_int: List[int] = []
 
         self.ONCE = False
+        self.processed_traces: Set[str] = set()
 
     def set_word(self, w: Trace):
         self.events = w.events
@@ -133,22 +134,33 @@ class TraceGenerator:
         m_w.close()
 
     def get_traces(self, n: int = 1):
-        if RESAMPLE_STRATEGY == 'SIMULATIONS':
-            return self.get_traces_sim()
-        else:
+        if RESAMPLE_STRATEGY == 'UPPAAL':
             return self.get_traces_uppaal(n)
+        else:
+            return self.get_traces_sim(n)
 
-    def get_traces_sim(self):
+    def get_traces_sim(self, n: int = 1):
         # if self.ONCE:
         #    return []
 
-        sims = os.listdir(SIM_LOGS_PATH.format(config['SUL CONFIGURATION']['CS_VERSION']))
-        sims = list(filter(lambda s: s.startswith('SIM'), sims))
+        if CS.lower() == 'energy':
+            sims = os.listdir(SIM_LOGS_PATH.format(CS))
+            sims = list(filter(lambda s: s.startswith('_W') and s not in self.processed_traces, sims))
+            sims.sort()
+        else:
+            sims = os.listdir(SIM_LOGS_PATH.format(config['SUL CONFIGURATION']['CS_VERSION']))
+            sims = list(filter(lambda s: s.startswith('SIM'), sims))
         paths = []
-        for i in range(len(sims)):
-            # rand_sel = random.randint(0, 100)
-            # rand_sel = rand_sel % len(sims)
-            paths.append(SIM_LOGS_PATH.format(config['SUL CONFIGURATION']['CS_VERSION']) + sims[i] + '/')
+        for i in range(n + 1):
+            if len(sims) == 0:
+                break
+            rand_sel = random.randint(0, 100)
+            rand_sel = rand_sel % len(sims)
+            if CS.lower() == 'energy':
+                self.processed_traces.add(sims[rand_sel])
+                paths.append(SIM_LOGS_PATH.format(CS) + '/' + sims[rand_sel])
+            else:
+                paths.append(SIM_LOGS_PATH.format(config['SUL CONFIGURATION']['CS_VERSION']) + sims[i] + '/')
         # self.ONCE = True
         return paths
 

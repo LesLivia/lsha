@@ -23,6 +23,8 @@ config.sections()
 config.read('./resources/config/config.ini')
 config.sections()
 
+HT_TEST = config['LSHA PARAMETERS']['HT_TEST']
+
 
 class Teacher:
     def __init__(self, sul: SystemUnderLearning):
@@ -67,6 +69,9 @@ class Teacher:
         else:
             segments = self.sul.get_segments(word)
             if len(segments) > 0:
+                if len(self.flows[0]) == 1:
+                    return self.flows[0][0]
+
                 fits = []
                 for segment in segments:
                     if len(segment) < 10:
@@ -95,7 +100,7 @@ class Teacher:
 
                         # compares the observed behavior with the ideal one (values and derivatives)
                         # TODO: think of something to avoid the check on the name
-                        if dist_is_closer and der_is_closer and (der_same_sign or self.sul.name == 'energy'):
+                        if dist_is_closer and der_is_closer and der_same_sign:
                             min_distance = avg_distance
                             min_der_distance = avg_der_distance
                             best_fit = flow
@@ -127,7 +132,7 @@ class Teacher:
     # a new one is added
     # If available data are not enough to draw a conclusion, returns None
     #############################################
-    def ht_query(self, word: Trace, flow: FlowCondition, save=True):
+    def normal_ht_query(self, word: Trace, flow: FlowCondition, save=True):
         if flow is None:
             return None
 
@@ -181,6 +186,40 @@ class Teacher:
                         return new_distr
             else:
                 return None
+
+    def ht_query(self, word: Trace, flow: FlowCondition, save=True):
+        if HT_TEST.upper() == 'LIGHT':
+            if flow is None:
+                return None
+
+            if word == '':
+                return self.distributions[self.sul.default_d]
+            else:
+                segments = self.sul.get_segments(word)
+                if len(segments) > 0:
+                    # distr associated with selected flow
+                    eligible_distributions = self.sul.vars[0].get_distr_for_flow(flow.f_id)
+
+                    # randomly distributed metrics for each segment
+                    metrics = [self.sul.get_ht_params(segment, flow) for segment in segments]
+                    metrics = [met for met in metrics if met is not None]
+                    avg_metrics = round(sum(metrics) / len(metrics))
+
+                    min_dist, best_fit = 1000, None
+
+                    for distr in eligible_distributions:
+                        if abs(avg_metrics - distr.params['avg']) <= min_dist:
+                            min_dist = abs(avg_metrics - distr.params['avg'])
+                            best_fit = distr
+                    if min_dist < 0.5:
+                        return best_fit
+                    else:
+                        new_distr = NormalDistribution(len(self.distributions[0]), avg_metrics, 0.0)
+                        if save:
+                            self.add_distribution(new_distr, flow)
+                        return new_distr
+        else:
+            return self.normal_ht_query(word, flow, save)
 
     #############################################
     # ROW EQUALITY QUERY:

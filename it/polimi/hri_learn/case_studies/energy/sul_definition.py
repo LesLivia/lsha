@@ -14,24 +14,30 @@ def pwr_model(interval: List[Timestamp], P_0):
     return [AVG_PW] * len(interval)
 
 
+# define flow conditions
 on_fc: FlowCondition = FlowCondition(0, pwr_model)
 
-model2distr = {0: []}
-power = RealValuedVar([on_fc], [], model2distr, label='P')
+# define distributions
+off_distr = NormalDistribution(0, 0.0, 0.1)
+
+model2distr = {0: [0]}
+power = RealValuedVar([on_fc], [off_distr], model2distr, label='P')
 
 # define events
-spindle_on1 = Event('100<=w<500', 'start', 'm_0')
-spindle_on2 = Event('500<=w<1000', 'start', 'm_1')
-spindle_on3 = Event('1000<=w<1500', 'start', 'm_2')
-spindle_on4 = Event('1500<=w<2000', 'start', 'm_3')
-spindle_on5 = Event('2000<=w', 'start', 'm_3')
+spindle_on1 = Event('100<=w<250', 'start', 'm_0')
+spindle_on2 = Event('250<=w<500', 'start', 'm_1')
+spindle_on3 = Event('500<=w<750', 'start', 'm_2')
+spindle_on4 = Event('750<=w<1000', 'start', 'm_3')
+spindle_on5 = Event('1000<=w<1250', 'start', 'm_4')
+spindle_on6 = Event('1250<=w<1500', 'start', 'm_5')
+spindle_on7 = Event('1500<=w<1750', 'start', 'm_6')
+spindle_on8 = Event('1750<=w<2000', 'start', 'm_7')
+spindle_on9 = Event('2000<=w', 'start', 'm_8')
 
 spindle_off = Event('', 'stop', 'i_0')
 
-events = [spindle_off, spindle_on1, spindle_on2, spindle_on3, spindle_on4, spindle_on5]
-
-# define distributions
-off_distr = NormalDistribution(0, 0.0, 10.0)
+events = [spindle_off, spindle_on1, spindle_on2, spindle_on3, spindle_on4, spindle_on5,
+          spindle_on6, spindle_on7, spindle_on8, spindle_on9]
 
 DRIVER_SIG = 'w'
 DEFAULT_M = 0
@@ -40,9 +46,9 @@ DEFAULT_DISTR = 0
 args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, args=args)
 
-test = True
+test = False
 if test:
-    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/W9_2019-10-31_6-8.csv'
+    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/_W9_2019-10-31_6-8.csv'
     # testing data to signals conversion
     new_signals: List[SampledSignal] = parse_data(TEST_PATH)
 
@@ -58,7 +64,7 @@ if test:
         print(trace)
 
     # test segment identification
-    test_trace = Trace([spindle_off, spindle_on1, spindle_off, spindle_on1])
+    test_trace = Trace([spindle_on6])
     segments = energy_cs.get_segments(test_trace)
     print(segments)
 
