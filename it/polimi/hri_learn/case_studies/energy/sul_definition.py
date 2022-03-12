@@ -29,7 +29,7 @@ def pwr_model(interval: List[Timestamp], P_0):
 on_fc: FlowCondition = FlowCondition(0, pwr_model)
 
 # define distributions
-off_distr = NormalDistribution(0, 0.0, 0.1)
+off_distr = NormalDistribution(0, 0.0, 0.0)
 
 model2distr = {0: [0]}
 power = RealValuedVar([on_fc], [off_distr], model2distr, label='P')
@@ -56,9 +56,9 @@ DEFAULT_DISTR = 0
 args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, args=args)
 
-test = False
+test = True
 if test:
-    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/-W7_2019-10-16_11-12.csv'
+    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/*W9_2019-10-31_10-11.csv'
     # testing data to signals conversion
     new_signals: List[SampledSignal] = parse_data(TEST_PATH)
 
@@ -70,13 +70,13 @@ if test:
 
     # testing signal to trace conversion
     energy_cs.process_data(TEST_PATH)
-    for trace in energy_cs.traces:
-        print(trace)
+    for trace in energy_cs.timed_traces:
+        print(Trace(tt=trace))
         power_pts = new_signals[0].points
         speed_pts = new_signals[1].points
         double_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
                     [pt.timestamp for pt in speed_pts], [pt.value for pt in speed_pts],
-                    [pt.t for pt in chg_pts], title=str(trace), filtered=True)
+                    trace, title=str(Trace(tt=trace)), filtered=True)
 
     # test segment identification
     test_trace = Trace(energy_cs.traces[0][:-3])

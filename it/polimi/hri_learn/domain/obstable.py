@@ -64,15 +64,7 @@ class ObsTable:
 
     def __str__(self, filter_empty=False):
         result = ''
-        try:
-            max_s = max([len(word) for word in self.get_S()])
-        except ValueError:
-            max_s = 0
-        try:
-            max_low_s = max([len(word) for word in self.get_low_S()])
-        except ValueError:
-            max_low_s = 0
-        max_tabs = int(max(max_s, max_low_s))
+        max_tabs = max([len(word) for word in self.get_S() + self.get_low_S()])
 
         HEADER = '\t' * max_tabs + '|\t\t'
 
@@ -85,63 +77,66 @@ class ObsTable:
         result += SEPARATOR + '\n'
 
         # print short words row labels
-        for (i, s_word) in enumerate(self.get_S()):
-            row = self.get_upper_observations()[i]
+        for (i, s_word) in enumerate(self.get_S() + self.get_low_S()):
+            if i == len(self.get_S()):
+                result += SEPARATOR + '\n'
+            row = self.get_upper_observations()[i] if i < len(self.get_S()) else self.get_lower_observations()[
+                i - len(self.get_S())]
             if filter_empty and not row.is_populated():
                 pass
             else:
                 ROW = str(s_word)
-                len_word = int(len(s_word) / 3) if s_word != '' else 1
-                ROW += '\t' * (max_tabs + 1 - len_word) + '|\t' if len_word < max_tabs - 1 or max_tabs <= 4 \
-                    else '\t' * (max_tabs + 2 - len_word) + '|\t'
+                ROW += '\t' * (max_tabs + 1 - len(s_word)) + '|\t' if len(s_word) < max_tabs - 1 or max_tabs <= 4 \
+                    else '\t' * (max_tabs + 2 - len(s_word)) + '|\t'
                 ROW += str(row) + '\n'
                 result += ROW
-        result += SEPARATOR + '\n'
 
-        # print long words row labels
-        for (i, s_word) in enumerate(self.get_low_S()):
-            row = self.get_lower_observations()[i]
-            if filter_empty and not row.is_populated():
-                pass
-            else:
-                ROW = str(s_word)
-                len_word = int(len(s_word) / 3)
-                ROW += '\t' * (max_tabs + 1 - len_word) + '|\t' if len_word < max_tabs - 1 or max_tabs <= 4 \
-                    else '\t' * (max_tabs + 2 - len_word) + '|\t'
-                ROW += str(row) + '\n'
-                result += ROW
         result += SEPARATOR + '\n'
         return result
 
     def print(self, filter_empty=False):
         print(self.__str__(filter_empty))
 
-    def get_loc_from_word(self, word: Trace, locations: List[Location], seq_to_loc: Dict[Trace, str]):
+    def get_loc_from_word(self, word: Trace, locations: List[Location], seq_to_loc: Dict[Trace, str], teacher):
         loc = None
+
         if word in seq_to_loc.keys():
             loc = [l for l in locations if l.name == seq_to_loc[word]][0]
         else:
-            try:
+            if word in self.get_S():
                 curr_row = self.get_upper_observations()[self.get_S().index(word)]
-            except ValueError:
+            elif word in self.get_low_S():
                 curr_row = self.get_lower_observations()[self.get_low_S().index(word)]
+            elif Trace(word[:-1]) in self.get_S():
+                row = self.get_S().index(Trace(word[:-1]))
+                column = self.get_E().index(Trace([word[-1]]))
+                needed_state = self.get_upper_observations()[row].state[column]
+                curr_row = Row([needed_state] + [State([(None, None)])] * (len(self.get_E()) - 1))
+            elif Trace(word[:-1]) in self.get_low_S():
+                row = self.get_low_S().index(Trace(word[:-1]))
+                column = self.get_E().index(Trace([word[-1]]))
+                needed_state = self.get_lower_observations()[row].state[column]
+                curr_row = Row([needed_state] + [State([(None, None)])] * (len(self.get_E()) - 1))
+
+            if not curr_row.is_populated():
+                return loc
 
             for i, row in enumerate(self.get_upper_observations()):
-                if self.get_S()[i] in seq_to_loc.keys() and curr_row == row:
+                if self.get_S()[i] in seq_to_loc.keys() and teacher.eqr_query(curr_row, row):
                     loc = [l for l in locations if l.name == seq_to_loc[self.get_S()[i]]][0]
         return loc
 
-    def add_init_edges(self, locations: List[Location], edges: List[Edge], seq_to_loc: Dict[Trace, str]):
+    def add_init_edges(self, locations: List[Location], edges: List[Edge], seq_to_loc: Dict[Trace, str], teacher):
         init_loc = Location('__init__', 'null')
         locations.append(init_loc)
 
         one_word_upper = [word for word in self.get_S() if len(word) == 1]
-        # TODO
         one_word_lower = [word for word in self.get_low_S() if len(word) == 1]
 
-        for word in one_word_upper:
-            dest_loc = self.get_loc_from_word(word, locations, seq_to_loc)
-            edges.append(Edge(init_loc, dest_loc, sync=str(word)))
+        for word in one_word_upper + one_word_lower:
+            dest_loc = self.get_loc_from_word(word, locations, seq_to_loc, teacher)
+            if dest_loc is not None:
+                edges.append(Edge(init_loc, dest_loc, sync=str(word)))
 
         return locations, edges
 
@@ -181,12 +176,12 @@ class ObsTable:
                     if len(entry_word) == 0:
                         continue
 
-                    start_loc = self.get_loc_from_word(entry_word, locations, unique_sequences_dict)
-                    dest_loc = self.get_loc_from_word(word, locations, unique_sequences_dict)
+                    start_loc = self.get_loc_from_word(entry_word, locations, unique_sequences_dict, teacher)
+                    dest_loc = self.get_loc_from_word(word, locations, unique_sequences_dict, teacher)
 
                     labels = str(Trace(word[-1:]))
                     new_edge = Edge(start_loc, dest_loc, sync=labels)
-                    if new_edge not in edges:
+                    if start_loc is not None and dest_loc is not None and new_edge not in edges:
                         edges.append(new_edge)
 
         # start building edges list for lower part of the table
@@ -198,17 +193,17 @@ class ObsTable:
                     if len(entry_word) == 0:
                         continue
 
-                    start_loc = self.get_loc_from_word(entry_word, locations, unique_sequences_dict)
-                    dest_loc = self.get_loc_from_word(word, locations, unique_sequences_dict)
+                    start_loc = self.get_loc_from_word(entry_word, locations, unique_sequences_dict, teacher)
+                    dest_loc = self.get_loc_from_word(word, locations, unique_sequences_dict, teacher)
 
                     if word != '':
                         labels = str(word).replace(str(entry_word), '')
                     else:
                         labels = EMPTY_STRING
                     new_edge = Edge(start_loc, dest_loc, sync=labels)
-                    if new_edge not in edges:
+                    if start_loc is not None and dest_loc is not None and new_edge not in edges:
                         edges.append(new_edge)
 
-        locations, edges = self.add_init_edges(locations, edges, unique_sequences_dict)
+        locations, edges = self.add_init_edges(locations, edges, unique_sequences_dict, teacher)
 
         return HybridAutomaton(locations, edges)

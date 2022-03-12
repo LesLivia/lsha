@@ -288,7 +288,7 @@ class Teacher:
         # sample new traces only for ambiguous words which
         # are not prefixes of another ambiguous word
         uq = []
-        for i, w in enumerate(amb_words):
+        for i, w in tqdm(enumerate(amb_words)):
             is_prefix = False
             for j, w2 in enumerate(amb_words):
                 if i != j and str(w2).startswith(str(w)):
