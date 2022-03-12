@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from it.polimi.hri_learn.domain.hafeatures import HybridAutomaton, Location, Edge
 from it.polimi.hri_learn.domain.lshafeatures import Trace, State, EMPTY_STRING
@@ -116,6 +116,35 @@ class ObsTable:
     def print(self, filter_empty=False):
         print(self.__str__(filter_empty))
 
+    def get_loc_from_word(self, word: Trace, locations: List[Location], seq_to_loc: Dict[Trace, str]):
+        loc = None
+        if word in seq_to_loc.keys():
+            loc = [l for l in locations if l.name == seq_to_loc[word]][0]
+        else:
+            try:
+                curr_row = self.get_upper_observations()[self.get_S().index(word)]
+            except ValueError:
+                curr_row = self.get_lower_observations()[self.get_low_S().index(word)]
+
+            for i, row in enumerate(self.get_upper_observations()):
+                if self.get_S()[i] in seq_to_loc.keys() and curr_row == row:
+                    loc = [l for l in locations if l.name == seq_to_loc[self.get_S()[i]]][0]
+        return loc
+
+    def add_init_edges(self, locations: List[Location], edges: List[Edge], seq_to_loc: Dict[Trace, str]):
+        init_loc = Location('__init__', 'null')
+        locations.append(init_loc)
+
+        one_word_upper = [word for word in self.get_S() if len(word) == 1]
+        # TODO
+        one_word_lower = [word for word in self.get_low_S() if len(word) == 1]
+
+        for word in one_word_upper:
+            dest_loc = self.get_loc_from_word(word, locations, seq_to_loc)
+            edges.append(Edge(init_loc, dest_loc, sync=str(word)))
+
+        return locations, edges
+
     def to_sha(self, teacher):
         locations: List[Location] = []
         upp_obs: List[Row] = self.get_upper_observations()
@@ -123,6 +152,7 @@ class ObsTable:
         # each unique sequence in the upper observations
         # constitutes an automaton location
         unique_sequences: List[Trace] = []
+        unique_sequences_dict: Dict[Trace, str] = {}
         for i, row in enumerate(upp_obs):
             row_already_present = False
             for seq in unique_sequences:
@@ -132,64 +162,28 @@ class ObsTable:
                     break
             if not row_already_present:
                 unique_sequences.append(self.get_S()[i])
+        # Create a new location for each unique sequence
         for index, seq in enumerate(unique_sequences):
             seq_index = self.get_S().index(seq)
             row = upp_obs[seq_index]
             new_name = HybridAutomaton.LOCATION_FORMATTER.format(seq_index)
             new_flow = row.state[0].vars[0][0].label + ', ' + row.state[0].vars[0][1].label
             locations.append(Location(new_name, new_flow))
+            unique_sequences_dict[seq] = new_name
 
         # start building edges list for upper part of the table
         edges: List[Edge] = []
         for s_i, s_word in enumerate(self.get_S()):
-
             for t_i, t_word in enumerate(self.get_E()):
                 if upp_obs[s_i].state[t_i].observed():
                     word: Trace = s_word + t_word
                     entry_word = Trace(word[:len(word) - 1])
-                    try:
-                        start_row = unique_sequences.index(entry_word)
-                    except ValueError:
-                        if entry_word in self.get_low_S():
-                            start_row_index = self.get_low_S().index(entry_word)
-                            if low_obs[start_row_index].is_populated():
-                                corresponding_location = upp_obs.index(low_obs[start_row_index])
-                                start_row = [i for i, seq in enumerate(unique_sequences) if
-                                             upp_obs[self.get_S().index(seq)] == upp_obs[corresponding_location]][0]
-                            else:
-                                continue
-                        else:
-                            continue
-                    start_loc = locations[start_row]
+                    if len(entry_word) == 0:
+                        continue
 
-                    if len(t_word) == 0:
-                        eq_rows = []
-                        for seq in unique_sequences:
-                            if teacher.eqr_query(upp_obs[s_i], upp_obs[self.get_S().index(seq)]):
-                                eq_rows.append(seq)
-                        eq_row = eq_rows[0]
-                        dest_row = unique_sequences.index(eq_row)
-                        dest_loc = locations[dest_row]
-                    else:
-                        try:
-                            dest_row_index = self.get_S().index(word)
-                            eq_rows = []
-                            for seq in unique_sequences:
-                                if teacher.eqr_query(upp_obs[dest_row_index], upp_obs[self.get_S().index(seq)]):
-                                    eq_rows.append(seq)
-                            eq_row = eq_rows[0]
-                        except ValueError:
-                            if word in self.get_low_S():
-                                dest_row_index = self.get_low_S().index(word)
-                                eq_rows = []
-                                for seq in unique_sequences:
-                                    if teacher.eqr_query(low_obs[dest_row_index], upp_obs[self.get_S().index(seq)]):
-                                        eq_rows.append(seq)
-                                eq_row = eq_rows[0]
-                            else:
-                                continue
-                        dest_row = unique_sequences.index(eq_row)
-                        dest_loc = locations[dest_row]
+                    start_loc = self.get_loc_from_word(entry_word, locations, unique_sequences_dict)
+                    dest_loc = self.get_loc_from_word(word, locations, unique_sequences_dict)
+
                     labels = str(Trace(word[-1:]))
                     new_edge = Edge(start_loc, dest_loc, sync=labels)
                     if new_edge not in edges:
@@ -201,39 +195,12 @@ class ObsTable:
                 if low_obs[s_i].state[t_i].observed():
                     word: Trace = s_word + t_word
                     entry_word = Trace(word[:len(word) - 1])
-                    try:
-                        start_row = self.get_S().index(entry_word)
-                    except ValueError:
-                        if entry_word in self.get_low_S():
-                            start_row_index = self.get_low_S().index(entry_word)
-                            eq_rows = []
-                            for seq in unique_sequences:
-                                if teacher.eqr_query(upp_obs[self.get_S().index(seq)], low_obs[start_row_index]):
-                                    eq_rows.append(seq)
-                            start_row = unique_sequences.index(eq_rows[0])
-                        else:
-                            continue
-                    start_loc = [l for l in locations if
-                                 upp_obs[start_row].state[0].label.__contains__(l.flow_cond.replace(' ', ''))][0]
+                    if len(entry_word) == 0:
+                        continue
 
-                    try:
-                        dest_row_index = self.get_S().index(word)
-                        eq_rows = []
-                        for seq in unique_sequences:
-                            if teacher.eqr_query(upp_obs[dest_row_index], upp_obs[self.get_S().index(seq)]):
-                                eq_rows.append(seq)
-                        eq_row = eq_rows[0]
-                    except ValueError:
-                        if word in self.get_low_S():
-                            dest_row_index = self.get_low_S().index(word)
-                            eq_rows = []
-                            for seq in unique_sequences:
-                                if teacher.eqr_query(low_obs[dest_row_index], upp_obs[self.get_S().index(seq)]):
-                                    eq_rows.append(seq)
-                            eq_row = eq_rows[0]
-                        else:
-                            continue
-                    dest_loc = locations[unique_sequences.index(eq_row)]
+                    start_loc = self.get_loc_from_word(entry_word, locations, unique_sequences_dict)
+                    dest_loc = self.get_loc_from_word(word, locations, unique_sequences_dict)
+
                     if word != '':
                         labels = str(word).replace(str(entry_word), '')
                     else:
@@ -241,5 +208,7 @@ class ObsTable:
                     new_edge = Edge(start_loc, dest_loc, sync=labels)
                     if new_edge not in edges:
                         edges.append(new_edge)
+
+        locations, edges = self.add_init_edges(locations, edges, unique_sequences_dict)
 
         return HybridAutomaton(locations, edges)

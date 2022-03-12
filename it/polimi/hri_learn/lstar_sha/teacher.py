@@ -132,7 +132,7 @@ class Teacher:
     # a new one is added
     # If available data are not enough to draw a conclusion, returns None
     #############################################
-    def normal_ht_query(self, word: Trace, flow: FlowCondition, save=True):
+    def full_ht_query(self, word: Trace, flow: FlowCondition, save=True):
         if flow is None:
             return None
 
@@ -203,23 +203,33 @@ class Teacher:
                     # randomly distributed metrics for each segment
                     metrics = [self.sul.get_ht_params(segment, flow) for segment in segments]
                     metrics = [met for met in metrics if met is not None]
-                    avg_metrics = round(sum(metrics) / len(metrics))
+                    avg_metrics = sum(metrics) / len(metrics)
+                    int_avg_metrics = int(avg_metrics)
+                    dec_part = avg_metrics - int_avg_metrics
+                    if 0.0 <= dec_part <= 0.25:
+                        rounded_avg_metrics = int_avg_metrics
+                    elif 0.25 < dec_part <= 0.5:
+                        rounded_avg_metrics = int_avg_metrics + 0.5
+                    elif 0.5 < dec_part <= 0.75:
+                        rounded_avg_metrics = int_avg_metrics + 0.75
+                    else:
+                        rounded_avg_metrics = int_avg_metrics + 1
 
                     min_dist, best_fit = 1000, None
 
                     for distr in eligible_distributions:
-                        if abs(avg_metrics - distr.params['avg']) <= min_dist:
-                            min_dist = abs(avg_metrics - distr.params['avg'])
+                        if abs(rounded_avg_metrics - distr.params['avg']) <= min_dist:
+                            min_dist = abs(rounded_avg_metrics - distr.params['avg'])
                             best_fit = distr
                     if min_dist < 0.5:
                         return best_fit
                     else:
-                        new_distr = NormalDistribution(len(self.distributions[0]), avg_metrics, 0.0)
+                        new_distr = NormalDistribution(len(self.distributions[0]), rounded_avg_metrics, 0.0)
                         if save:
                             self.add_distribution(new_distr, flow)
                         return new_distr
         else:
-            return self.normal_ht_query(word, flow, save)
+            return self.full_ht_query(word, flow, save)
 
     #############################################
     # ROW EQUALITY QUERY:

@@ -58,7 +58,7 @@ energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_po
 
 test = False
 if test:
-    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/_W9_2019-10-31_6-7.csv'
+    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/-W7_2019-10-16_11-12.csv'
     # testing data to signals conversion
     new_signals: List[SampledSignal] = parse_data(TEST_PATH)
 
