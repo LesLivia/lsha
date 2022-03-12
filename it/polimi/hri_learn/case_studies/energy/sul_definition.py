@@ -6,6 +6,16 @@ from it.polimi.hri_learn.domain.sigfeatures import Timestamp, SampledSignal
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
 from it.polimi.hri_learn.pltr.energy_pltr import double_plot
+import configparser
+
+config = configparser.ConfigParser()
+config.sections()
+config.read('./resources/config/config.ini')
+config.sections()
+
+SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])
+MIN_SPEED = int(config['ENERGY CS']['MIN_SPEED'])
+MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
 
 
 # FIXME: temporarily approximated to constant function
@@ -25,20 +35,19 @@ model2distr = {0: [0]}
 power = RealValuedVar([on_fc], [off_distr], model2distr, label='P')
 
 # define events
-spindle_on1 = Event('100<=w<250', 'start', 'm_0')
-spindle_on2 = Event('250<=w<500', 'start', 'm_1')
-spindle_on3 = Event('500<=w<750', 'start', 'm_2')
-spindle_on4 = Event('750<=w<1000', 'start', 'm_3')
-spindle_on5 = Event('1000<=w<1250', 'start', 'm_4')
-spindle_on6 = Event('1250<=w<1500', 'start', 'm_5')
-spindle_on7 = Event('1500<=w<1750', 'start', 'm_6')
-spindle_on8 = Event('1750<=w<2000', 'start', 'm_7')
+events: List[Event] = []
+for i in range(MIN_SPEED, MAX_SPEED, SPEED_RANGE):
+    if i < MAX_SPEED - SPEED_RANGE:
+        new_guard = '{}<=w<{}'.format(i, i + SPEED_RANGE)
+    else:
+        new_guard = '{}<=w'.format(i)
+    events.append(Event(new_guard, 'start', 'm_{}'.format(len(events))))
+
 spindle_on9 = Event('2000<=w', 'start', 'm_8')
 
 spindle_off = Event('', 'stop', 'i_0')
 
-events = [spindle_off, spindle_on1, spindle_on2, spindle_on3, spindle_on4, spindle_on5,
-          spindle_on6, spindle_on7, spindle_on8, spindle_on9]
+events.append(spindle_off)
 
 DRIVER_SIG = 'w'
 DEFAULT_M = 0
@@ -49,7 +58,7 @@ energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_po
 
 test = False
 if test:
-    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/W9_2019-10-28_6-7.csv'
+    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/_W9_2019-10-31_6-7.csv'
     # testing data to signals conversion
     new_signals: List[SampledSignal] = parse_data(TEST_PATH)
 
@@ -70,7 +79,7 @@ if test:
                     [pt.t for pt in chg_pts], title=str(trace), filtered=True)
 
     # test segment identification
-    test_trace = Trace([spindle_on6])
+    test_trace = Trace(energy_cs.traces[0][:-3])
     segments = energy_cs.get_segments(test_trace)
     print(segments)
 

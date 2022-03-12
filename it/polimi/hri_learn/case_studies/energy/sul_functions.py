@@ -1,6 +1,6 @@
 import configparser
 import csv
-from typing import List
+from typing import List, Tuple
 
 from it.polimi.hri_learn.domain.lshafeatures import Event, FlowCondition
 from it.polimi.hri_learn.domain.sigfeatures import SampledSignal, Timestamp, SignalPoint
@@ -12,6 +12,10 @@ config.read('./resources/config/config.ini')
 config.sections()
 
 CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'][0])
+SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])
+MIN_SPEED = int(config['ENERGY CS']['MIN_SPEED'])
+MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
+
 LOGGER = Logger('SUL DATA HANDLER')
 
 
@@ -20,9 +24,12 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
     speed = {pt.timestamp: (i, pt.value) for i, pt in enumerate(speed_sig.points)}
 
     # FIXME: both need tuning
-    SPEED_RANGE = 100
-    SPEED_INTERVALS = [(100, 250), (250, 500), (500, 750), (750, 1000),
-                       (1000, 1250), (1250, 1500), (1500, 1750), (1750, 5000), (2000, None)]
+    SPEED_INTERVALS: List[Tuple[int, int]] = []
+    for i in range(MIN_SPEED, MAX_SPEED, SPEED_RANGE):
+        if i < MAX_SPEED - SPEED_RANGE:
+            SPEED_INTERVALS.append((i, i + SPEED_RANGE))
+        else:
+            SPEED_INTERVALS.append((i, None))
 
     curr_speed_index, curr_speed = speed[t]
     if curr_speed_index > 0:
@@ -34,7 +41,7 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
     identified_event = None
     # if spindle was moving previously and now it is idle, return "stop" event
     if curr_speed <= 100 and prev_speed >= 100:
-        identified_event = events[0]
+        identified_event = events[-1]
     else:
         # if spindle is now moving at a different speed than before,
         # return 'new speed' event, which varies depending on current speed range
