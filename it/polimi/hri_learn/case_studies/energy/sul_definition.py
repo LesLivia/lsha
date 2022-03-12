@@ -1,3 +1,5 @@
+import configparser
+import os
 from typing import List
 
 from it.polimi.hri_learn.case_studies.energy.sul_functions import label_event, parse_data, get_power_param
@@ -6,7 +8,6 @@ from it.polimi.hri_learn.domain.sigfeatures import Timestamp, SampledSignal
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
 from it.polimi.hri_learn.pltr.energy_pltr import double_plot
-import configparser
 
 config = configparser.ConfigParser()
 config.sections()
@@ -58,19 +59,20 @@ energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_po
 
 test = False
 if test:
-    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/*W9_2019-10-31_12-13.csv'
-    # testing data to signals conversion
-    new_signals: List[SampledSignal] = parse_data(TEST_PATH)
+    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/'
+    traces_files = os.listdir(TEST_PATH)
+    traces_files = [file for file in traces_files if file.startswith('_')]
 
-    # testing chg pts identification
-    chg_pts = SystemUnderLearning.find_chg_pts([sig for sig in new_signals if sig.label == DRIVER_SIG][0])
-
-    # testing event labeling
-    id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
-
-    # testing signal to trace conversion
-    energy_cs.process_data(TEST_PATH)
-    for trace in energy_cs.timed_traces:
+    for file in traces_files:
+        # testing data to signals conversion
+        new_signals: List[SampledSignal] = parse_data(TEST_PATH + file)
+        # testing chg pts identification
+        chg_pts = SystemUnderLearning.find_chg_pts([sig for sig in new_signals if sig.label == DRIVER_SIG][0])
+        # testing event labeling
+        id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
+        # testing signal to trace conversion
+        energy_cs.process_data(TEST_PATH + file)
+        trace = energy_cs.timed_traces[-1]
         print(Trace(tt=trace))
         power_pts = new_signals[0].points
         speed_pts = new_signals[1].points
