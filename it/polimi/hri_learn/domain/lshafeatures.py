@@ -118,6 +118,16 @@ class Trace:
                 prefixes.append(Trace(self[:i + 1]))
         return prefixes
 
+    def startswith(self, word):
+        if len(word) > len(self):
+            return False
+
+        for i, e in enumerate(word):
+            if self.events[i].symbol != e.symbol:
+                return False
+        else:
+            return True
+
 
 class State:
     def __init__(self, vars: List[Tuple[FlowCondition, ProbDistribution]]):

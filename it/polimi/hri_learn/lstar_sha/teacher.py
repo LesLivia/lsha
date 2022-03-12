@@ -287,14 +287,11 @@ class Teacher:
 
         # sample new traces only for ambiguous words which
         # are not prefixes of another ambiguous word
-        uq = []
-        for i, w in tqdm(enumerate(amb_words)):
-            is_prefix = False
-            for j, w2 in enumerate(amb_words):
-                if i != j and str(w2).startswith(str(w)):
-                    is_prefix = True
-            if not is_prefix:
-                uq.append(w)
+        uq = amb_words
+        # for i, w in tqdm(enumerate(amb_words)):
+        #     suffixes = [w2 for w2 in amb_words if w2 != w and w2.startswith(w)]
+        #     if len(suffixes) == 0:
+        #         uq.append(w)
 
         for word in tqdm(uq, total=len(uq)):
             LOGGER.info('Requesting new traces for {}'.format(str(word)))

@@ -67,7 +67,7 @@ class SystemUnderLearning:
         return self.param_f(segment, flow)
 
     def get_segments(self, word: Trace):
-        traces: List[int] = [i for i, t in enumerate(self.traces) if str(t).startswith(str(word))]
+        traces: List[int] = [i for i, t in enumerate(self.traces) if t.startswith(word)]
         if len(traces) == 0:
             return []
 
