@@ -23,7 +23,6 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
     speed_sig = signals[1]
     speed = {pt.timestamp: (i, pt.value) for i, pt in enumerate(speed_sig.points)}
 
-    # FIXME: both need tuning
     SPEED_INTERVALS: List[Tuple[int, int]] = []
     for i in range(MIN_SPEED, MAX_SPEED, SPEED_RANGE):
         if i < MAX_SPEED - SPEED_RANGE:
@@ -40,7 +39,7 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
 
     identified_event = None
     # if spindle was moving previously and now it is idle, return "stop" event
-    if curr_speed <= 100 and prev_speed >= 100:
+    if curr_speed < 100 and prev_speed >= 100:
         identified_event = events[-1]
     else:
         # if spindle is now moving at a different speed than before,
@@ -49,7 +48,7 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
             for i, interval in enumerate(SPEED_INTERVALS):
                 if (i < len(SPEED_INTERVALS) - 1 and interval[0] <= curr_speed < interval[1]) or \
                         (i == len(SPEED_INTERVALS) - 1 and curr_speed >= interval[0]):
-                    identified_event = events[i + 1]
+                    identified_event = events[i]
 
     if identified_event is None:
         LOGGER.error("No event was identified at time {}.".format(t))

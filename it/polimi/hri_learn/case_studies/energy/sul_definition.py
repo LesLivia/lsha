@@ -56,9 +56,9 @@ DEFAULT_DISTR = 0
 args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, args=args)
 
-test = True
+test = False
 if test:
-    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/*W9_2019-10-31_10-11.csv'
+    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/*W9_2019-10-31_12-13.csv'
     # testing data to signals conversion
     new_signals: List[SampledSignal] = parse_data(TEST_PATH)
 

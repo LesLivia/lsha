@@ -44,13 +44,13 @@ def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered
     axs[0].plot(events, [height1] * len(events), marker, color=colors[i], label=labels[i])
     axs[0].vlines(events, [0] * len(events), [height1] * len(events), color=colors[i], linewidth=0.5)
     for i, e in enumerate(events):
-        axs[0].text(e, height1, labels[i], fontsize=24)
+        axs[0].text(e, height1, labels[i], fontsize=12)
 
     i = 0
     axs[1].plot(events, [height2] * len(events), marker, color=colors[i], label=labels[i])
     axs[1].vlines(events, [0] * len(events), [height2] * len(events), color=colors[i], linewidth=0.5)
     for i, e in enumerate(events):
-        axs[1].text(e, height2, labels[i], fontsize=24)
+        axs[1].text(e, height2, labels[i], fontsize=12)
 
     step = 300
     xticks = [str(x.hour) + ':' + str(x.min).zfill(2) for x in timestamps1][::step]
@@ -64,7 +64,7 @@ def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered
     xticks = [str(x.hour) + ':' + str(x.min).zfill(2) for x in timestamps2][::step]
     axs[1].set_xticks(ticks=t2[::step])
     axs[1].set_xticklabels(labels=xticks, fontsize=24)
-    yticks = np.arange(0, max(v2), SPEED_RANGE)
+    yticks = np.arange(0, max(v2), SPEED_RANGE if max(v2) < 2000 else 500)
     axs[1].set_yticks(ticks=yticks)
     axs[1].set_yticklabels(labels=yticks, fontsize=24)
 
