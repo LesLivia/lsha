@@ -1,6 +1,6 @@
 import configparser
 import math
-from typing import List
+from typing import List, Dict, Tuple
 
 import numpy as np
 import scipy.stats as stats
@@ -24,6 +24,7 @@ config.read('./resources/config/config.ini')
 config.sections()
 
 HT_TEST = config['LSHA PARAMETERS']['HT_TEST']
+CS = config['SUL CONFIGURATION']['CASE_STUDY']
 
 
 class Teacher:
@@ -187,6 +188,15 @@ class Teacher:
             else:
                 return None
 
+    def to_hist(self, value, distr):
+        try:
+            if distr in self.hist:
+                self.hist[distr].append(value)
+            else:
+                self.hist[distr] = []
+        except AttributeError:
+            self.hist: Dict[int, List[float]] = {d.d_id: [] for d in self.distributions[0]}
+
     def ht_query(self, word: Trace, flow: FlowCondition, save=True):
         if HT_TEST.upper() == 'LIGHT':
             if flow is None:
@@ -206,11 +216,11 @@ class Teacher:
                     avg_metrics = sum(metrics) / len(metrics)
                     int_avg_metrics = int(avg_metrics)
                     dec_part = avg_metrics - int_avg_metrics
-                    if 0.0 <= dec_part <= 0.25:
+                    if 0.0 <= dec_part < 0.25:
                         rounded_avg_metrics = int_avg_metrics
-                    elif 0.25 < dec_part <= 0.5:
+                    elif 0.25 <= dec_part < 0.5:
                         rounded_avg_metrics = int_avg_metrics + 0.5
-                    elif 0.5 < dec_part <= 0.75:
+                    elif 0.5 <= dec_part < 0.75:
                         rounded_avg_metrics = int_avg_metrics + 0.75
                     else:
                         rounded_avg_metrics = int_avg_metrics + 1
@@ -222,10 +232,12 @@ class Teacher:
                             min_dist = abs(rounded_avg_metrics - distr.params['avg'])
                             best_fit = distr
                     if min_dist < 0.5:
+                        self.to_hist(avg_metrics, best_fit.d_id)
                         return best_fit
                     else:
                         new_distr = NormalDistribution(len(self.distributions[0]), rounded_avg_metrics, 0.0)
                         if save:
+                            self.to_hist(avg_metrics, new_distr.d_id)
                             self.add_distribution(new_distr, flow)
                         return new_distr
         else:

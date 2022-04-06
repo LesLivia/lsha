@@ -1,11 +1,12 @@
 import configparser
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from it.polimi.hri_learn.domain.lshafeatures import TimedTrace
 
-SAVE_PATH = './resources/plots/'
+SAVE_PATH = './resources/plots/min/'
 
 config = configparser.ConfigParser()
 config.sections()
@@ -82,3 +83,10 @@ def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered
     fig.savefig(SAVE_PATH + '{}.pdf'.format(title))
 
     del fig, axs
+
+
+def distr_hist(values: Dict[int, List[float]]):
+    fig, axs = plt.subplots(len(values), 1, tight_layout=True, figsize=(5, 5*len(values)))
+    for i, ax in enumerate(axs):
+        ax.hist(values[i], label='N_{}'.format(i))
+    fig.show()

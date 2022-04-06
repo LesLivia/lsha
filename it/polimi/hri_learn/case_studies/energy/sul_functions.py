@@ -32,19 +32,22 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
 
     curr_speed_index, curr_speed = speed[t]
     if curr_speed_index > 0:
-        prev_index = [tup[0] for tup in speed.values() if tup[0] < curr_speed_index][-1]
-        prev_speed = speed_sig.points[prev_index].value
+        try:
+            prev_index = [tup[0] for tup in speed.values() if tup[0] < curr_speed_index][-1]
+            prev_speed = speed_sig.points[prev_index].value
+        except IndexError:
+            prev_speed = None
     else:
         prev_speed = curr_speed
 
     identified_event = None
     # if spindle was moving previously and now it is idle, return "stop" event
-    if curr_speed < 100 and prev_speed >= 100:
+    if curr_speed < 100 and (prev_speed is not None and prev_speed >= 100):
         identified_event = events[-1]
     else:
         # if spindle is now moving at a different speed than before,
         # return 'new speed' event, which varies depending on current speed range
-        if abs(curr_speed - prev_speed) >= SPEED_RANGE:
+        if prev_speed is None or abs(curr_speed - prev_speed) >= SPEED_RANGE:
             for i, interval in enumerate(SPEED_INTERVALS):
                 if (i < len(SPEED_INTERVALS) - 1 and interval[0] <= curr_speed < interval[1]) or \
                         (i == len(SPEED_INTERVALS) - 1 and curr_speed >= interval[0]):
@@ -131,7 +134,7 @@ def parse_data(path: str):
         filtered_speed_pts: List[SignalPoint] = []
         for ts in filtered_speed_ts:
             batch_pts = list(filter(lambda pt: pt.timestamp == ts, nosecs_speed_pts))
-            filtered_speed_pts.extend([SignalPoint(ts, min([pt.value for pt in batch_pts]))] * len(batch_pts))
+            filtered_speed_pts.extend([SignalPoint(ts, max([pt.value for pt in batch_pts]))] * len(batch_pts))
         filtered_speed = SampledSignal(filtered_speed_pts, label='w')
 
         return [power, filtered_speed, pressure]

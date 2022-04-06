@@ -26,6 +26,13 @@ def pwr_model(interval: List[Timestamp], P_0):
     return [AVG_PW] * len(interval)
 
 
+def stopping_model(interval: List[Timestamp], P_0):
+    interval = [ts.to_secs() - interval[0].to_secs() for ts in interval]
+    COEFF = 1.0
+    values = [max(0, P_0 - COEFF * t) for t in interval]
+    return values
+
+
 # define flow conditions
 on_fc: FlowCondition = FlowCondition(0, pwr_model)
 
@@ -78,12 +85,11 @@ if test:
         speed_pts = new_signals[1].points
         double_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
                     [pt.timestamp for pt in speed_pts], [pt.value for pt in speed_pts],
-                    trace, title=str(Trace(tt=trace)), filtered=True)
+                    trace, title=file, filtered=True)
 
     # test segment identification
-    test_trace = Trace(energy_cs.traces[0][:-3])
+    test_trace = Trace(energy_cs.traces[0][:1])
     segments = energy_cs.get_segments(test_trace)
-    print(segments)
 
     # test model identification
     TEACHER = Teacher(energy_cs)

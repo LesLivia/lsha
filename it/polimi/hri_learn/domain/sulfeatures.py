@@ -15,6 +15,9 @@ class SystemUnderLearning:
         values = [pt.value for pt in driver.points]
         chg_pts: List[ChangePoint] = []
 
+        if values[0] > 0:
+            chg_pts.append(ChangePoint(timestamps[0]))
+
         # IDENTIFY CHANGE PTS IN DRIVER OVERLAY
         prev = values[0]
         for i in range(1, len(values)):
