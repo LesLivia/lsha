@@ -1,6 +1,6 @@
 import configparser
 import math
-from typing import List, Dict, Tuple
+from typing import List, Dict
 
 import numpy as np
 import scipy.stats as stats
@@ -188,12 +188,12 @@ class Teacher:
             else:
                 return None
 
-    def to_hist(self, value, distr):
+    def to_hist(self, values: List[float], distr: int):
         try:
             if distr in self.hist:
-                self.hist[distr].append(value)
+                self.hist[distr].extend(values)
             else:
-                self.hist[distr] = []
+                self.hist[distr] = values
         except AttributeError:
             self.hist: Dict[int, List[float]] = {d.d_id: [] for d in self.distributions[0]}
 
@@ -214,30 +214,52 @@ class Teacher:
                     metrics = [self.sul.get_ht_params(segment, flow) for segment in segments]
                     metrics = [met for met in metrics if met is not None]
                     avg_metrics = sum(metrics) / len(metrics)
-                    int_avg_metrics = int(avg_metrics)
-                    dec_part = avg_metrics - int_avg_metrics
-                    if 0.0 <= dec_part < 0.25:
-                        rounded_avg_metrics = int_avg_metrics
-                    elif 0.25 <= dec_part < 0.5:
-                        rounded_avg_metrics = int_avg_metrics + 0.5
-                    elif 0.5 <= dec_part < 0.75:
-                        rounded_avg_metrics = int_avg_metrics + 0.75
-                    else:
-                        rounded_avg_metrics = int_avg_metrics + 1
+                    # int_avg_metrics = int(avg_metrics)
+                    # dec_part = avg_metrics - int_avg_metrics
+                    # if 0.0 <= dec_part < 0.5:
+                    #     rounded_avg_metrics = int_avg_metrics
+                    # else:
+                    #     rounded_avg_metrics = int_avg_metrics + 1
+
+                    # intervals = [(0.0, 0.2), (0.2, 0.4), (0.4, 0.7),
+                    #              (0.7, 1.2), (1.2, 1.6), (1.6, 2.2),
+                    #              (2.2, 3.0), (3.0, 3.6), (3.6, 5.0),
+                    #              (5.0, 6.0), (6.0, 7.0), (7.0, 20.0)]
+                    # for interval in intervals:
+                    #     if interval[0] <= avg_metrics < interval[1]:
+                    #         rounded_avg_metrics = interval[0]
 
                     min_dist, best_fit = 1000, None
 
-                    for distr in eligible_distributions:
-                        if abs(rounded_avg_metrics - distr.params['avg']) <= min_dist:
-                            min_dist = abs(rounded_avg_metrics - distr.params['avg'])
-                            best_fit = distr
-                    if min_dist < 0.5:
-                        self.to_hist(avg_metrics, best_fit.d_id)
+                    try:
+                        for distr in self.hist:
+                            if len(self.hist[distr]) == 0 or len(metrics) == 0:
+                                continue
+
+                            v1 = [avg_metrics] * 50
+                            noise1 = np.random.normal(0.0, 0.5, size=len(v1))
+                            v1 = [x + noise1[i] for i, x in enumerate(v1)]
+
+                            v2 = []
+                            for m in self.hist[distr]:
+                                v2 += [m] * 10
+                            noise2 = np.random.normal(0.0, 0.5, size=len(v2))
+                            v2 = [x + noise2[i] for i, x in enumerate(v2)]
+
+                            statistic, pvalue = stats.ks_2samp(v1, v2)
+                            if statistic <= min_dist:
+                                min_dist = statistic
+                                best_fit = [d for d in eligible_distributions if d.d_id == distr][0]
+                    except AttributeError:
+                        pass
+
+                    if min_dist < 0.75:
+                        self.to_hist(metrics, best_fit.d_id)
                         return best_fit
                     else:
-                        new_distr = NormalDistribution(len(self.distributions[0]), rounded_avg_metrics, 0.0)
+                        new_distr = ProbDistribution(len(self.distributions[0]), {'avg': sum(metrics) / len(metrics)})
                         if save:
-                            self.to_hist(avg_metrics, new_distr.d_id)
+                            self.to_hist(metrics, new_distr.d_id)
                             self.add_distribution(new_distr, flow)
                         return new_distr
         else:
