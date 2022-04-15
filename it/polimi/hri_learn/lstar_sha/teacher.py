@@ -188,14 +188,22 @@ class Teacher:
             else:
                 return None
 
-    def to_hist(self, values: List[float], distr: int):
+    def to_hist(self, values: List[float], d_id: int, update=False):
         try:
-            if distr in self.hist:
-                self.hist[distr].extend(values)
+            if d_id in self.hist:
+                distr = [d for d in self.distributions[0] if d.d_id == d_id][0]
+                old_avg = distr.params['avg']
+                old_v = len(self.hist[d_id])
+                self.hist[d_id].extend(values)
             else:
-                self.hist[distr] = values
+                old_avg = 0.0
+                old_v = 0
+                self.hist[d_id] = values
+            distr = [d for d in self.distributions[0] if d.d_id == d_id][0]
+            distr.params['avg'] = (old_avg * old_v + sum(values)) / (old_v + len(values))
         except AttributeError:
             self.hist: Dict[int, List[float]] = {d.d_id: [] for d in self.distributions[0]}
+            self.hist[d_id] = values
 
     def ht_query(self, word: Trace, flow: FlowCondition, save=True):
         if HT_TEST.upper() == 'LIGHT':
@@ -254,13 +262,13 @@ class Teacher:
                         pass
 
                     if min_dist < 0.75:
-                        self.to_hist(metrics, best_fit.d_id)
+                        self.to_hist(metrics, best_fit.d_id, update=True)
                         return best_fit
                     else:
                         new_distr = ProbDistribution(len(self.distributions[0]), {'avg': sum(metrics) / len(metrics)})
                         if save:
-                            self.to_hist(metrics, new_distr.d_id)
                             self.add_distribution(new_distr, flow)
+                            self.to_hist(metrics, new_distr.d_id)
                         return new_distr
         else:
             return self.full_ht_query(word, flow, save)

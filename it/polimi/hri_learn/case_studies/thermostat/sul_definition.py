@@ -3,7 +3,8 @@ import math
 import os
 from typing import List
 
-from it.polimi.hri_learn.case_studies.thermostat.sul_functions import label_event, parse_data, get_thermo_param
+from it.polimi.hri_learn.case_studies.thermostat.sul_functions import label_event, parse_data, get_thermo_param, \
+    is_chg_pt
 from it.polimi.hri_learn.domain.lshafeatures import RealValuedVar, FlowCondition, Trace, NormalDistribution
 from it.polimi.hri_learn.domain.sigfeatures import Event, Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning
@@ -66,7 +67,8 @@ if CS_VERSION in [3, 8, 9, 10]:
     events += [on_event3, off_event3]
 
 args = {'name': 'thermostat', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
-thermostat_cs = SystemUnderLearning([temperature], events, parse_data, label_event, get_thermo_param, args=args)
+thermostat_cs = SystemUnderLearning([temperature], events, parse_data, label_event, get_thermo_param, is_chg_pt,
+                                    args=args)
 
 test = False
 if test:

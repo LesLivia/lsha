@@ -16,6 +16,10 @@ ON_R = 100.0
 LOGGER = Logger('SUL DATA HANDLER')
 
 
+def is_chg_pt(curr, prev):
+    return curr != prev
+
+
 def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp):
     heatOn = signals[0]
     wOpen = signals[2]

@@ -2,7 +2,7 @@ import configparser
 import os
 from typing import List
 
-from it.polimi.hri_learn.case_studies.energy.sul_functions import label_event, parse_data, get_power_param
+from it.polimi.hri_learn.case_studies.energy.sul_functions import label_event, parse_data, get_power_param, is_chg_pt
 from it.polimi.hri_learn.domain.lshafeatures import Event, NormalDistribution, Trace
 from it.polimi.hri_learn.domain.sigfeatures import Timestamp, SampledSignal
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
@@ -63,9 +63,9 @@ DEFAULT_M = 0
 DEFAULT_DISTR = 0
 
 args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
-energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, args=args)
+energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 
-test = False
+test = True
 if test:
     TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/'
     traces_files = os.listdir(TEST_PATH)
@@ -75,7 +75,7 @@ if test:
         # testing data to signals conversion
         new_signals: List[SampledSignal] = parse_data(TEST_PATH + file)
         # testing chg pts identification
-        chg_pts = SystemUnderLearning.find_chg_pts([sig for sig in new_signals if sig.label == DRIVER_SIG][0])
+        chg_pts = energy_cs.find_chg_pts([sig for sig in new_signals if sig.label == DRIVER_SIG][0])
         # testing event labeling
         id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
         # testing signal to trace conversion
@@ -84,9 +84,9 @@ if test:
         print(Trace(tt=trace))
         power_pts = new_signals[0].points
         speed_pts = new_signals[1].points
-        # double_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
-        #             [pt.timestamp for pt in speed_pts], [pt.value for pt in speed_pts],
-        #             trace, title=file, filtered=True)
+        double_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
+                    [pt.timestamp for pt in speed_pts], [pt.value for pt in speed_pts],
+                    trace, title=file, filtered=True)
 
     # test segment identification
     test_trace = Trace(energy_cs.traces[0][:1])

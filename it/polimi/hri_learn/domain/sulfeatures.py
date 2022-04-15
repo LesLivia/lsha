@@ -9,26 +9,8 @@ from it.polimi.hri_learn.domain.sigfeatures import ChangePoint, Event, SampledSi
 
 
 class SystemUnderLearning:
-    @staticmethod
-    def find_chg_pts(driver: SampledSignal):
-        timestamps = [pt.timestamp for pt in driver.points]
-        values = [pt.value for pt in driver.points]
-        chg_pts: List[ChangePoint] = []
-
-        if values[0] > 0:
-            chg_pts.append(ChangePoint(timestamps[0]))
-
-        # IDENTIFY CHANGE PTS IN DRIVER OVERLAY
-        prev = values[0]
-        for i in range(1, len(values)):
-            curr = values[i]
-            if curr != prev:
-                chg_pts.append(ChangePoint(timestamps[i]))
-            prev = curr
-
-        return chg_pts
-
-    def __init__(self, rv_vars: List[RealValuedVar], events: List[Event], parse_f, label_f, param_f, **args):
+    def __init__(self, rv_vars: List[RealValuedVar], events: List[Event],
+                 parse_f, label_f, param_f, is_chg_pt, **args):
         #
         self.vars = rv_vars
         self.flows = [v.flows for v in rv_vars]
@@ -37,6 +19,7 @@ class SystemUnderLearning:
         self.parse_f = parse_f
         self.label_f = label_f
         self.param_f = param_f
+        self.is_chg_pt = is_chg_pt
         #
         self.signals: List[List[SampledSignal]] = []
         self.timed_traces: List[TimedTrace] = []
@@ -54,13 +37,31 @@ class SystemUnderLearning:
     #
     # TRACE PROCESSING METHODS
     #
+    def find_chg_pts(self, driver: SampledSignal):
+        timestamps = [pt.timestamp for pt in driver.points]
+        values = [pt.value for pt in driver.points]
+        chg_pts: List[ChangePoint] = []
+
+        if values[0] > 0:
+            chg_pts.append(ChangePoint(timestamps[0]))
+
+        # IDENTIFY CHANGE PTS IN DRIVER OVERLAY
+        prev = values[0]
+        for i in range(1, len(values)):
+            curr = values[i]
+            if self.is_chg_pt(curr, prev):
+                chg_pts.append(ChangePoint(timestamps[i]))
+            prev = curr
+
+        return chg_pts
+
     def process_data(self, path: str):
         new_signals: List[SampledSignal] = self.parse_f(path)
         self.signals.append(new_signals)
 
         driver_sig = [sig for sig in new_signals if sig.label == self.driver][0]
 
-        chg_pts = SystemUnderLearning.find_chg_pts(driver_sig)
+        chg_pts = self.find_chg_pts(driver_sig)
         events = [self.label_f(self.events, new_signals, pt.t) for pt in chg_pts]
         new_tt = TimedTrace([pt.t for pt in chg_pts], events)
         self.timed_traces.append(new_tt)

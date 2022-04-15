@@ -87,7 +87,7 @@ def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered
 
 def distr_hist(values: Dict[int, List[float]]):
     values = [(v, values[v]) for v in values]
-    values = sorted(values, key=lambda tup: sum(tup[1]) / len(tup[1]))
+    # values = sorted(values, key=lambda tup: sum(tup[1]) / len(tup[1]))
 
     fig, axs = plt.subplots(1, len(values), tight_layout=True, figsize=(5 * len(values), 5))
 

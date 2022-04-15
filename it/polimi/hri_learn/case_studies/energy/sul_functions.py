@@ -19,6 +19,10 @@ MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
 LOGGER = Logger('SUL DATA HANDLER')
 
 
+def is_chg_pt(curr, prev):
+    return abs(curr - prev) > SPEED_RANGE
+
+
 def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp):
     speed_sig = signals[1]
     speed = {pt.timestamp: (i, pt.value) for i, pt in enumerate(speed_sig.points)}
