@@ -169,7 +169,7 @@ class Teacher:
                         max_scs = scs
 
                 if max_scs > 0:
-                    LOGGER.debug("Accepting N_{} with Y: {}".format(best_fit, max_scs))
+                    LOGGER.debug("Accepting D_{} with Y: {}".format(best_fit, max_scs))
                     return best_fit
                 else:
                     # rejects H0

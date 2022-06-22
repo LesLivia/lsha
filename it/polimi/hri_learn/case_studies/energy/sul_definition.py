@@ -65,7 +65,7 @@ DEFAULT_DISTR = 0
 args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 
-test = True
+test = False
 if test:
     TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/'
     traces_files = os.listdir(TEST_PATH)

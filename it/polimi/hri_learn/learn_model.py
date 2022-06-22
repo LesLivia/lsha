@@ -41,6 +41,11 @@ HA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH']
 SHA_NAME = '{}_{}_{}'.format(CS, RESAMPLE_STRATEGY, config['SUL CONFIGURATION']['CS_VERSION'])
 graphviz_sha = ha_pltr.to_graphviz(LEARNED_HA, SHA_NAME, HA_SAVE_PATH, view=True)
 
+# saving sha source to .txt file
+sha_source = graphviz_sha.source
+with open(HA_SAVE_PATH + SHA_NAME + '_source.txt', 'w') as f:
+    f.write(sha_source)
+
 if config['DEFAULT']['PLOT_DISTR'] == 'True':
     TEACHER.sul.plot_distributions()
 
