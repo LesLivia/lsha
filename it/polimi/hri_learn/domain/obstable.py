@@ -152,7 +152,7 @@ class ObsTable:
             row_already_present = False
             for seq in unique_sequences:
                 row_2 = upp_obs[self.get_S().index(seq)]
-                if teacher.eqr_query(row, row_2):
+                if teacher.eqr_query(row, row_2, strict=True):
                     row_already_present = True
                     break
             if not row_already_present:
