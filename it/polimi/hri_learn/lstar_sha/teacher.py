@@ -356,9 +356,8 @@ class Teacher:
     def get_counterexample(self, table: ObsTable):
         LOGGER.msg('Looking for counterexample...')
 
-        # FIXME
-        if len(self.timed_traces) >= 2000:
-            return None
+        # if len(self.timed_traces) >= 2000:
+        #    return None
 
         S = table.get_S()
         low_S = table.get_low_S()
@@ -427,7 +426,13 @@ class Teacher:
                                             LOGGER.warn(
                                                 "!! MISSED NON-CONSISTENCY ({}, {}) !!".format(Trace([event]), s_word))
                                             return prefix
-                            else:
-                                not_counter.append(prefix)
+                                    else:
+                                        not_counter.append(prefix)
+                        else:
+                            not_counter.append(prefix)
+        # TODO: check che l'ultimo sia sempre il più lungo
         else:
-            return None
+            if len(not_counter) > 0:
+                return not_counter[-1]
+            else:
+                return None
