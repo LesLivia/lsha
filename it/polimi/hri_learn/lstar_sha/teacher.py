@@ -308,7 +308,7 @@ class Teacher:
         # find all words which are ambiguous
         # (equivalent to multiple rows)
         amb_words: List[Trace] = []
-        for i, row in enumerate(upp_obs + low_obs):
+        for i, row in tqdm(enumerate(upp_obs + low_obs)):
             # if there are not enough observations of a word,
             # it needs a refinement query
             s = S[i] if i < len(upp_obs) else lS[i - len(upp_obs)]
