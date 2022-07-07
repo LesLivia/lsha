@@ -94,5 +94,5 @@ def distr_hist(values: Dict[int, List[float]]):
     for i, ax in enumerate(axs):
         ax.set_title('D_{}'.format(i))
         ax.hist(values[i][1])
-    fig.show()
+    fig.savefig(SAVE_PATH + '{}.pdf'.format('histograms'))
     del fig
