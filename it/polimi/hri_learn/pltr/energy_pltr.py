@@ -6,7 +6,7 @@ import numpy as np
 
 from it.polimi.hri_learn.domain.lshafeatures import TimedTrace
 
-SAVE_PATH = './resources/plots/min/'
+SAVE_PATH = 'resources/learned_ha/'
 
 config = configparser.ConfigParser()
 config.sections()
@@ -93,6 +93,6 @@ def distr_hist(values: Dict[int, List[float]]):
 
     for i, ax in enumerate(axs):
         ax.set_title('D_{}'.format(i))
-        ax.hist(values[i][1])
+        ax.hist(values[i][1], bins=25)
     fig.savefig(SAVE_PATH + '{}.pdf'.format('histograms'))
     del fig
