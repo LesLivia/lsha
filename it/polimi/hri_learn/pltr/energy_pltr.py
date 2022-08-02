@@ -16,6 +16,7 @@ config.sections()
 SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])
 MIN_SPEED = int(config['ENERGY CS']['MIN_SPEED'])
 MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
+CS = config['SUL CONFIGURATION']['CASE_STUDY']
 
 
 def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered=False):
@@ -93,6 +94,9 @@ def distr_hist(values: Dict[int, List[float]]):
 
     for i, ax in enumerate(axs):
         ax.set_title('D_{}'.format(i))
-        ax.hist(values[i][1], bins=25, normed=True)
+        if CS == 'THERMO':
+            ax.hist(values[i][1], bins=25)
+        else:
+            ax.hist(values[i][1], bins=25, normed=True)
     fig.savefig(SAVE_PATH + '{}.pdf'.format('histograms'))
     del fig

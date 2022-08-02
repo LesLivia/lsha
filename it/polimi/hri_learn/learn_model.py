@@ -25,7 +25,7 @@ CS = config['SUL CONFIGURATION']['CASE_STUDY']
 CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'][0])
 RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 
-SUL = energy_cs
+SUL = thermostat_cs
 TEACHER = Teacher(SUL)
 
 long_traces = [Trace(events=[e]) for e in SUL.events]
