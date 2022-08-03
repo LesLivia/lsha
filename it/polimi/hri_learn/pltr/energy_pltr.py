@@ -86,7 +86,7 @@ def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered
     del fig, axs
 
 
-def distr_hist(values: Dict[int, List[float]]):
+def distr_hist(values: Dict[int, List[float]], name: str):
     values = [(v, values[v]) for v in values]
     # values = sorted(values, key=lambda tup: sum(tup[1]) / len(tup[1]))
 
@@ -98,5 +98,5 @@ def distr_hist(values: Dict[int, List[float]]):
             ax.hist(values[i][1], bins=25)
         else:
             ax.hist(values[i][1], bins=25, normed=True)
-    fig.savefig(SAVE_PATH + '{}.pdf'.format('histograms'))
+    fig.savefig(SAVE_PATH + '{}_{}.pdf'.format(name, 'histograms'))
     del fig

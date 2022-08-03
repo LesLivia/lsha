@@ -251,7 +251,7 @@ class Teacher:
 
                             statistic, pvalue = stats.ks_2samp(v1, v2)
                             fits = [d for d in eligible_distributions if d.d_id == distr]
-                            if statistic <= min_dist and pvalue >= 0.05 and len(fits) > 0:
+                            if statistic <= min_dist and pvalue >= 0.01 and len(fits) > 0:
                                 min_dist = statistic
                                 best_fit = fits[0]
                     except AttributeError:
