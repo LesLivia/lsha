@@ -17,4 +17,4 @@ for file in files:
     if file.startswith(CS.upper() + '_' + CS_VERSION):
         os.remove(folder + '/' + file)
         total += 1
-print('Clean up {} traces.'.format(total))
+print('{} traces deleted.'.format(total))

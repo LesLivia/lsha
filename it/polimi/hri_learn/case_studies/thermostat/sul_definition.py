@@ -48,8 +48,9 @@ off2 = NormalDistribution(5, 100.0, 1.0)
 off3 = NormalDistribution(6, 80.0, 1.0)
 off4 = NormalDistribution(7, 60.0, 1.0)
 
-model_to_distr = {on_fc.f_id: [0, 1, 2, 3], off_fc.f_id: [4, 5, 6, 7]}
-temperature = RealValuedVar([on_fc, off_fc], [on1, on2, on3, on4, off1, off2, off3, off4], model_to_distr, label='T_r')
+# model_to_distr = {on_fc.f_id: [0, 1, 2, 3], off_fc.f_id: [4, 5, 6, 7]}
+model_to_distr = {on_fc.f_id: [], off_fc.f_id: []}
+temperature = RealValuedVar([on_fc, off_fc], [], model_to_distr, label='T_r')
 
 if CS_VERSION in [1]:
     on_event = Event('', 'on', 'h_0')
@@ -102,4 +103,4 @@ if test:
     print(thermostat_cs.vars[0].model2distr[1])
     print(teacher.ht_query(Trace([on_event, off_event]), off_fc, save=True))
     print(thermostat_cs.vars[0].model2distr[1])
-    thermostat_cs.plot_distributions()
+    # thermostat_cs.plot_distributions()

@@ -16,6 +16,7 @@ config.sections()
 SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])
 MIN_SPEED = int(config['ENERGY CS']['MIN_SPEED'])
 MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
+CS = config['SUL CONFIGURATION']['CASE_STUDY']
 
 
 def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered=False):
@@ -85,7 +86,7 @@ def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered
     del fig, axs
 
 
-def distr_hist(values: Dict[int, List[float]]):
+def distr_hist(values: Dict[int, List[float]], name: str):
     values = [(v, values[v]) for v in values]
     # values = sorted(values, key=lambda tup: sum(tup[1]) / len(tup[1]))
 
@@ -93,11 +94,14 @@ def distr_hist(values: Dict[int, List[float]]):
 
     for i, ax in enumerate(axs):
         ax.set_title('D_{}'.format(i))
-        ax.hist(values[i][1], bins=25, density=False, histtype='step')
-        with open(SAVE_PATH + '{}.txt'.format('histogram_values'), 'a') as f:
-                f.write('D_{}:\n'.format(i))
-                lines = [str(x)+'\n' for x in values[i][1]]
-                print(lines)
-                f.writelines(lines)
-    fig.savefig(SAVE_PATH + '{}.pdf'.format('histograms'))
+        if CS == 'THERMO':
+            ax.hist(values[i][1], bins=25)
+        else:
+            ax.hist(values[i][1], bins=25, density=False, histtype='step')
+            with open(SAVE_PATH + '{}.txt'.format('histogram_values'), 'a') as f:
+                    f.write('D_{}:\n'.format(i))
+                    lines = [str(x)+'\n' for x in values[i][1]]
+                    print(lines)
+                    f.writelines(lines)
+    fig.savefig(SAVE_PATH + '{}_{}.pdf'.format(name, 'histograms'))
     del fig

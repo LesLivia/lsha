@@ -25,7 +25,7 @@ CS = config['SUL CONFIGURATION']['CASE_STUDY']
 CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'][0])
 RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 
-SUL = energy_cs
+SUL = thermostat_cs
 TEACHER = Teacher(SUL)
 
 long_traces = [Trace(events=[e]) for e in SUL.events]
@@ -53,4 +53,4 @@ report.save_data(TEACHER.symbols, TEACHER.distributions, LEARNER.obs_table,
                  len(TEACHER.signals), datetime.now() - startTime, SHA_NAME)
 print('----> EXPERIMENTAL RESULTS SAVED IN: {}{}.txt'.format(config['SUL CONFIGURATION']['REPORT_SAVE_PATH'], SHA_NAME))
 
-distr_hist(TEACHER.hist)
+distr_hist(TEACHER.hist, SHA_NAME)

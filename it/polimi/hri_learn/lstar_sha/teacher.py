@@ -222,20 +222,6 @@ class Teacher:
                     metrics = [self.sul.get_ht_params(segment, flow) for segment in segments]
                     metrics = [met for met in metrics if met is not None]
                     avg_metrics = sum(metrics) / len(metrics)
-                    # int_avg_metrics = int(avg_metrics)
-                    # dec_part = avg_metrics - int_avg_metrics
-                    # if 0.0 <= dec_part < 0.5:
-                    #     rounded_avg_metrics = int_avg_metrics
-                    # else:
-                    #     rounded_avg_metrics = int_avg_metrics + 1
-
-                    # intervals = [(0.0, 0.2), (0.2, 0.4), (0.4, 0.7),
-                    #              (0.7, 1.2), (1.2, 1.6), (1.6, 2.2),
-                    #              (2.2, 3.0), (3.0, 3.6), (3.6, 5.0),
-                    #              (5.0, 6.0), (6.0, 7.0), (7.0, 20.0)]
-                    # for interval in intervals:
-                    #     if interval[0] <= avg_metrics < interval[1]:
-                    #         rounded_avg_metrics = interval[0]
 
                     min_dist, best_fit = 1000, None
 
@@ -244,24 +230,34 @@ class Teacher:
                             if len(self.hist[distr]) == 0 or len(metrics) == 0:
                                 continue
 
-                            v1 = [avg_metrics] * 50
-                            noise1 = np.random.normal(0.0, 0.5, size=len(v1))
+                            if CS == 'THERMO':
+                                v1 = metrics
+                                noise1 = [0] * len(v1)
+                            else:
+                                v1 = [avg_metrics] * 50
+                                noise1 = np.random.normal(0.0, 0.5, size=len(v1))
+
                             v1 = [x + noise1[i] for i, x in enumerate(v1)]
 
                             v2 = []
-                            for m in self.hist[distr]:
-                                v2 += [m] * 10
-                            noise2 = np.random.normal(0.0, 0.5, size=len(v2))
+                            if CS == 'THERMO':
+                                v2 = self.hist[distr]
+                                noise2 = [0] * len(v2)
+                            else:
+                                for m in self.hist[distr]:
+                                    v2 += [m] * 10
+                                noise2 = np.random.normal(0.0, 0.5, size=len(v2))
                             v2 = [x + noise2[i] for i, x in enumerate(v2)]
 
                             statistic, pvalue = stats.ks_2samp(v1, v2)
-                            if statistic <= min_dist:
+                            fits = [d for d in eligible_distributions if d.d_id == distr]
+                            if statistic <= min_dist and pvalue >= 0.01 and len(fits) > 0:
                                 min_dist = statistic
-                                best_fit = [d for d in eligible_distributions if d.d_id == distr][0]
+                                best_fit = fits[0]
                     except AttributeError:
                         pass
 
-                    if min_dist < 0.75:
+                    if (CS == 'THERMO' and best_fit is not None and min_dist <= 1.0) or (min_dist < 0.75):
                         self.to_hist(metrics, best_fit.d_id, update=True)
                         return best_fit
                     else:
@@ -432,7 +428,7 @@ class Teacher:
                             not_counter.append(prefix)
         # TODO: check che l'ultimo sia sempre il più lungo
         else:
-            if len(not_counter) > 0:
+            if CS != 'THERMO' and len(not_counter) > 0:
                 return not_counter[-1]
             else:
                 return None
