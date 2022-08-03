@@ -5,7 +5,7 @@ from typing import List
 
 from it.polimi.hri_learn.case_studies.thermostat.sul_functions import label_event, parse_data, get_thermo_param, \
     is_chg_pt
-from it.polimi.hri_learn.domain.lshafeatures import RealValuedVar, FlowCondition, Trace, NormalDistribution
+from it.polimi.hri_learn.domain.lshafeatures import RealValuedVar, FlowCondition, Trace
 from it.polimi.hri_learn.domain.sigfeatures import Event, Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
@@ -21,7 +21,7 @@ config = configparser.ConfigParser()
 config.sections()
 config.read('./resources/config/config.ini')
 config.sections()
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'][0])
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
 
 
 def off_model(interval: List[Timestamp], T_0: float):
@@ -35,22 +35,20 @@ def on_model(interval: List[Timestamp], T_0: float):
     return [coeff - (coeff - T_0) * math.exp(-(1 / CLOSED_R) * (t - interval[0])) for t in interval]
 
 
+def off_model_2(interval: List[float], T_0: float):
+    return [T_0 - 1 / OFF_DISTR[0] * (t - interval[0]) for t in interval]
+
+
+def on_model_2(interval: List[float], T_0: float):
+    return [T_0 + ON_DISTR[0] * (t - interval[0]) for t in interval]
+
+
 on_fc = FlowCondition(0, on_model)
 off_fc = FlowCondition(1, off_model)
+on_fc2 = FlowCondition(2, on_model_2)
+off_fc2 = FlowCondition(3, off_model_2)
 
-on1 = NormalDistribution(0, 0.9, 0.01)
-on2 = NormalDistribution(1, 0.7, 0.01)
-on3 = NormalDistribution(2, 0.5, 0.01)
-on4 = NormalDistribution(3, 0.3, 0.01)
-
-off1 = NormalDistribution(4, 120.0, 1.0)
-off2 = NormalDistribution(5, 100.0, 1.0)
-off3 = NormalDistribution(6, 80.0, 1.0)
-off4 = NormalDistribution(7, 60.0, 1.0)
-
-# model_to_distr = {on_fc.f_id: [0, 1, 2, 3], off_fc.f_id: [4, 5, 6, 7]}
-model_to_distr = {on_fc.f_id: [], off_fc.f_id: []}
-temperature = RealValuedVar([on_fc, off_fc], [], model_to_distr, label='T_r')
+models: List[FlowCondition] = [on_fc, off_fc]
 
 if CS_VERSION in [1]:
     on_event = Event('', 'on', 'h_0')
@@ -66,12 +64,21 @@ if CS_VERSION in [3, 8, 9, 10]:
     on_event3 = Event('open2', 'on', 'h_2')
     off_event3 = Event('open2', 'off', 'c_2')
     events += [on_event3, off_event3]
+if CS_VERSION in [8]:
+    models += [off_fc2]
+if CS_VERSION in [8, 9, 10]:
+    models += [on_fc2]
 
+model_to_distr = {}
+for m in models:
+    model_to_distr[m.f_id] = []
+
+temperature = RealValuedVar(models, [], model_to_distr, label='T_r')
 args = {'name': 'thermostat', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 thermostat_cs = SystemUnderLearning([temperature], events, parse_data, label_event, get_thermo_param, is_chg_pt,
                                     args=args)
 
-test = False
+test = True
 if test:
     # test event configuration
     print(thermostat_cs.symbols)

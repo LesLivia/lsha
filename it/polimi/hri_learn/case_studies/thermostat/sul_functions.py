@@ -11,7 +11,7 @@ config.sections()
 config.read('./resources/config/config.ini')
 config.sections()
 
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'][0])
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
 ON_R = 100.0
 LOGGER = Logger('SUL DATA HANDLER')
 

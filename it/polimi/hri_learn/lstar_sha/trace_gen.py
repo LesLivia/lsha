@@ -13,7 +13,7 @@ config.read('./resources/config/config.ini')
 config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
-CS_VERSION = config['SUL CONFIGURATION']['CS_VERSION'][0]
+CS_VERSION = config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', '')
 
 UPP_EXE_PATH = config['TRACE GENERATION']['UPPAAL_PATH']
 UPP_OUT_PATH = config['TRACE GENERATION']['UPPAAL_OUT_PATH']

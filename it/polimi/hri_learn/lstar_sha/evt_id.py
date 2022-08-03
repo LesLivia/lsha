@@ -18,7 +18,7 @@ config.read('./resources/config/config.ini')
 config.sections()
 
 CASE_STUDY = config['SUL CONFIGURATION']['CASE_STUDY']
-CS_VERSION = config['SUL CONFIGURATION']['CS_VERSION'][0]
+CS_VERSION = config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', '')
 RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 MAIN_SIGNAL = None
 
