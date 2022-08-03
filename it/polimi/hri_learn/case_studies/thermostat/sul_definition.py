@@ -56,7 +56,7 @@ if CS_VERSION in [1]:
     on_event = Event('', 'on', 'h_0')
     off_event = Event('', 'off', 'c_0')
     events = [on_event, off_event]
-if CS_VERSION in [2, 4, 5, 6, 7, 8, 9, 10]:
+if CS_VERSION in [2, 3, 4, 5, 6, 7, 8, 9, 10]:
     on_event = Event('!open', 'on', 'h_0')
     off_event = Event('!open', 'off', 'c_0')
     on_event2 = Event('open', 'on', 'h_1')

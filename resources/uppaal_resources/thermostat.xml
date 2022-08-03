@@ -1,0 +1,2971 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>broadcast chan on, off;
+
+double T_r = 0.0;
+
+const double OFF_FULLY_ISOLATED[2] = {120.0, 0.01};
+const double OFF_TWO_WINDOWS_CLOSED[2] = {100.0, 0.01};
+const double OFF_ONE_WINDOW_OPEN[2] = {80.0, 0.01};
+const double OFF_TWO_WINDOWS_OPEN[2] = {60.0, 0.01};
+
+const double ON_FULLY_ISOLATED[2] = {0.9, 0.01};
+const double ON_TWO_WINDOWS_CLOSED[2] = {0.7, 0.01};
+const double ON_ONE_WINDOW_OPEN[2] = {0.5, 0.01};
+const double ON_TWO_WINDOWS_OPEN[2] = {0.3, 0.01};
+
+const double PI = 3.14159265358979323846;
+
+double stdNormal() {
+    return sqrt(-2*ln(1-random(1)))*cos(2*PI*random(1));
+}
+
+double Normal(double mean, double stdDev) {
+    return random_normal(mean, stdDev*stdDev); //mean + stdDev*stdNormal();
+}
+
+const int MAX_E = 15;
+bool force_exe = true;
+int curr = 0;
+int force_open[MAX_E] = {0, 0, 1, 0, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+
+const int TAU = 300;
+const int R = 10;
+</declaration>
+	<template>
+		<name>Thermostat</name>
+		<parameter>double min_T, double max_T</parameter>
+		<location id="id0" x="340" y="0">
+			<name x="357" y="-17">ON</name>
+			<label kind="exponentialrate" x="357" y="0">1</label>
+		</location>
+		<location id="id1" x="25" y="0">
+			<name x="-17" y="-17">OFF</name>
+			<label kind="exponentialrate" x="0" y="0">1</label>
+		</location>
+		<init ref="id1"/>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="guard" x="145" y="-110">T_r&gt;=max_T</label>
+			<label kind="synchronisation" x="170" y="-85">off!</label>
+			<nail x="297" y="-86"/>
+			<nail x="68" y="-86"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="guard" x="136" y="0">T_r&lt;=min_T</label>
+			<label kind="synchronisation" x="170" y="17">on!</label>
+		</transition>
+	</template>
+	<template>
+		<name>Room_1</name>
+		<parameter>double T_0</parameter>
+		<declaration>clock T, x;
+
+int T_s = 1;
+bool open = false;
+
+double R = 100.0;
+double K;
+
+void init_r() {
+   x = 0;
+   T = T_0;
+   T_r = T_0;
+   K = 1.0;
+}
+
+void update_Tr(bool on) {
+    if(!on) {
+        T_r = T_r*exp(-1/R);
+    } else {
+        T_r = R*K-exp(-1/R)*(R*K-T_r);
+    }
+}
+
+void update_K(bool on, int open) {
+    // if heating is on, K is randomly generated
+    if(on) {
+        R = 100.0;
+        K = Normal(ON_TWO_WINDOWS_CLOSED[0], ON_TWO_WINDOWS_CLOSED[1]); 
+    } else { // if heating is off, R is randomly generated
+        K = 0.0;
+        R = Normal(OFF_TWO_WINDOWS_CLOSED[0], OFF_TWO_WINDOWS_CLOSED[1]); 
+    }
+}</declaration>
+		<location id="id2" x="-416" y="-59">
+			<name x="-426" y="-93">start</name>
+			<committed/>
+		</location>
+		<location id="id3" x="-416" y="43">
+			<name x="-459" y="26">OFF</name>
+			<label kind="invariant" x="-518" y="43">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id4" x="-102" y="43">
+			<name x="-85" y="17">ON</name>
+			<label kind="invariant" x="-85" y="35">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id5" x="-416" y="153">
+			<committed/>
+		</location>
+		<location id="id6" x="-102" y="153">
+			<committed/>
+		</location>
+		<init ref="id2"/>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id4"/>
+			<label kind="assignment" x="-94" y="85">x=0,
+update_Tr(1)</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-391" y="102">x&gt;=T_s</label>
+			<nail x="-391" y="102"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id6"/>
+			<label kind="guard" x="-178" y="94">x&gt;=T_s</label>
+			<nail x="-119" y="94"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id3"/>
+			<label kind="assignment" x="-510" y="85">x=0,
+update_Tr(0)</label>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-272" y="8">off?</label>
+			<label kind="assignment" x="-297" y="25">update_K(0,0)</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-272" y="94">on?</label>
+			<label kind="assignment" x="-306" y="110">update_K(1,0)</label>
+			<nail x="-357" y="94"/>
+			<nail x="-170" y="94"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="assignment" x="-467" y="-16">init_r()</label>
+		</transition>
+	</template>
+	<template>
+		<name>Room_2</name>
+		<parameter>double T_0</parameter>
+		<declaration>clock T, x;
+
+int T_s = 1;
+
+double R = 100.0;
+double K;
+
+bool open = false;
+
+void init_r() {
+   x = 0;
+   T = T_0;
+   T_r = T_0;
+   K = 1.0;
+}
+
+void random_open_window() {
+    double dice = random(100);
+    if(force_exe) {
+        open = force_open[curr];
+        return;
+    }
+    if (dice&gt;=95) open = !open;
+}
+
+void update_Tr(bool on) {
+    if(!on) {
+        T_r = T_r*exp(-1/R);
+    } else {
+        T_r = R*K-exp(-1/R)*(R*K-T_r);
+    }
+
+    random_open_window();
+}
+
+void update_K(bool on, int open) {
+    if (force_exe &amp;&amp; force_open[curr+1] != -1) {
+        curr++;
+    } else force_exe = false;
+
+    // if heating is on, K is randomly generated
+    if(on) {
+        R = 100.0;
+        if(open) K = Normal(ON_ONE_WINDOW_OPEN[0], ON_ONE_WINDOW_OPEN[1]); 
+        else K = Normal(ON_TWO_WINDOWS_CLOSED[0], ON_TWO_WINDOWS_CLOSED[1]); 
+    } else { // if heating is off, R is randomly generated
+        K = 0.0;
+        if(open!=0) R = Normal(OFF_ONE_WINDOW_OPEN[0], OFF_ONE_WINDOW_OPEN[1]); 
+        else R = Normal(OFF_TWO_WINDOWS_CLOSED[0], OFF_TWO_WINDOWS_CLOSED[1]); 
+    }
+}</declaration>
+		<location id="id7" x="-34" y="135">
+			<committed/>
+		</location>
+		<location id="id8" x="-34" y="25">
+			<name x="-17" y="8">ON_0</name>
+			<label kind="invariant" x="-17" y="25">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id9" x="-348" y="25">
+			<name x="-425" y="8">OFF_0</name>
+			<label kind="invariant" x="-433" y="25">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id10" x="-348" y="135">
+			<committed/>
+		</location>
+		<location id="id11" x="-569" y="25">
+			<name x="-579" y="-9">start</name>
+			<committed/>
+		</location>
+		<location id="id12" x="-34" y="-144">
+			<name x="-17" y="-161">OFF_1</name>
+			<label kind="invariant" x="-17" y="-144">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id13" x="-272" y="-144">
+			<name x="-323" y="-170">ON_1</name>
+			<label kind="invariant" x="-365" y="-153">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id14" x="-34" y="-280">
+			<committed/>
+		</location>
+		<location id="id15" x="-272" y="-280">
+			<committed/>
+		</location>
+		<init ref="id11"/>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id13"/>
+			<label kind="guard" x="-170" y="-127">open</label>
+			<label kind="synchronisation" x="-136" y="-110">on?</label>
+			<label kind="assignment" x="-195" y="-93">update_K(1,1)</label>
+			<nail x="-153" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id9"/>
+			<label kind="guard" x="-263" y="-93">!open</label>
+			<label kind="synchronisation" x="-263" y="-76">off?</label>
+			<label kind="assignment" x="-289" y="-59">update_K(0, 0)</label>
+			<nail x="-272" y="-42"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id13"/>
+			<label kind="guard" x="-340" y="-93">open</label>
+			<label kind="synchronisation" x="-340" y="-76">on?</label>
+			<label kind="assignment" x="-399" y="-59">update_K(1, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-76" y="-68">!open</label>
+			<label kind="synchronisation" x="-68" y="-51">on?</label>
+			<label kind="assignment" x="-136" y="-34">update_K(1, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id12"/>
+			<label kind="guard" x="8" y="-68">open</label>
+			<label kind="synchronisation" x="8" y="-51">off?</label>
+			<label kind="assignment" x="0" y="-34">update_K(0, 1)</label>
+			<nail x="8" y="-51"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id15"/>
+			<label kind="guard" x="-357" y="-246">x&gt;=T_s</label>
+			<nail x="-298" y="-212"/>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id13"/>
+			<label kind="assignment" x="-264" y="-246">x=0,
+update_Tr(1)</label>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-110" y="-246">x&gt;=T_s</label>
+			<nail x="-59" y="-212"/>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id12"/>
+			<label kind="assignment" x="-25" y="-263">x=0,
+update_Tr(0)</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-178" y="-178">open</label>
+			<label kind="synchronisation" x="-170" y="-161">off?</label>
+			<label kind="assignment" x="-212" y="-144">update_K(0, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id8"/>
+			<label kind="assignment" x="-26" y="67">x=0,
+update_Tr(1)</label>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id10"/>
+			<label kind="guard" x="-323" y="84">x&gt;=T_s</label>
+			<nail x="-323" y="84"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id7"/>
+			<label kind="guard" x="-110" y="76">x&gt;=T_s</label>
+			<nail x="-51" y="76"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id9"/>
+			<label kind="assignment" x="-442" y="67">x=0,
+update_Tr(0)</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id9"/>
+			<label kind="guard" x="-212" y="-8">!open</label>
+			<label kind="synchronisation" x="-204" y="8">off?</label>
+			<label kind="assignment" x="-238" y="25">update_K(0, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-212" y="59">!open</label>
+			<label kind="synchronisation" x="-204" y="76">on?</label>
+			<label kind="assignment" x="-238" y="93">update_K(1, 0)</label>
+			<nail x="-289" y="76"/>
+			<nail x="-102" y="76"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id9"/>
+			<label kind="assignment" x="-535" y="8">init_r()</label>
+		</transition>
+	</template>
+	<template>
+		<name>Room_3</name>
+		<parameter>double T_0</parameter>
+		<declaration>clock T, x;
+
+int T_s = 1;
+
+double R = 100.0;
+double K;
+
+int open = 0;
+
+void init_r() {
+   x = 0;
+   T = T_0;
+   T_r = T_0;
+   K = 1.0;
+}
+
+void random_open_window() {
+    double dice = random(100);
+    if(force_exe) {
+        open = force_open[curr];
+        return;
+    }
+
+
+    if(dice&gt;=97) {
+        dice = random(100);
+        if(dice&gt;=50) {
+            open++;
+            if(open&gt;2) open = 2;
+        } else {
+            open--;
+            if(open&lt;0) open = 0;
+        }
+    }
+}
+
+void update_Tr(bool on) {
+    if(!on) {
+        T_r = T_r*exp(-1/R);
+    } else {
+        T_r = R*K-exp(-1/R)*(R*K-T_r);
+    }
+
+    random_open_window();
+}
+
+void update_K(bool on) {
+    if (force_exe &amp;&amp; force_open[curr+1] != -1) {
+        curr++;
+    } else force_exe = false;
+
+    // if heating is on, K is randomly generated
+    if(on) {
+        R = 100.0;
+        if(open==1) K = Normal(ON_ONE_WINDOW_OPEN[0], ON_ONE_WINDOW_OPEN[1]);
+        else if(open==2) K = Normal(ON_TWO_WINDOWS_OPEN[0], ON_TWO_WINDOWS_OPEN[1]); 
+        else K = Normal(ON_TWO_WINDOWS_CLOSED[0], ON_TWO_WINDOWS_CLOSED[1]); 
+    } else { // if heating is off, R is randomly generated
+        K = 0.0;
+        if(open==1) R = Normal(OFF_ONE_WINDOW_OPEN[0], OFF_ONE_WINDOW_OPEN[1]); 
+        else if (open==2) R = Normal(OFF_TWO_WINDOWS_OPEN[0], OFF_TWO_WINDOWS_OPEN[1]);
+        else R = Normal(OFF_TWO_WINDOWS_CLOSED[0], OFF_TWO_WINDOWS_CLOSED[1]); 
+    }
+}</declaration>
+		<location id="id16" x="255" y="195">
+			<committed/>
+		</location>
+		<location id="id17" x="255" y="59">
+			<name x="272" y="42">ON_0</name>
+			<label kind="invariant" x="272" y="59">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id18" x="-203" y="59">
+			<name x="-263" y="68">OFF_0</name>
+			<label kind="invariant" x="-289" y="85">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id19" x="-204" y="204">
+			<committed/>
+		</location>
+		<location id="id20" x="-340" y="59">
+			<name x="-350" y="25">start</name>
+			<committed/>
+		</location>
+		<location id="id21" x="255" y="-110">
+			<name x="272" y="-102">OFF_1</name>
+			<label kind="invariant" x="272" y="-85">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id22" x="-204" y="-110">
+			<name x="-246" y="-93">ON_1</name>
+			<label kind="invariant" x="-289" y="-76">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id23" x="416" y="-110">
+			<committed/>
+		</location>
+		<location id="id24" x="-340" y="-110">
+			<committed/>
+		</location>
+		<location id="id25" x="255" y="-297">
+			<name x="272" y="-314">ON_2</name>
+			<label kind="invariant" x="272" y="-297">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id26" x="-204" y="-297">
+			<name x="-255" y="-289">OFF_2</name>
+			<label kind="invariant" x="-289" y="-272">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id27" x="-340" y="-297">
+			<committed/>
+		</location>
+		<location id="id28" x="255" y="-391">
+			<committed/>
+		</location>
+		<init ref="id20"/>
+		<transition>
+			<source ref="id26"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-373" y="-425">open==0</label>
+			<label kind="synchronisation" x="-373" y="-408">on?</label>
+			<label kind="assignment" x="-373" y="-391">update_K(1)</label>
+			<nail x="-204" y="-391"/>
+			<nail x="-391" y="-391"/>
+			<nail x="-391" y="255"/>
+			<nail x="102" y="255"/>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id18"/>
+			<label kind="guard" x="442" y="-297">open==0</label>
+			<label kind="synchronisation" x="442" y="-280">off?</label>
+			<label kind="assignment" x="442" y="-263">update_K(0)</label>
+			<nail x="433" y="-297"/>
+			<nail x="433" y="221"/>
+			<nail x="-110" y="221"/>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id26"/>
+			<label kind="guard" x="-93" y="-238">open==2</label>
+			<label kind="synchronisation" x="-76" y="-221">off?</label>
+			<label kind="assignment" x="-68" y="-212">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id25"/>
+			<label kind="guard" x="51" y="-212">open==2</label>
+			<label kind="synchronisation" x="85" y="-195">on?</label>
+			<label kind="assignment" x="42" y="-178">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id28"/>
+			<target ref="id25"/>
+			<label kind="assignment" x="272" y="-365">x=0,
+update_Tr(1)</label>
+			<nail x="272" y="-348"/>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id28"/>
+			<label kind="guard" x="195" y="-357">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id27"/>
+			<target ref="id26"/>
+			<label kind="assignment" x="-297" y="-357">x=0,
+update_Tr(0)</label>
+			<nail x="-263" y="-323"/>
+		</transition>
+		<transition>
+			<source ref="id26"/>
+			<target ref="id27"/>
+			<label kind="guard" x="-297" y="-314">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id21"/>
+			<label kind="guard" x="280" y="-229">open==1</label>
+			<label kind="synchronisation" x="280" y="-212">off?</label>
+			<label kind="assignment" x="280" y="-195">update_K(0)</label>
+			<nail x="280" y="-204"/>
+		</transition>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id25"/>
+			<label kind="guard" x="178" y="-229">open==2</label>
+			<label kind="synchronisation" x="221" y="-212">on?</label>
+			<label kind="assignment" x="161" y="-195">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id26"/>
+			<target ref="id22"/>
+			<label kind="guard" x="-178" y="-221">open==1</label>
+			<label kind="synchronisation" x="-178" y="-204">on?</label>
+			<label kind="assignment" x="-178" y="-187">update_K(1)</label>
+			<nail x="-178" y="-195"/>
+		</transition>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id26"/>
+			<label kind="guard" x="-272" y="-221">open==2</label>
+			<label kind="synchronisation" x="-238" y="-204">off?</label>
+			<label kind="assignment" x="-289" y="-187">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id26"/>
+			<target ref="id25"/>
+			<label kind="guard" x="-110" y="-399">open==2</label>
+			<label kind="synchronisation" x="-110" y="-382">on?</label>
+			<label kind="assignment" x="-110" y="-365">update_K(1)</label>
+			<nail x="-136" y="-340"/>
+			<nail x="187" y="-340"/>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id26"/>
+			<label kind="guard" x="0" y="-314">open==2</label>
+			<label kind="synchronisation" x="0" y="-297">off?</label>
+			<label kind="assignment" x="0" y="-280">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id18"/>
+			<label kind="guard" x="-178" y="-59">open==0</label>
+			<label kind="synchronisation" x="-178" y="-42">off?</label>
+			<label kind="assignment" x="-178" y="-25">update_K(0)</label>
+			<nail x="-178" y="-25"/>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id22"/>
+			<label kind="guard" x="-272" y="-26">open==1</label>
+			<label kind="synchronisation" x="-229" y="-9">on?</label>
+			<label kind="assignment" x="-289" y="8">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id17"/>
+			<label kind="guard" x="187" y="-51">open==0</label>
+			<label kind="synchronisation" x="229" y="-34">on?</label>
+			<label kind="assignment" x="170" y="-17">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id21"/>
+			<label kind="guard" x="280" y="-25">open==1</label>
+			<label kind="synchronisation" x="280" y="-8">off?</label>
+			<label kind="assignment" x="280" y="8">update_K(0)</label>
+			<nail x="280" y="-25"/>
+		</transition>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id24"/>
+			<label kind="guard" x="-289" y="-161">x&gt;=T_s</label>
+			<nail x="-272" y="-144"/>
+		</transition>
+		<transition>
+			<source ref="id24"/>
+			<target ref="id22"/>
+			<label kind="assignment" x="-314" y="-127">x=0,
+update_Tr(1)</label>
+		</transition>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id23"/>
+			<label kind="guard" x="357" y="-144">x&gt;=T_s</label>
+			<nail x="331" y="-136"/>
+		</transition>
+		<transition>
+			<source ref="id23"/>
+			<target ref="id21"/>
+			<label kind="assignment" x="314" y="-127">x=0,
+update_Tr(0)</label>
+		</transition>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id21"/>
+			<label kind="guard" x="34" y="-144">open==1</label>
+			<label kind="synchronisation" x="42" y="-127">off?</label>
+			<label kind="assignment" x="0" y="-110">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id22"/>
+			<label kind="guard" x="34" y="-85">open==1</label>
+			<label kind="synchronisation" x="42" y="-68">on?</label>
+			<label kind="assignment" x="17" y="-51">update_K(1)</label>
+			<nail x="196" y="-68"/>
+			<nail x="-76" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id16"/>
+			<target ref="id17"/>
+			<label kind="assignment" x="263" y="101">x=0,
+update_Tr(1)</label>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id19"/>
+			<label kind="guard" x="-178" y="118">x&gt;=T_s</label>
+			<nail x="-178" y="118"/>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id16"/>
+			<label kind="guard" x="179" y="110">x&gt;=T_s</label>
+			<nail x="238" y="110"/>
+		</transition>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id18"/>
+			<label kind="assignment" x="-297" y="144">x=0,
+update_Tr(0)</label>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id18"/>
+			<label kind="guard" x="18" y="26">open==0</label>
+			<label kind="synchronisation" x="26" y="42">off?</label>
+			<label kind="assignment" x="-8" y="59">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id17"/>
+			<label kind="guard" x="1" y="93">open==0</label>
+			<label kind="synchronisation" x="9" y="110">on?</label>
+			<label kind="assignment" x="-25" y="127">update_K(1)</label>
+			<nail x="-144" y="110"/>
+			<nail x="187" y="110"/>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id18"/>
+			<label kind="assignment" x="-314" y="42">init_r()</label>
+		</transition>
+	</template>
+	<template>
+		<name>Room_4</name>
+		<parameter>double T_0</parameter>
+		<declaration>clock T, x;
+
+int T_s = 1;
+
+double R = 100.0;
+double K;
+
+bool open = false;
+
+void init_r() {
+   x = 0;
+   T = T_0;
+   T_r = T_0;
+   K = 1.0;
+}
+
+void random_open_window() {
+    double dice = random(100);
+    if(force_exe) {
+        open = force_open[curr];
+        return;
+    }
+
+    if (dice&gt;=95) open = !open;
+}
+
+void update_Tr(bool on) {
+    if(!on) {
+        T_r = T_r*exp(-1/R);
+    } else {
+        T_r = R*K-exp(-1/R)*(R*K-T_r);
+    }
+
+    random_open_window();
+}
+
+void update_K(bool on, int open) {
+    if (force_exe &amp;&amp; force_open[curr+1] != -1) {
+        curr++;
+    } else force_exe = false;
+
+    // if heating is on, K is randomly generated
+    if(on) {
+        R = 100.0;
+        if(open==1) K = Normal(ON_ONE_WINDOW_OPEN[0], ON_ONE_WINDOW_OPEN[1]); 
+        else if(open==2) K = Normal(ON_TWO_WINDOWS_OPEN[0], ON_TWO_WINDOWS_OPEN[1]); 
+        else K = Normal(ON_TWO_WINDOWS_CLOSED[0], ON_TWO_WINDOWS_CLOSED[1]); 
+    } else { // if heating is off, R is randomly generated
+        K = 0.0;
+        if(open==1) R = Normal(OFF_ONE_WINDOW_OPEN[0], OFF_ONE_WINDOW_OPEN[1]); 
+        else if(open==2) R = Normal(OFF_TWO_WINDOWS_OPEN[0], OFF_TWO_WINDOWS_OPEN[1]); 
+        else R = Normal(OFF_TWO_WINDOWS_CLOSED[0], OFF_TWO_WINDOWS_CLOSED[1]); 
+    }
+}</declaration>
+		<location id="id29" x="-68" y="102">
+			<committed/>
+		</location>
+		<location id="id30" x="-68" y="-8">
+			<name x="-51" y="-25">ON_0</name>
+			<label kind="invariant" x="-51" y="-8">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id31" x="-382" y="-8">
+			<name x="-459" y="-25">OFF_0</name>
+			<label kind="invariant" x="-467" y="-8">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id32" x="-382" y="102">
+			<committed/>
+		</location>
+		<location id="id33" x="-603" y="-8">
+			<name x="-613" y="-42">start</name>
+			<committed/>
+		</location>
+		<location id="id34" x="-68" y="-178">
+			<name x="-51" y="-195">OFF_2</name>
+			<label kind="invariant" x="-51" y="-178">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id35" x="-306" y="-177">
+			<name x="-357" y="-203">ON_1</name>
+			<label kind="invariant" x="-399" y="-186">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id36" x="-68" y="-314">
+			<committed/>
+		</location>
+		<location id="id37" x="-306" y="-313">
+			<committed/>
+		</location>
+		<location id="id38" x="136" y="-178">
+			<name x="153" y="-178">OFF_1</name>
+			<label kind="invariant" x="126" y="-161">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id39" x="289" y="-178">
+			<committed/>
+		</location>
+		<init ref="id33"/>
+		<transition>
+			<source ref="id38"/>
+			<target ref="id35"/>
+			<label kind="guard" x="-211" y="-399">open</label>
+			<label kind="synchronisation" x="-211" y="-382">on?</label>
+			<label kind="assignment" x="-211" y="-365">update_K(1,1)</label>
+			<nail x="136" y="-365"/>
+			<nail x="-229" y="-365"/>
+		</transition>
+		<transition>
+			<source ref="id38"/>
+			<target ref="id30"/>
+			<label kind="guard" x="-25" y="-136">!open</label>
+			<label kind="synchronisation" x="-25" y="-119">on?</label>
+			<label kind="assignment" x="-59" y="-102">update_K(1,0)</label>
+			<nail x="8" y="-110"/>
+		</transition>
+		<transition>
+			<source ref="id34"/>
+			<target ref="id35"/>
+			<label kind="guard" x="-212" y="-161">open</label>
+			<label kind="synchronisation" x="-204" y="-144">on?</label>
+			<label kind="assignment" x="-238" y="-127">update_K(1, 1)</label>
+			<nail x="-195" y="-136"/>
+		</transition>
+		<transition>
+			<source ref="id39"/>
+			<target ref="id38"/>
+			<label kind="assignment" x="187" y="-246">x=0,
+update_Tr(0)</label>
+			<nail x="212" y="-212"/>
+		</transition>
+		<transition>
+			<source ref="id38"/>
+			<target ref="id39"/>
+			<label kind="guard" x="221" y="-178">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id30"/>
+			<target ref="id38"/>
+			<label kind="guard" x="42" y="-102">open</label>
+			<label kind="synchronisation" x="42" y="-85">off?</label>
+			<label kind="assignment" x="42" y="-68">update_K(0, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id35"/>
+			<target ref="id31"/>
+			<label kind="guard" x="-297" y="-126">!open</label>
+			<label kind="synchronisation" x="-297" y="-109">off?</label>
+			<label kind="assignment" x="-323" y="-92">update_K(0, 0)</label>
+			<nail x="-306" y="-75"/>
+		</transition>
+		<transition>
+			<source ref="id31"/>
+			<target ref="id35"/>
+			<label kind="guard" x="-374" y="-126">open</label>
+			<label kind="synchronisation" x="-374" y="-109">on?</label>
+			<label kind="assignment" x="-433" y="-92">update_K(1, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id34"/>
+			<target ref="id30"/>
+			<label kind="guard" x="-110" y="-101">!open</label>
+			<label kind="synchronisation" x="-102" y="-84">on?</label>
+			<label kind="assignment" x="-170" y="-67">update_K(1, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id35"/>
+			<target ref="id37"/>
+			<label kind="guard" x="-391" y="-279">x&gt;=T_s</label>
+			<nail x="-332" y="-245"/>
+		</transition>
+		<transition>
+			<source ref="id37"/>
+			<target ref="id35"/>
+			<label kind="assignment" x="-298" y="-279">x=0,
+update_Tr(1)</label>
+		</transition>
+		<transition>
+			<source ref="id34"/>
+			<target ref="id36"/>
+			<label kind="guard" x="-144" y="-280">x&gt;=T_s</label>
+			<nail x="-93" y="-246"/>
+		</transition>
+		<transition>
+			<source ref="id36"/>
+			<target ref="id34"/>
+			<label kind="assignment" x="-59" y="-297">x=0,
+update_Tr(0)</label>
+		</transition>
+		<transition>
+			<source ref="id35"/>
+			<target ref="id34"/>
+			<label kind="guard" x="-212" y="-211">open</label>
+			<label kind="synchronisation" x="-204" y="-194">off?</label>
+			<label kind="assignment" x="-246" y="-177">update_K(0, 2)</label>
+		</transition>
+		<transition>
+			<source ref="id29"/>
+			<target ref="id30"/>
+			<label kind="assignment" x="-60" y="34">x=0,
+update_Tr(1)</label>
+		</transition>
+		<transition>
+			<source ref="id31"/>
+			<target ref="id32"/>
+			<label kind="guard" x="-357" y="51">x&gt;=T_s</label>
+			<nail x="-357" y="51"/>
+		</transition>
+		<transition>
+			<source ref="id30"/>
+			<target ref="id29"/>
+			<label kind="guard" x="-144" y="43">x&gt;=T_s</label>
+			<nail x="-85" y="43"/>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id31"/>
+			<label kind="assignment" x="-476" y="34">x=0,
+update_Tr(0)</label>
+		</transition>
+		<transition>
+			<source ref="id30"/>
+			<target ref="id31"/>
+			<label kind="guard" x="-246" y="-41">!open</label>
+			<label kind="synchronisation" x="-238" y="-25">off?</label>
+			<label kind="assignment" x="-272" y="-8">update_K(0, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id31"/>
+			<target ref="id30"/>
+			<label kind="guard" x="-246" y="26">!open</label>
+			<label kind="synchronisation" x="-238" y="43">on?</label>
+			<label kind="assignment" x="-272" y="60">update_K(1, 0)</label>
+			<nail x="-323" y="43"/>
+			<nail x="-136" y="43"/>
+		</transition>
+		<transition>
+			<source ref="id33"/>
+			<target ref="id31"/>
+			<label kind="assignment" x="-569" y="-25">init_r()</label>
+		</transition>
+	</template>
+	<template>
+		<name>Room_5</name>
+		<parameter>double T_0</parameter>
+		<declaration>clock T, x;
+
+int T_s = 1;
+
+double R = 100.0;
+double K;
+
+bool open = false;
+
+void init_r() {
+   x = 0;
+   T = T_0;
+   T_r = T_0;
+   K = 1.0;
+}
+
+void random_open_window() {
+    double dice = random(100);
+    if(force_exe) {
+        open = force_open[curr];
+        return;
+    }
+
+    if (dice&gt;=95) open = !open;
+}
+
+void update_Tr(bool on) {
+    if(!on) {
+        T_r = T_r*exp(-1/R);
+    } else {
+        T_r = R*K-exp(-1/R)*(R*K-T_r);
+    }
+
+    random_open_window();
+}
+
+void update_K(bool on, int open) {
+    if (force_exe &amp;&amp; force_open[curr+1] != -1) {
+        curr++;
+    } else force_exe = false;
+
+    // if heating is on, K is randomly generated
+    if(on) {
+        R = 100.0;
+        if(open==1) K = Normal(ON_ONE_WINDOW_OPEN[0], ON_ONE_WINDOW_OPEN[1]); 
+        else if(open==2) K = Normal(ON_TWO_WINDOWS_OPEN[0], ON_TWO_WINDOWS_OPEN[1]); 
+        else K = Normal(ON_TWO_WINDOWS_CLOSED[0], ON_TWO_WINDOWS_CLOSED[1]); 
+    } else { // if heating is off, R is randomly generated
+        K = 0.0;
+        if(open!=0) R = Normal(OFF_ONE_WINDOW_OPEN[0], OFF_ONE_WINDOW_OPEN[1]); 
+        else R = Normal(OFF_TWO_WINDOWS_CLOSED[0], OFF_TWO_WINDOWS_CLOSED[1]); 
+    }
+}</declaration>
+		<location id="id40" x="-34" y="135">
+			<committed/>
+		</location>
+		<location id="id41" x="-34" y="25">
+			<name x="-17" y="8">ON_0</name>
+			<label kind="invariant" x="-17" y="25">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id42" x="-348" y="25">
+			<name x="-425" y="8">OFF_0</name>
+			<label kind="invariant" x="-433" y="25">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id43" x="-348" y="135">
+			<committed/>
+		</location>
+		<location id="id44" x="-569" y="25">
+			<name x="-579" y="-9">start</name>
+			<committed/>
+		</location>
+		<location id="id45" x="-34" y="-144">
+			<name x="-17" y="-161">OFF_1</name>
+			<label kind="invariant" x="-17" y="-144">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id46" x="-272" y="-144">
+			<name x="-323" y="-170">ON_1</name>
+			<label kind="invariant" x="-365" y="-153">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id47" x="-34" y="-280">
+			<committed/>
+		</location>
+		<location id="id48" x="-272" y="-280">
+			<committed/>
+		</location>
+		<location id="id49" x="119" y="-331">
+			<name x="68" y="-356">ON_2</name>
+			<label kind="invariant" x="25" y="-339">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id50" x="204" y="-331">
+			<committed/>
+		</location>
+		<init ref="id44"/>
+		<transition>
+			<source ref="id49"/>
+			<target ref="id42"/>
+			<label kind="guard" x="-330" y="-425">!open</label>
+			<label kind="synchronisation" x="-330" y="-408">off?</label>
+			<label kind="assignment" x="-330" y="-391">update_K(0,0)</label>
+			<nail x="119" y="-391"/>
+			<nail x="-348" y="-391"/>
+		</transition>
+		<transition>
+			<source ref="id49"/>
+			<target ref="id45"/>
+			<label kind="guard" x="1" y="-229">open</label>
+			<label kind="synchronisation" x="1" y="-212">off?</label>
+			<label kind="assignment" x="1" y="-195">update_K(0, 1)</label>
+			<nail x="76" y="-195"/>
+			<nail x="76" y="-195"/>
+			<nail x="-17" y="-195"/>
+		</transition>
+		<transition>
+			<source ref="id50"/>
+			<target ref="id49"/>
+			<label kind="assignment" x="136" y="-391">x=0,
+update_Tr(1)</label>
+			<nail x="161" y="-357"/>
+		</transition>
+		<transition>
+			<source ref="id49"/>
+			<target ref="id50"/>
+			<label kind="guard" x="136" y="-331">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id45"/>
+			<target ref="id49"/>
+			<label kind="guard" x="127" y="-272">open</label>
+			<label kind="synchronisation" x="127" y="-255">on?</label>
+			<label kind="assignment" x="127" y="-238">update_K(1, 2)</label>
+			<nail x="119" y="-144"/>
+		</transition>
+		<transition>
+			<source ref="id46"/>
+			<target ref="id42"/>
+			<label kind="guard" x="-263" y="-93">!open</label>
+			<label kind="synchronisation" x="-263" y="-76">off?</label>
+			<label kind="assignment" x="-289" y="-59">update_K(0, 0)</label>
+			<nail x="-272" y="-42"/>
+		</transition>
+		<transition>
+			<source ref="id42"/>
+			<target ref="id46"/>
+			<label kind="guard" x="-340" y="-93">open</label>
+			<label kind="synchronisation" x="-340" y="-76">on?</label>
+			<label kind="assignment" x="-399" y="-59">update_K(1, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id45"/>
+			<target ref="id41"/>
+			<label kind="guard" x="-76" y="-68">!open</label>
+			<label kind="synchronisation" x="-68" y="-51">on?</label>
+			<label kind="assignment" x="-136" y="-34">update_K(1, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id41"/>
+			<target ref="id45"/>
+			<label kind="guard" x="8" y="-68">open</label>
+			<label kind="synchronisation" x="8" y="-51">off?</label>
+			<label kind="assignment" x="0" y="-34">update_K(0, 1)</label>
+			<nail x="8" y="-51"/>
+		</transition>
+		<transition>
+			<source ref="id46"/>
+			<target ref="id48"/>
+			<label kind="guard" x="-357" y="-246">x&gt;=T_s</label>
+			<nail x="-298" y="-212"/>
+		</transition>
+		<transition>
+			<source ref="id48"/>
+			<target ref="id46"/>
+			<label kind="assignment" x="-264" y="-246">x=0,
+update_Tr(1)</label>
+		</transition>
+		<transition>
+			<source ref="id45"/>
+			<target ref="id47"/>
+			<label kind="guard" x="-110" y="-246">x&gt;=T_s</label>
+			<nail x="-59" y="-212"/>
+		</transition>
+		<transition>
+			<source ref="id47"/>
+			<target ref="id45"/>
+			<label kind="assignment" x="-25" y="-263">x=0,
+update_Tr(0)</label>
+		</transition>
+		<transition>
+			<source ref="id46"/>
+			<target ref="id45"/>
+			<label kind="guard" x="-178" y="-178">open</label>
+			<label kind="synchronisation" x="-170" y="-161">off?</label>
+			<label kind="assignment" x="-212" y="-144">update_K(0, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id40"/>
+			<target ref="id41"/>
+			<label kind="assignment" x="-26" y="67">x=0,
+update_Tr(1)</label>
+		</transition>
+		<transition>
+			<source ref="id42"/>
+			<target ref="id43"/>
+			<label kind="guard" x="-323" y="84">x&gt;=T_s</label>
+			<nail x="-323" y="84"/>
+		</transition>
+		<transition>
+			<source ref="id41"/>
+			<target ref="id40"/>
+			<label kind="guard" x="-110" y="76">x&gt;=T_s</label>
+			<nail x="-51" y="76"/>
+		</transition>
+		<transition>
+			<source ref="id43"/>
+			<target ref="id42"/>
+			<label kind="assignment" x="-442" y="67">x=0,
+update_Tr(0)</label>
+		</transition>
+		<transition>
+			<source ref="id41"/>
+			<target ref="id42"/>
+			<label kind="guard" x="-212" y="-8">!open</label>
+			<label kind="synchronisation" x="-204" y="8">off?</label>
+			<label kind="assignment" x="-238" y="25">update_K(0, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id42"/>
+			<target ref="id41"/>
+			<label kind="guard" x="-212" y="59">!open</label>
+			<label kind="synchronisation" x="-204" y="76">on?</label>
+			<label kind="assignment" x="-238" y="93">update_K(1, 0)</label>
+			<nail x="-289" y="76"/>
+			<nail x="-102" y="76"/>
+		</transition>
+		<transition>
+			<source ref="id44"/>
+			<target ref="id42"/>
+			<label kind="assignment" x="-535" y="8">init_r()</label>
+		</transition>
+	</template>
+	<template>
+		<name>Room_6</name>
+		<parameter>double T_0</parameter>
+		<declaration>clock T, x;
+
+int T_s = 1;
+
+double R = 100.0;
+double K;
+
+bool open = false;
+bool already_on = false;
+
+void init_r() {
+   x = 0;
+   T = T_0;
+   T_r = T_0;
+   K = 1.0;
+}
+
+void random_open_window() {
+    double dice = random(100);
+    if(force_exe) {
+        open = force_open[curr];
+        return;
+    }
+
+    if (dice&gt;=95) open = !open;
+}
+
+void update_Tr(bool on) {
+    if(!on) {
+        T_r = T_r*exp(-1/R);
+    } else {
+        T_r = R*K-exp(-1/R)*(R*K-T_r);
+    }
+
+    random_open_window();
+}
+
+void update_K(bool on, int open) {
+    if (force_exe &amp;&amp; force_open[curr+1] != -1) {
+        curr++;
+    } else force_exe = false;
+
+    // if heating is on, K is randomly generated
+    if(on) {
+        R = 100.0;
+        if(open==1) K = Normal(ON_ONE_WINDOW_OPEN[0], ON_ONE_WINDOW_OPEN[1]); 
+        else if(open==2) K = Normal(ON_TWO_WINDOWS_OPEN[0], ON_TWO_WINDOWS_OPEN[1]); 
+        else K = Normal(ON_TWO_WINDOWS_CLOSED[0], ON_TWO_WINDOWS_CLOSED[1]); 
+    } else { // if heating is off, R is randomly generated
+        K = 0.0;
+        if(open==1) R = Normal(OFF_ONE_WINDOW_OPEN[0], OFF_ONE_WINDOW_OPEN[1]); 
+        else if(open==2) R = Normal(OFF_TWO_WINDOWS_OPEN[0], OFF_TWO_WINDOWS_OPEN[1]); 
+        else R = Normal(OFF_TWO_WINDOWS_CLOSED[0], OFF_TWO_WINDOWS_CLOSED[1]); 
+    }
+}</declaration>
+		<location id="id51" x="263" y="-162">
+			<name x="280" y="-162">OFF_1</name>
+			<label kind="invariant" x="253" y="-145">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id52" x="-179" y="-161">
+			<name x="-230" y="-187">ON_1</name>
+			<label kind="invariant" x="-272" y="-170">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id53" x="59" y="8">
+			<name x="76" y="-9">ON_0</name>
+			<label kind="invariant" x="76" y="8">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id54" x="59" y="-162">
+			<name x="76" y="-179">OFF_2</name>
+			<label kind="invariant" x="76" y="-162">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id55" x="416" y="-162">
+			<committed/>
+		</location>
+		<location id="id56" x="59" y="118">
+			<committed/>
+		</location>
+		<location id="id57" x="-255" y="8">
+			<name x="-332" y="-9">OFF_0</name>
+			<label kind="invariant" x="-340" y="8">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id58" x="-255" y="118">
+			<committed/>
+		</location>
+		<location id="id59" x="-476" y="8">
+			<name x="-486" y="-26">start</name>
+			<committed/>
+		</location>
+		<location id="id60" x="59" y="-298">
+			<committed/>
+		</location>
+		<location id="id61" x="-179" y="-297">
+			<committed/>
+		</location>
+		<init ref="id59"/>
+		<transition>
+			<source ref="id53"/>
+			<target ref="id51"/>
+			<label kind="guard" x="77" y="-111">open</label>
+			<label kind="synchronisation" x="77" y="-94">off?</label>
+			<label kind="assignment" x="77" y="-77">update_K(0,1)</label>
+		</transition>
+		<transition>
+			<source ref="id52"/>
+			<target ref="id51"/>
+			<label kind="guard" x="153" y="-331">open &amp;&amp; already_on</label>
+			<label kind="synchronisation" x="153" y="-314">off?</label>
+			<label kind="assignment" x="153" y="-297">update_K(0, 1)</label>
+			<nail x="0" y="-314"/>
+			<nail x="195" y="-314"/>
+		</transition>
+		<transition>
+			<source ref="id51"/>
+			<target ref="id52"/>
+			<label kind="guard" x="-84" y="-383">open</label>
+			<label kind="synchronisation" x="-84" y="-366">on?</label>
+			<label kind="assignment" x="-84" y="-349">update_K(1,1)</label>
+			<nail x="263" y="-349"/>
+			<nail x="-102" y="-349"/>
+		</transition>
+		<transition>
+			<source ref="id51"/>
+			<target ref="id53"/>
+			<label kind="guard" x="229" y="-85">!open</label>
+			<label kind="synchronisation" x="221" y="-68">on?</label>
+			<label kind="assignment" x="212" y="-51">update_K(1,0),
+already_on=true</label>
+			<nail x="187" y="8"/>
+		</transition>
+		<transition>
+			<source ref="id54"/>
+			<target ref="id52"/>
+			<label kind="guard" x="-85" y="-145">open</label>
+			<label kind="synchronisation" x="-77" y="-128">on?</label>
+			<label kind="assignment" x="-111" y="-111">update_K(1, 1)</label>
+			<nail x="-68" y="-120"/>
+		</transition>
+		<transition>
+			<source ref="id55"/>
+			<target ref="id51"/>
+			<label kind="assignment" x="314" y="-230">x=0,
+update_Tr(0)</label>
+			<nail x="339" y="-196"/>
+		</transition>
+		<transition>
+			<source ref="id51"/>
+			<target ref="id55"/>
+			<label kind="guard" x="348" y="-162">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id52"/>
+			<target ref="id57"/>
+			<label kind="guard" x="-170" y="-110">!open</label>
+			<label kind="synchronisation" x="-170" y="-93">off?</label>
+			<label kind="assignment" x="-196" y="-76">update_K(0, 0)</label>
+			<nail x="-179" y="-59"/>
+		</transition>
+		<transition>
+			<source ref="id57"/>
+			<target ref="id52"/>
+			<label kind="guard" x="-247" y="-110">open</label>
+			<label kind="synchronisation" x="-247" y="-93">on?</label>
+			<label kind="assignment" x="-306" y="-76">update_K(1, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id54"/>
+			<target ref="id53"/>
+			<label kind="guard" x="17" y="-110">!open</label>
+			<label kind="synchronisation" x="25" y="-93">on?</label>
+			<label kind="assignment" x="-42" y="-76">update_K(1, 0),
+already_on=true</label>
+		</transition>
+		<transition>
+			<source ref="id52"/>
+			<target ref="id61"/>
+			<label kind="guard" x="-264" y="-263">x&gt;=T_s</label>
+			<nail x="-205" y="-229"/>
+		</transition>
+		<transition>
+			<source ref="id61"/>
+			<target ref="id52"/>
+			<label kind="assignment" x="-171" y="-263">x=0,
+update_Tr(1)</label>
+		</transition>
+		<transition>
+			<source ref="id54"/>
+			<target ref="id60"/>
+			<label kind="guard" x="-17" y="-264">x&gt;=T_s</label>
+			<nail x="34" y="-230"/>
+		</transition>
+		<transition>
+			<source ref="id60"/>
+			<target ref="id54"/>
+			<label kind="assignment" x="68" y="-281">x=0,
+update_Tr(0)</label>
+		</transition>
+		<transition>
+			<source ref="id52"/>
+			<target ref="id54"/>
+			<label kind="guard" x="-127" y="-195">open &amp;&amp; !already_on</label>
+			<label kind="synchronisation" x="-77" y="-178">off?</label>
+			<label kind="assignment" x="-119" y="-161">update_K(0, 2)</label>
+		</transition>
+		<transition>
+			<source ref="id56"/>
+			<target ref="id53"/>
+			<label kind="assignment" x="67" y="50">x=0,
+update_Tr(1)</label>
+		</transition>
+		<transition>
+			<source ref="id57"/>
+			<target ref="id58"/>
+			<label kind="guard" x="-230" y="67">x&gt;=T_s</label>
+			<nail x="-230" y="67"/>
+		</transition>
+		<transition>
+			<source ref="id53"/>
+			<target ref="id56"/>
+			<label kind="guard" x="-17" y="59">x&gt;=T_s</label>
+			<nail x="42" y="59"/>
+		</transition>
+		<transition>
+			<source ref="id58"/>
+			<target ref="id57"/>
+			<label kind="assignment" x="-349" y="50">x=0,
+update_Tr(0)</label>
+		</transition>
+		<transition>
+			<source ref="id53"/>
+			<target ref="id57"/>
+			<label kind="guard" x="-119" y="-25">!open</label>
+			<label kind="synchronisation" x="-111" y="-9">off?</label>
+			<label kind="assignment" x="-145" y="8">update_K(0, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id57"/>
+			<target ref="id53"/>
+			<label kind="guard" x="-119" y="42">!open</label>
+			<label kind="synchronisation" x="-111" y="59">on?</label>
+			<label kind="assignment" x="-145" y="76">update_K(1, 0), 
+already_on=true</label>
+			<nail x="-196" y="59"/>
+			<nail x="-9" y="59"/>
+		</transition>
+		<transition>
+			<source ref="id59"/>
+			<target ref="id57"/>
+			<label kind="assignment" x="-442" y="-9">init_r()</label>
+		</transition>
+	</template>
+	<template>
+		<name>Room_7</name>
+		<parameter>double T_0</parameter>
+		<declaration>clock T, x;
+
+int T_s = 1;
+
+double R = 100.0;
+double K;
+
+bool open = false;
+bool already_on = false;
+
+void init_r() {
+   x = 0;
+   T = T_0;
+   T_r = T_0;
+   K = 1.0;
+}
+
+void random_open_window() {
+    double dice = random(100);
+    if(force_exe) {
+        open = force_open[curr];
+        return;
+    }
+
+    if (dice&gt;=99) open = !open;
+}
+
+void update_Tr(bool on) {
+    if(!on) {
+        T_r = T_r*exp(-1/R);
+    } else {
+        T_r = R*K-exp(-1/R)*(R*K-T_r);
+    }
+
+    random_open_window();
+}
+
+void update_K(bool on, int open) {
+    if (force_exe &amp;&amp; force_open[curr+1] != -1) {
+        curr++;
+    } else force_exe = false;
+
+    // if heating is on, K is randomly generated
+    if(on) {
+        R = 100.0;
+        if(open==1) K = Normal(ON_ONE_WINDOW_OPEN[0], ON_ONE_WINDOW_OPEN[1]); 
+        else if(open==2) K = Normal(ON_TWO_WINDOWS_OPEN[0], ON_TWO_WINDOWS_OPEN[1]); 
+        else K = Normal(ON_TWO_WINDOWS_CLOSED[0], ON_TWO_WINDOWS_CLOSED[1]); 
+    } else { // if heating is off, R is randomly generated
+        K = 0.0;
+        if(open==1) R = Normal(OFF_ONE_WINDOW_OPEN[0], OFF_ONE_WINDOW_OPEN[1]); 
+        else if(open==2) R = Normal(OFF_TWO_WINDOWS_OPEN[0], OFF_TWO_WINDOWS_OPEN[1]); 
+        else R = Normal(OFF_TWO_WINDOWS_CLOSED[0], OFF_TWO_WINDOWS_CLOSED[1]); 
+    }
+}</declaration>
+		<location id="id62" x="230" y="-128">
+			<name x="247" y="-128">OFF_1</name>
+			<label kind="invariant" x="220" y="-111">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id63" x="-204" y="-203">
+			<name x="-255" y="-229">ON_1</name>
+			<label kind="invariant" x="-297" y="-212">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id64" x="34" y="110">
+			<name x="51" y="93">ON_0</name>
+			<label kind="invariant" x="51" y="110">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id65" x="34" y="-204">
+			<name x="51" y="-221">OFF_2</name>
+			<label kind="invariant" x="51" y="-204">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id66" x="383" y="-128">
+			<committed/>
+		</location>
+		<location id="id67" x="34" y="220">
+			<committed/>
+		</location>
+		<location id="id68" x="-288" y="110">
+			<name x="-365" y="93">OFF_0</name>
+			<label kind="invariant" x="-373" y="110">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id69" x="-288" y="220">
+			<committed/>
+		</location>
+		<location id="id70" x="-493" y="110">
+			<name x="-503" y="76">start</name>
+			<committed/>
+		</location>
+		<location id="id71" x="34" y="-340">
+			<committed/>
+		</location>
+		<location id="id72" x="-204" y="-339">
+			<committed/>
+		</location>
+		<location id="id73" x="-467" y="-127">
+			<name x="-518" y="-127">ON_2</name>
+			<label kind="invariant" x="-544" y="-110">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id74" x="-552" y="-221">
+			<committed/>
+		</location>
+		<init ref="id70"/>
+		<transition>
+			<source ref="id62"/>
+			<target ref="id73"/>
+			<label kind="guard" x="42" y="-161">open &amp;&amp; !already_on</label>
+			<label kind="synchronisation" x="42" y="-144">on?</label>
+			<label kind="assignment" x="42" y="-127">update_K(1, 2)</label>
+		</transition>
+		<transition>
+			<source ref="id65"/>
+			<target ref="id73"/>
+			<label kind="guard" x="-348" y="-161">open</label>
+			<label kind="synchronisation" x="-348" y="-144">on?</label>
+			<label kind="assignment" x="-348" y="-127">update_K(1, 2)</label>
+			<nail x="-17" y="-127"/>
+		</transition>
+		<transition>
+			<source ref="id73"/>
+			<target ref="id65"/>
+			<label kind="guard" x="-391" y="-263">open</label>
+			<label kind="synchronisation" x="-391" y="-246">off?</label>
+			<label kind="assignment" x="-391" y="-229">update_K(0, 2)</label>
+			<nail x="-399" y="-246"/>
+			<nail x="-34" y="-246"/>
+		</transition>
+		<transition>
+			<source ref="id74"/>
+			<target ref="id73"/>
+			<label kind="assignment" x="-501" y="-204">x=0,
+update_Tr(1)</label>
+			<nail x="-484" y="-187"/>
+		</transition>
+		<transition>
+			<source ref="id73"/>
+			<target ref="id74"/>
+			<label kind="guard" x="-569" y="-178">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id73"/>
+			<target ref="id68"/>
+			<label kind="guard" x="-476" y="-59">!open</label>
+			<label kind="synchronisation" x="-459" y="-42">off?</label>
+			<label kind="assignment" x="-518" y="-25">update_K(0,0)</label>
+			<nail x="-416" y="-17"/>
+		</transition>
+		<transition>
+			<source ref="id68"/>
+			<target ref="id73"/>
+			<label kind="guard" x="-425" y="-119">open &amp;&amp; 
+!already_on</label>
+			<label kind="synchronisation" x="-408" y="-85">on?</label>
+			<label kind="assignment" x="-399" y="-68">update_K(1, 2)</label>
+		</transition>
+		<transition>
+			<source ref="id64"/>
+			<target ref="id62"/>
+			<label kind="guard" x="76" y="-42">open</label>
+			<label kind="synchronisation" x="76" y="-25">off?</label>
+			<label kind="assignment" x="76" y="-8">update_K(0,1)</label>
+		</transition>
+		<transition>
+			<source ref="id63"/>
+			<target ref="id62"/>
+			<label kind="guard" x="93" y="-382">open</label>
+			<label kind="synchronisation" x="94" y="-364">off?</label>
+			<label kind="assignment" x="59" y="-348">update_K(0, 1)</label>
+			<nail x="-59" y="-364"/>
+			<nail x="195" y="-365"/>
+		</transition>
+		<transition>
+			<source ref="id62"/>
+			<target ref="id63"/>
+			<label kind="guard" x="-109" y="-425">open &amp;&amp; already_on</label>
+			<label kind="synchronisation" x="-109" y="-408">on?</label>
+			<label kind="assignment" x="-109" y="-391">update_K(1,1)</label>
+			<nail x="229" y="-391"/>
+			<nail x="-127" y="-391"/>
+		</transition>
+		<transition>
+			<source ref="id62"/>
+			<target ref="id64"/>
+			<label kind="guard" x="212" y="-51">!open</label>
+			<label kind="synchronisation" x="204" y="-34">on?</label>
+			<label kind="assignment" x="195" y="-17">update_K(1,0),
+already_on=true</label>
+			<nail x="154" y="110"/>
+		</transition>
+		<transition>
+			<source ref="id66"/>
+			<target ref="id62"/>
+			<label kind="assignment" x="281" y="-196">x=0,
+update_Tr(0)</label>
+			<nail x="306" y="-162"/>
+		</transition>
+		<transition>
+			<source ref="id62"/>
+			<target ref="id66"/>
+			<label kind="guard" x="315" y="-128">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id63"/>
+			<target ref="id68"/>
+			<label kind="guard" x="-195" y="-17">!open</label>
+			<label kind="synchronisation" x="-204" y="0">off?</label>
+			<label kind="assignment" x="-221" y="17">update_K(0, 0)</label>
+			<nail x="-195" y="-25"/>
+		</transition>
+		<transition>
+			<source ref="id68"/>
+			<target ref="id63"/>
+			<label kind="guard" x="-314" y="-34">open &amp;&amp; 
+already_on</label>
+			<label kind="synchronisation" x="-289" y="0">on?</label>
+			<label kind="assignment" x="-340" y="17">update_K(1, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id65"/>
+			<target ref="id64"/>
+			<label kind="guard" x="-26" y="-17">!open</label>
+			<label kind="synchronisation" x="-18" y="0">on?</label>
+			<label kind="assignment" x="-85" y="17">update_K(1, 0),
+already_on=true</label>
+		</transition>
+		<transition>
+			<source ref="id63"/>
+			<target ref="id72"/>
+			<label kind="guard" x="-289" y="-305">x&gt;=T_s</label>
+			<nail x="-230" y="-271"/>
+		</transition>
+		<transition>
+			<source ref="id72"/>
+			<target ref="id63"/>
+			<label kind="assignment" x="-196" y="-305">x=0,
+update_Tr(1)</label>
+		</transition>
+		<transition>
+			<source ref="id65"/>
+			<target ref="id71"/>
+			<label kind="guard" x="-42" y="-306">x&gt;=T_s</label>
+			<nail x="9" y="-272"/>
+		</transition>
+		<transition>
+			<source ref="id71"/>
+			<target ref="id65"/>
+			<label kind="assignment" x="43" y="-323">x=0,
+update_Tr(0)</label>
+		</transition>
+		<transition>
+			<source ref="id67"/>
+			<target ref="id64"/>
+			<label kind="assignment" x="42" y="152">x=0,
+update_Tr(1)</label>
+		</transition>
+		<transition>
+			<source ref="id68"/>
+			<target ref="id69"/>
+			<label kind="guard" x="-263" y="169">x&gt;=T_s</label>
+			<nail x="-263" y="169"/>
+		</transition>
+		<transition>
+			<source ref="id64"/>
+			<target ref="id67"/>
+			<label kind="guard" x="-42" y="161">x&gt;=T_s</label>
+			<nail x="17" y="161"/>
+		</transition>
+		<transition>
+			<source ref="id69"/>
+			<target ref="id68"/>
+			<label kind="assignment" x="-382" y="152">x=0,
+update_Tr(0)</label>
+		</transition>
+		<transition>
+			<source ref="id64"/>
+			<target ref="id68"/>
+			<label kind="guard" x="-152" y="77">!open</label>
+			<label kind="synchronisation" x="-144" y="93">off?</label>
+			<label kind="assignment" x="-178" y="110">update_K(0, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id68"/>
+			<target ref="id64"/>
+			<label kind="guard" x="-152" y="144">!open</label>
+			<label kind="synchronisation" x="-144" y="161">on?</label>
+			<label kind="assignment" x="-178" y="178">update_K(1, 0), 
+already_on=true</label>
+			<nail x="-229" y="161"/>
+			<nail x="-34" y="161"/>
+		</transition>
+		<transition>
+			<source ref="id70"/>
+			<target ref="id68"/>
+			<label kind="assignment" x="-475" y="25">init_r()</label>
+		</transition>
+	</template>
+	<template>
+		<name>Room_8</name>
+		<parameter>double T_0</parameter>
+		<declaration>clock T, x;
+
+int T_s = 1;
+
+double R = 100.0;
+double K;
+
+int open = 0;
+bool already_on = false;
+
+void init_r() {
+   x = 0;
+   T = T_0;
+   T_r = T_0;
+   K = 1.0;
+}
+
+void random_open_window() {
+    double dice = random(100);
+    int i;
+    if(force_exe) {
+        open = force_open[curr];
+        return;
+    }
+
+    if(dice &gt; 9) {
+        dice = random(100);
+        for(i=0; i&lt;dice; i++){}
+        open = i % 3;
+    }
+}
+void update_Tr(bool on, int open) {
+    if(!on) {
+        if(open&gt;0)
+            T_r = T_r*exp(-1/R);
+        else T_r = T_r - 1/R;
+    } else {
+        if(open&gt;0)
+            T_r = R*K-exp(-1/R)*(R*K-T_r);
+        else T_r = T_r + K;
+    }
+
+    random_open_window();
+}
+
+void update_K(bool on) {
+    if (force_exe &amp;&amp; force_open[curr+1] != -1) {
+        curr++;
+    } else force_exe = false;
+
+    // if heating is on, K is randomly generated
+    if(on) {
+        R = 100.0;
+        if(open==1) K = Normal(ON_ONE_WINDOW_OPEN[0], ON_ONE_WINDOW_OPEN[1]); 
+        else if(open==2) K = Normal(ON_TWO_WINDOWS_OPEN[0], ON_TWO_WINDOWS_OPEN[1]); 
+        else K = Normal(ON_TWO_WINDOWS_CLOSED[0], ON_TWO_WINDOWS_CLOSED[1]); 
+    } else { // if heating is off, R is randomly generated
+        K = 0.0;
+        if(open==1) R = Normal(OFF_ONE_WINDOW_OPEN[0], OFF_ONE_WINDOW_OPEN[1]); 
+        else if(open==2) R = Normal(OFF_TWO_WINDOWS_OPEN[0], OFF_TWO_WINDOWS_OPEN[1]); 
+        else R = Normal(OFF_TWO_WINDOWS_CLOSED[0], OFF_TWO_WINDOWS_CLOSED[1]); 
+    }
+}</declaration>
+		<location id="id75" x="255" y="195">
+			<committed/>
+		</location>
+		<location id="id76" x="255" y="59">
+			<name x="272" y="42">ON_0</name>
+			<label kind="invariant" x="272" y="59">T'==K
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id77" x="-203" y="59">
+			<name x="-263" y="68">OFF_0</name>
+			<label kind="invariant" x="-289" y="85">T'==-1/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id78" x="-204" y="204">
+			<committed/>
+		</location>
+		<location id="id79" x="-340" y="59">
+			<name x="-350" y="25">start</name>
+			<committed/>
+		</location>
+		<location id="id80" x="255" y="-110">
+			<name x="272" y="-102">OFF_1</name>
+			<label kind="invariant" x="272" y="-85">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id81" x="-204" y="-110">
+			<name x="-246" y="-93">ON_1</name>
+			<label kind="invariant" x="-289" y="-76">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id82" x="416" y="-110">
+			<committed/>
+		</location>
+		<location id="id83" x="-340" y="-110">
+			<committed/>
+		</location>
+		<location id="id84" x="255" y="-297">
+			<name x="272" y="-314">ON_2</name>
+			<label kind="invariant" x="272" y="-297">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id85" x="-204" y="-297">
+			<name x="-255" y="-289">OFF_2</name>
+			<label kind="invariant" x="-289" y="-272">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id86" x="-340" y="-297">
+			<committed/>
+		</location>
+		<location id="id87" x="255" y="-391">
+			<committed/>
+		</location>
+		<init ref="id79"/>
+		<transition>
+			<source ref="id85"/>
+			<target ref="id76"/>
+			<label kind="guard" x="-373" y="-425">open==0</label>
+			<label kind="synchronisation" x="-373" y="-408">on?</label>
+			<label kind="assignment" x="-373" y="-391">update_K(1)</label>
+			<nail x="-204" y="-391"/>
+			<nail x="-391" y="-391"/>
+			<nail x="-391" y="255"/>
+			<nail x="102" y="255"/>
+		</transition>
+		<transition>
+			<source ref="id84"/>
+			<target ref="id77"/>
+			<label kind="guard" x="442" y="-297">open==0</label>
+			<label kind="synchronisation" x="442" y="-280">off?</label>
+			<label kind="assignment" x="442" y="-263">update_K(0)</label>
+			<nail x="433" y="-297"/>
+			<nail x="433" y="221"/>
+			<nail x="-110" y="221"/>
+		</transition>
+		<transition>
+			<source ref="id76"/>
+			<target ref="id85"/>
+			<label kind="guard" x="-93" y="-238">open==2</label>
+			<label kind="synchronisation" x="-76" y="-221">off?</label>
+			<label kind="assignment" x="-68" y="-212">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id77"/>
+			<target ref="id84"/>
+			<label kind="guard" x="51" y="-212">open==2</label>
+			<label kind="synchronisation" x="85" y="-195">on?</label>
+			<label kind="assignment" x="42" y="-178">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id87"/>
+			<target ref="id84"/>
+			<label kind="assignment" x="272" y="-365">x=0,
+update_Tr(1, 2)</label>
+			<nail x="272" y="-348"/>
+		</transition>
+		<transition>
+			<source ref="id84"/>
+			<target ref="id87"/>
+			<label kind="guard" x="195" y="-357">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id86"/>
+			<target ref="id85"/>
+			<label kind="assignment" x="-323" y="-357">x=0,
+update_Tr(0, 2)</label>
+			<nail x="-263" y="-323"/>
+		</transition>
+		<transition>
+			<source ref="id85"/>
+			<target ref="id86"/>
+			<label kind="guard" x="-297" y="-314">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id84"/>
+			<target ref="id80"/>
+			<label kind="guard" x="280" y="-229">open==1</label>
+			<label kind="synchronisation" x="280" y="-212">off?</label>
+			<label kind="assignment" x="280" y="-195">update_K(0)</label>
+			<nail x="280" y="-204"/>
+		</transition>
+		<transition>
+			<source ref="id80"/>
+			<target ref="id84"/>
+			<label kind="guard" x="178" y="-229">open==2</label>
+			<label kind="synchronisation" x="221" y="-212">on?</label>
+			<label kind="assignment" x="161" y="-195">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id85"/>
+			<target ref="id81"/>
+			<label kind="guard" x="-178" y="-221">open==1</label>
+			<label kind="synchronisation" x="-178" y="-204">on?</label>
+			<label kind="assignment" x="-178" y="-187">update_K(1)</label>
+			<nail x="-178" y="-195"/>
+		</transition>
+		<transition>
+			<source ref="id81"/>
+			<target ref="id85"/>
+			<label kind="guard" x="-272" y="-221">open==2</label>
+			<label kind="synchronisation" x="-238" y="-204">off?</label>
+			<label kind="assignment" x="-289" y="-187">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id85"/>
+			<target ref="id84"/>
+			<label kind="guard" x="-110" y="-399">open==2</label>
+			<label kind="synchronisation" x="-110" y="-382">on?</label>
+			<label kind="assignment" x="-110" y="-365">update_K(1)</label>
+			<nail x="-136" y="-340"/>
+			<nail x="187" y="-340"/>
+		</transition>
+		<transition>
+			<source ref="id84"/>
+			<target ref="id85"/>
+			<label kind="guard" x="0" y="-314">open==2</label>
+			<label kind="synchronisation" x="0" y="-297">off?</label>
+			<label kind="assignment" x="0" y="-280">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id81"/>
+			<target ref="id77"/>
+			<label kind="guard" x="-178" y="-59">open==0</label>
+			<label kind="synchronisation" x="-178" y="-42">off?</label>
+			<label kind="assignment" x="-178" y="-25">update_K(0)</label>
+			<nail x="-178" y="-25"/>
+		</transition>
+		<transition>
+			<source ref="id77"/>
+			<target ref="id81"/>
+			<label kind="guard" x="-272" y="-26">open==1</label>
+			<label kind="synchronisation" x="-229" y="-9">on?</label>
+			<label kind="assignment" x="-289" y="8">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id80"/>
+			<target ref="id76"/>
+			<label kind="guard" x="187" y="-51">open==0</label>
+			<label kind="synchronisation" x="229" y="-34">on?</label>
+			<label kind="assignment" x="170" y="-17">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id76"/>
+			<target ref="id80"/>
+			<label kind="guard" x="280" y="-25">open==1</label>
+			<label kind="synchronisation" x="280" y="-8">off?</label>
+			<label kind="assignment" x="280" y="8">update_K(0)</label>
+			<nail x="280" y="-25"/>
+		</transition>
+		<transition>
+			<source ref="id81"/>
+			<target ref="id83"/>
+			<label kind="guard" x="-289" y="-161">x&gt;=T_s</label>
+			<nail x="-272" y="-144"/>
+		</transition>
+		<transition>
+			<source ref="id83"/>
+			<target ref="id81"/>
+			<label kind="assignment" x="-314" y="-127">x=0,
+update_Tr(1, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id80"/>
+			<target ref="id82"/>
+			<label kind="guard" x="357" y="-144">x&gt;=T_s</label>
+			<nail x="331" y="-136"/>
+		</transition>
+		<transition>
+			<source ref="id82"/>
+			<target ref="id80"/>
+			<label kind="assignment" x="314" y="-127">x=0,
+update_Tr(0, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id81"/>
+			<target ref="id80"/>
+			<label kind="guard" x="34" y="-144">open==1</label>
+			<label kind="synchronisation" x="42" y="-127">off?</label>
+			<label kind="assignment" x="0" y="-110">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id80"/>
+			<target ref="id81"/>
+			<label kind="guard" x="34" y="-85">open==1</label>
+			<label kind="synchronisation" x="42" y="-68">on?</label>
+			<label kind="assignment" x="17" y="-51">update_K(1)</label>
+			<nail x="196" y="-68"/>
+			<nail x="-76" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id75"/>
+			<target ref="id76"/>
+			<label kind="assignment" x="263" y="101">x=0,
+update_Tr(1, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id77"/>
+			<target ref="id78"/>
+			<label kind="guard" x="-178" y="118">x&gt;=T_s</label>
+			<nail x="-178" y="118"/>
+		</transition>
+		<transition>
+			<source ref="id76"/>
+			<target ref="id75"/>
+			<label kind="guard" x="179" y="110">x&gt;=T_s</label>
+			<nail x="238" y="110"/>
+		</transition>
+		<transition>
+			<source ref="id78"/>
+			<target ref="id77"/>
+			<label kind="assignment" x="-297" y="144">x=0,
+update_Tr(0, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id76"/>
+			<target ref="id77"/>
+			<label kind="guard" x="18" y="26">open==0</label>
+			<label kind="synchronisation" x="26" y="42">off?</label>
+			<label kind="assignment" x="-8" y="59">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id77"/>
+			<target ref="id76"/>
+			<label kind="guard" x="1" y="93">open==0</label>
+			<label kind="synchronisation" x="9" y="110">on?</label>
+			<label kind="assignment" x="-25" y="127">update_K(1)</label>
+			<nail x="-144" y="110"/>
+			<nail x="187" y="110"/>
+		</transition>
+		<transition>
+			<source ref="id79"/>
+			<target ref="id77"/>
+			<label kind="assignment" x="-314" y="42">init_r()</label>
+		</transition>
+	</template>
+	<template>
+		<name>Room_9</name>
+		<parameter>double T_0</parameter>
+		<declaration>clock T, x;
+
+double T_s = 1.0;
+
+double R = 100.0;
+double K;
+
+int open = 0;
+bool r = false;
+
+void init_r() {
+   x = 0;
+   T = T_0;
+   T_r = T_0;
+   K = 1.0;
+}
+
+void random_open_window() {
+    double dice = random(100);
+    int i;
+    if(force_exe) {
+        open = force_open[curr];
+        return;
+    }
+
+    if(dice &gt; 9) {
+        dice = random(100);
+        for(i=0; i&lt;dice; i++){}
+        open = i % 3;
+    }
+}
+void update_Tr(bool on, int open) {
+    if(!on) {
+        T_r = T_r*exp(-1/R);
+    } else {
+        if(open&gt;0)
+            T_r = R*K-exp(-1/R)*(R*K-T_r);
+        else T_r = T_r + K;
+    }
+
+    random_open_window();
+}
+
+void update_K(bool on) {
+    if (force_exe &amp;&amp; force_open[curr+1] != -1) {
+        curr++;
+    } else force_exe = false;
+
+    // if heating is on, K is randomly generated
+    if(on) {
+        R = 100.0;
+        if(open==1) K = Normal(ON_ONE_WINDOW_OPEN[0], ON_ONE_WINDOW_OPEN[1]); 
+        else if(open==2) K = Normal(ON_TWO_WINDOWS_OPEN[0], ON_TWO_WINDOWS_OPEN[1]); 
+        else if(open==0 &amp;&amp; r) K = Normal(ON_FULLY_ISOLATED[0], ON_FULLY_ISOLATED[1]); 
+        else if(open==0 &amp;&amp; !r) K = Normal(ON_TWO_WINDOWS_CLOSED[0], ON_TWO_WINDOWS_CLOSED[1]); 
+    } else { // if heating is off, R is randomly generated
+        K = 0.0;
+        if(open==1) R = Normal(OFF_ONE_WINDOW_OPEN[0], OFF_ONE_WINDOW_OPEN[1]); 
+        else if(open==2) R = Normal(OFF_TWO_WINDOWS_OPEN[0], OFF_TWO_WINDOWS_OPEN[1]); 
+        else if(open==0 &amp;&amp; r) R = Normal(OFF_FULLY_ISOLATED[0], OFF_FULLY_ISOLATED[1]); 
+        else if(open==0 &amp;&amp; !r) R = Normal(OFF_TWO_WINDOWS_CLOSED[0], OFF_TWO_WINDOWS_CLOSED[1]); 
+    }
+}</declaration>
+		<location id="id88" x="255" y="195">
+			<committed/>
+		</location>
+		<location id="id89" x="255" y="59">
+			<name x="272" y="42">ON_0</name>
+			<label kind="invariant" x="272" y="59">T'==K
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id90" x="-203" y="59">
+			<name x="-263" y="68">OFF_0</name>
+			<label kind="invariant" x="-289" y="85">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id91" x="-204" y="195">
+			<committed/>
+		</location>
+		<location id="id92" x="-501" y="59">
+			<name x="-511" y="25">start</name>
+			<committed/>
+		</location>
+		<location id="id93" x="255" y="-110">
+			<name x="272" y="-102">OFF_1</name>
+			<label kind="invariant" x="272" y="-85">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id94" x="-204" y="-110">
+			<name x="-246" y="-93">ON_1</name>
+			<label kind="invariant" x="-289" y="-76">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id95" x="416" y="-110">
+			<committed/>
+		</location>
+		<location id="id96" x="-340" y="-110">
+			<committed/>
+		</location>
+		<location id="id97" x="255" y="-297">
+			<name x="272" y="-314">ON_2</name>
+			<label kind="invariant" x="272" y="-297">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id98" x="-204" y="-297">
+			<name x="-255" y="-289">OFF_2</name>
+			<label kind="invariant" x="-289" y="-272">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id99" x="-340" y="-297">
+			<committed/>
+		</location>
+		<location id="id100" x="255" y="-399">
+			<committed/>
+		</location>
+		<location id="id101" x="-204" y="-544">
+			<name x="-246" y="-578">ON_3</name>
+			<label kind="invariant" x="-297" y="-561">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id102" x="-204" y="-646">
+			<committed/>
+		</location>
+		<init ref="id92"/>
+		<transition>
+			<source ref="id90"/>
+			<target ref="id101"/>
+			<label kind="guard" x="-382" y="-637">open==0&amp;&amp;r</label>
+			<label kind="synchronisation" x="-382" y="-620">on?</label>
+			<label kind="assignment" x="-382" y="-595">update_K(1)</label>
+			<nail x="-391" y="59"/>
+			<nail x="-391" y="-595"/>
+			<nail x="-297" y="-595"/>
+		</transition>
+		<transition>
+			<source ref="id101"/>
+			<target ref="id90"/>
+			<label kind="guard" x="-526" y="-578">open==0</label>
+			<label kind="synchronisation" x="-526" y="-561">off?</label>
+			<label kind="assignment" x="-526" y="-544">update_K(0)</label>
+			<nail x="-544" y="-544"/>
+			<nail x="-544" y="153"/>
+			<nail x="-331" y="153"/>
+		</transition>
+		<transition>
+			<source ref="id93"/>
+			<target ref="id101"/>
+			<label kind="guard" x="331" y="-586">open==0 &amp;&amp; r</label>
+			<label kind="synchronisation" x="407" y="-569">on?</label>
+			<label kind="assignment" x="348" y="-552">update_K(1)</label>
+			<nail x="433" y="-110"/>
+			<nail x="433" y="-663"/>
+			<nail x="-391" y="-663"/>
+			<nail x="-391" y="-544"/>
+		</transition>
+		<transition>
+			<source ref="id101"/>
+			<target ref="id93"/>
+			<label kind="guard" x="-76" y="-467">open==1</label>
+			<label kind="synchronisation" x="-76" y="-450">off?</label>
+			<label kind="assignment" x="-76" y="-433">update_K(0)</label>
+			<nail x="-85" y="-476"/>
+			<nail x="-85" y="-229"/>
+		</transition>
+		<transition>
+			<source ref="id101"/>
+			<target ref="id98"/>
+			<label kind="guard" x="-314" y="-501">open==2</label>
+			<label kind="synchronisation" x="-272" y="-484">off?</label>
+			<label kind="assignment" x="-331" y="-467">update_K(0),
+r = true</label>
+			<nail x="-238" y="-493"/>
+			<nail x="-238" y="-365"/>
+		</transition>
+		<transition>
+			<source ref="id98"/>
+			<target ref="id101"/>
+			<label kind="guard" x="-195" y="-459">open==0 &amp;&amp; r</label>
+			<label kind="synchronisation" x="-195" y="-442">on?</label>
+			<label kind="assignment" x="-195" y="-425">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id102"/>
+			<target ref="id101"/>
+			<label kind="assignment" x="-170" y="-620">x=0,
+update_Tr(1, 3)</label>
+			<nail x="-178" y="-595"/>
+		</transition>
+		<transition>
+			<source ref="id101"/>
+			<target ref="id102"/>
+			<label kind="guard" x="-263" y="-612">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id98"/>
+			<target ref="id89"/>
+			<label kind="guard" x="-373" y="-425">open==0 &amp;&amp; !r</label>
+			<label kind="synchronisation" x="-373" y="-408">on?</label>
+			<label kind="assignment" x="-373" y="-391">update_K(1)</label>
+			<nail x="-204" y="-391"/>
+			<nail x="-391" y="-391"/>
+			<nail x="-391" y="221"/>
+			<nail x="153" y="221"/>
+		</transition>
+		<transition>
+			<source ref="id97"/>
+			<target ref="id90"/>
+			<label kind="guard" x="442" y="-297">open==0</label>
+			<label kind="synchronisation" x="442" y="-280">off?</label>
+			<label kind="assignment" x="442" y="-263">update_K(0)</label>
+			<nail x="433" y="-297"/>
+			<nail x="433" y="221"/>
+			<nail x="-110" y="221"/>
+		</transition>
+		<transition>
+			<source ref="id89"/>
+			<target ref="id98"/>
+			<label kind="guard" x="-93" y="-238">open==2</label>
+			<label kind="synchronisation" x="-76" y="-221">off?</label>
+			<label kind="assignment" x="-68" y="-212">update_K(0),
+r = true</label>
+		</transition>
+		<transition>
+			<source ref="id90"/>
+			<target ref="id97"/>
+			<label kind="guard" x="51" y="-212">open==2</label>
+			<label kind="synchronisation" x="85" y="-195">on?</label>
+			<label kind="assignment" x="42" y="-178">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id100"/>
+			<target ref="id97"/>
+			<label kind="assignment" x="272" y="-365">x=0,
+update_Tr(1, 2)</label>
+			<nail x="272" y="-348"/>
+		</transition>
+		<transition>
+			<source ref="id97"/>
+			<target ref="id100"/>
+			<label kind="guard" x="195" y="-365">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id99"/>
+			<target ref="id98"/>
+			<label kind="assignment" x="-323" y="-357">x=0,
+update_Tr(0, 2)</label>
+			<nail x="-263" y="-323"/>
+		</transition>
+		<transition>
+			<source ref="id98"/>
+			<target ref="id99"/>
+			<label kind="guard" x="-297" y="-314">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id97"/>
+			<target ref="id93"/>
+			<label kind="guard" x="280" y="-229">open==1</label>
+			<label kind="synchronisation" x="280" y="-212">off?</label>
+			<label kind="assignment" x="280" y="-195">update_K(0)</label>
+			<nail x="280" y="-204"/>
+		</transition>
+		<transition>
+			<source ref="id93"/>
+			<target ref="id97"/>
+			<label kind="guard" x="178" y="-229">open==2</label>
+			<label kind="synchronisation" x="221" y="-212">on?</label>
+			<label kind="assignment" x="161" y="-195">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id98"/>
+			<target ref="id94"/>
+			<label kind="guard" x="-178" y="-221">open==1</label>
+			<label kind="synchronisation" x="-178" y="-204">on?</label>
+			<label kind="assignment" x="-178" y="-187">update_K(1)</label>
+			<nail x="-178" y="-195"/>
+		</transition>
+		<transition>
+			<source ref="id94"/>
+			<target ref="id98"/>
+			<label kind="guard" x="-272" y="-229">open==2</label>
+			<label kind="synchronisation" x="-238" y="-212">off?</label>
+			<label kind="assignment" x="-289" y="-195">update_K(0), 
+r = true</label>
+		</transition>
+		<transition>
+			<source ref="id98"/>
+			<target ref="id97"/>
+			<label kind="guard" x="-8" y="-391">open==2</label>
+			<label kind="synchronisation" x="-8" y="-374">on?</label>
+			<label kind="assignment" x="-8" y="-357">update_K(1)</label>
+			<nail x="-136" y="-340"/>
+			<nail x="187" y="-340"/>
+		</transition>
+		<transition>
+			<source ref="id97"/>
+			<target ref="id98"/>
+			<label kind="guard" x="0" y="-314">open==2</label>
+			<label kind="synchronisation" x="0" y="-297">off?</label>
+			<label kind="assignment" x="0" y="-280">update_K(0),
+r = true</label>
+		</transition>
+		<transition>
+			<source ref="id94"/>
+			<target ref="id90"/>
+			<label kind="guard" x="-178" y="-59">open==0</label>
+			<label kind="synchronisation" x="-178" y="-42">off?</label>
+			<label kind="assignment" x="-178" y="-25">update_K(0)</label>
+			<nail x="-178" y="-25"/>
+		</transition>
+		<transition>
+			<source ref="id90"/>
+			<target ref="id94"/>
+			<label kind="guard" x="-272" y="-26">open==1</label>
+			<label kind="synchronisation" x="-229" y="-9">on?</label>
+			<label kind="assignment" x="-289" y="8">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id93"/>
+			<target ref="id89"/>
+			<label kind="guard" x="187" y="-51">open==0 
+&amp;&amp; !r</label>
+			<label kind="synchronisation" x="229" y="-34">on?</label>
+			<label kind="assignment" x="187" y="-17">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id89"/>
+			<target ref="id93"/>
+			<label kind="guard" x="280" y="-25">open==1</label>
+			<label kind="synchronisation" x="280" y="-8">off?</label>
+			<label kind="assignment" x="280" y="8">update_K(0)</label>
+			<nail x="280" y="-25"/>
+		</transition>
+		<transition>
+			<source ref="id94"/>
+			<target ref="id96"/>
+			<label kind="guard" x="-289" y="-161">x&gt;=T_s</label>
+			<nail x="-272" y="-144"/>
+		</transition>
+		<transition>
+			<source ref="id96"/>
+			<target ref="id94"/>
+			<label kind="assignment" x="-314" y="-127">x=0,
+update_Tr(1, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id93"/>
+			<target ref="id95"/>
+			<label kind="guard" x="357" y="-144">x&gt;=T_s</label>
+			<nail x="331" y="-136"/>
+		</transition>
+		<transition>
+			<source ref="id95"/>
+			<target ref="id93"/>
+			<label kind="assignment" x="314" y="-127">x=0,
+update_Tr(0, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id94"/>
+			<target ref="id93"/>
+			<label kind="guard" x="34" y="-144">open==1</label>
+			<label kind="synchronisation" x="42" y="-127">off?</label>
+			<label kind="assignment" x="0" y="-110">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id93"/>
+			<target ref="id94"/>
+			<label kind="guard" x="34" y="-85">open==1</label>
+			<label kind="synchronisation" x="42" y="-68">on?</label>
+			<label kind="assignment" x="17" y="-51">update_K(1)</label>
+			<nail x="196" y="-68"/>
+			<nail x="-76" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id88"/>
+			<target ref="id89"/>
+			<label kind="assignment" x="263" y="101">x=0,
+update_Tr(1, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id90"/>
+			<target ref="id91"/>
+			<label kind="guard" x="-178" y="118">x&gt;=T_s</label>
+			<nail x="-178" y="118"/>
+		</transition>
+		<transition>
+			<source ref="id89"/>
+			<target ref="id88"/>
+			<label kind="guard" x="179" y="110">x&gt;=T_s</label>
+			<nail x="238" y="110"/>
+		</transition>
+		<transition>
+			<source ref="id91"/>
+			<target ref="id90"/>
+			<label kind="assignment" x="-297" y="127">x=0,
+update_Tr(0, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id89"/>
+			<target ref="id90"/>
+			<label kind="guard" x="-34" y="25">open==0</label>
+			<label kind="synchronisation" x="-34" y="42">off?</label>
+			<label kind="assignment" x="-34" y="59">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id90"/>
+			<target ref="id89"/>
+			<label kind="guard" x="-34" y="93">open==0 &amp;&amp; !r</label>
+			<label kind="synchronisation" x="-34" y="110">on?</label>
+			<label kind="assignment" x="-34" y="127">update_K(1)</label>
+			<nail x="-144" y="110"/>
+			<nail x="187" y="110"/>
+		</transition>
+		<transition>
+			<source ref="id92"/>
+			<target ref="id90"/>
+			<label kind="assignment" x="-450" y="42">init_r()</label>
+		</transition>
+	</template>
+	<template>
+		<name>Room_10</name>
+		<parameter>double T_0</parameter>
+		<declaration>clock T, x;
+
+int T_s = 1;
+
+double R = 100.0;
+double K;
+
+int open = 0;
+bool r = false;
+
+void init_r() {
+   x = 0;
+   T = T_0;
+   T_r = T_0;
+   K = 1.0;
+}
+
+void random_open_window() {
+    double dice = random(10);
+    int i;
+
+    if(force_exe) {
+        open = force_open[curr];
+        return;
+    }
+
+    if(dice &gt; 9) {
+        dice = random(100);
+        for(i=0; i&lt;dice; i++){}
+        open = i % 3;
+    }
+}
+void update_Tr(bool on, int open) {
+    if(!on) {
+        T_r = T_r*exp(-1/R);
+    } else {
+        if(open&gt;0)
+            T_r = R*K-exp(-1/R)*(R*K-T_r);
+        else T_r = T_r + K;
+    }
+
+    random_open_window();
+}
+
+void update_K(bool on) {
+    if (force_exe &amp;&amp; force_open[curr+1] != -1) {
+        curr++;
+    } else force_exe = false;
+
+    // if heating is on, K is randomly generated
+    if(on) {
+        R = 100.0;
+        if(open==1) K = Normal(ON_ONE_WINDOW_OPEN[0], ON_ONE_WINDOW_OPEN[1]); 
+        else if(open==2) K = Normal(ON_TWO_WINDOWS_OPEN[0], ON_TWO_WINDOWS_OPEN[1]); 
+        else if(open==0) K = Normal(ON_TWO_WINDOWS_CLOSED[0], ON_TWO_WINDOWS_CLOSED[1]);
+    } else { // if heating is off, R is randomly generated
+        K = 0.0;
+        if(open==1) R = Normal(OFF_ONE_WINDOW_OPEN[0], OFF_ONE_WINDOW_OPEN[1]); 
+        else if(open==2) R = Normal(OFF_TWO_WINDOWS_OPEN[0], OFF_TWO_WINDOWS_OPEN[1]); 
+        else if(open==0 &amp;&amp; r) R = Normal(OFF_FULLY_ISOLATED[0], OFF_FULLY_ISOLATED[1]); 
+        else if(open==0 &amp;&amp; !r) R = Normal(OFF_TWO_WINDOWS_CLOSED[0], OFF_TWO_WINDOWS_CLOSED[1]); 
+    }
+}</declaration>
+		<location id="id103" x="255" y="195">
+			<committed/>
+		</location>
+		<location id="id104" x="255" y="59">
+			<name x="272" y="34">ON_0</name>
+			<label kind="invariant" x="272" y="59">T'==K
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id105" x="-203" y="59">
+			<name x="-263" y="68">OFF_0</name>
+			<label kind="invariant" x="-289" y="85">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id106" x="-204" y="204">
+			<committed/>
+		</location>
+		<location id="id107" x="-501" y="59">
+			<name x="-511" y="25">start</name>
+			<committed/>
+		</location>
+		<location id="id108" x="255" y="-110">
+			<name x="272" y="-102">OFF_1</name>
+			<label kind="invariant" x="272" y="-85">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id109" x="-204" y="-110">
+			<name x="-246" y="-93">ON_1</name>
+			<label kind="invariant" x="-289" y="-76">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id110" x="416" y="-110">
+			<committed/>
+		</location>
+		<location id="id111" x="-340" y="-110">
+			<committed/>
+		</location>
+		<location id="id112" x="255" y="-297">
+			<name x="272" y="-314">ON_2</name>
+			<label kind="invariant" x="272" y="-297">T'==K-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id113" x="-204" y="-297">
+			<name x="-255" y="-289">OFF_2</name>
+			<label kind="invariant" x="-289" y="-272">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id114" x="-340" y="-297">
+			<committed/>
+		</location>
+		<location id="id115" x="323" y="-382">
+			<committed/>
+		</location>
+		<location id="id116" x="255" y="-501">
+			<name x="272" y="-527">OFF_3</name>
+			<label kind="invariant" x="272" y="-501">T'==-T/R
+&amp;&amp; x&lt;=T_s</label>
+		</location>
+		<location id="id117" x="255" y="-603">
+			<committed/>
+		</location>
+		<init ref="id107"/>
+		<transition>
+			<source ref="id104"/>
+			<target ref="id116"/>
+			<label kind="guard" x="501" y="-25">open==0&amp;&amp;r</label>
+			<label kind="synchronisation" x="501" y="-8">off?</label>
+			<label kind="assignment" x="501" y="8">update_K(0)</label>
+			<nail x="493" y="59"/>
+			<nail x="493" y="-527"/>
+			<nail x="348" y="-527"/>
+		</transition>
+		<transition>
+			<source ref="id109"/>
+			<target ref="id116"/>
+			<label kind="guard" x="-144" y="-552">open==0&amp;&amp;r</label>
+			<label kind="synchronisation" x="-144" y="-535">off?</label>
+			<label kind="assignment" x="-119" y="-535">update_K(0)</label>
+			<nail x="-416" y="-110"/>
+			<nail x="-416" y="-535"/>
+			<nail x="195" y="-535"/>
+		</transition>
+		<transition>
+			<source ref="id116"/>
+			<target ref="id104"/>
+			<label kind="guard" x="442" y="-501">open==0</label>
+			<label kind="synchronisation" x="442" y="-484">on?</label>
+			<label kind="assignment" x="442" y="-467">update_K(1)</label>
+			<nail x="433" y="-501"/>
+			<nail x="433" y="59"/>
+		</transition>
+		<transition>
+			<source ref="id116"/>
+			<target ref="id109"/>
+			<label kind="guard" x="-390" y="-535">open==1</label>
+			<label kind="synchronisation" x="-390" y="-518">on?</label>
+			<label kind="assignment" x="-390" y="-501">update_K(1)</label>
+			<nail x="-408" y="-501"/>
+			<nail x="-408" y="-161"/>
+			<nail x="-246" y="-161"/>
+		</transition>
+		<transition>
+			<source ref="id116"/>
+			<target ref="id112"/>
+			<label kind="guard" x="161" y="-467">open==2</label>
+			<label kind="synchronisation" x="204" y="-450">on?</label>
+			<label kind="assignment" x="136" y="-433">update_K(1)</label>
+			<nail x="221" y="-408"/>
+		</transition>
+		<transition>
+			<source ref="id112"/>
+			<target ref="id116"/>
+			<label kind="guard" x="255" y="-450">open==0&amp;&amp;r</label>
+			<label kind="synchronisation" x="255" y="-433">off?</label>
+			<label kind="assignment" x="255" y="-416">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id117"/>
+			<target ref="id116"/>
+			<label kind="assignment" x="127" y="-569">x=0,
+update_Tr(0, 0)</label>
+			<nail x="238" y="-552"/>
+		</transition>
+		<transition>
+			<source ref="id116"/>
+			<target ref="id117"/>
+			<label kind="guard" x="255" y="-586">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id113"/>
+			<target ref="id104"/>
+			<label kind="guard" x="-390" y="-425">open==0</label>
+			<label kind="synchronisation" x="-390" y="-408">on?</label>
+			<label kind="assignment" x="-390" y="-391">update_K(1)</label>
+			<nail x="-221" y="-391"/>
+			<nail x="-408" y="-391"/>
+			<nail x="-408" y="221"/>
+			<nail x="93" y="221"/>
+		</transition>
+		<transition>
+			<source ref="id112"/>
+			<target ref="id105"/>
+			<label kind="guard" x="442" y="-297">open==0&amp;&amp;!r</label>
+			<label kind="synchronisation" x="442" y="-280">off?</label>
+			<label kind="assignment" x="442" y="-263">update_K(0)</label>
+			<nail x="433" y="-297"/>
+			<nail x="433" y="221"/>
+			<nail x="-110" y="221"/>
+		</transition>
+		<transition>
+			<source ref="id104"/>
+			<target ref="id113"/>
+			<label kind="guard" x="-93" y="-238">open==2</label>
+			<label kind="synchronisation" x="-76" y="-221">off?</label>
+			<label kind="assignment" x="-68" y="-212">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id105"/>
+			<target ref="id112"/>
+			<label kind="guard" x="51" y="-212">open==2</label>
+			<label kind="synchronisation" x="85" y="-195">on?</label>
+			<label kind="assignment" x="42" y="-178">update_K(1),
+r = true</label>
+		</transition>
+		<transition>
+			<source ref="id115"/>
+			<target ref="id112"/>
+			<label kind="assignment" x="272" y="-382">x=0,
+update_Tr(1, 2)</label>
+			<nail x="272" y="-348"/>
+		</transition>
+		<transition>
+			<source ref="id112"/>
+			<target ref="id115"/>
+			<label kind="guard" x="289" y="-340">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id114"/>
+			<target ref="id113"/>
+			<label kind="assignment" x="-323" y="-357">x=0,
+update_Tr(0, 2)</label>
+			<nail x="-263" y="-323"/>
+		</transition>
+		<transition>
+			<source ref="id113"/>
+			<target ref="id114"/>
+			<label kind="guard" x="-297" y="-314">x&gt;=T_s</label>
+		</transition>
+		<transition>
+			<source ref="id112"/>
+			<target ref="id108"/>
+			<label kind="guard" x="280" y="-229">open==1</label>
+			<label kind="synchronisation" x="280" y="-212">off?</label>
+			<label kind="assignment" x="280" y="-195">update_K(0)</label>
+			<nail x="280" y="-204"/>
+		</transition>
+		<transition>
+			<source ref="id108"/>
+			<target ref="id112"/>
+			<label kind="guard" x="178" y="-229">open==2</label>
+			<label kind="synchronisation" x="221" y="-212">on?</label>
+			<label kind="assignment" x="161" y="-195">update_K(1),
+r = true</label>
+		</transition>
+		<transition>
+			<source ref="id113"/>
+			<target ref="id109"/>
+			<label kind="guard" x="-178" y="-221">open==1</label>
+			<label kind="synchronisation" x="-178" y="-204">on?</label>
+			<label kind="assignment" x="-178" y="-187">update_K(1)</label>
+			<nail x="-178" y="-195"/>
+		</transition>
+		<transition>
+			<source ref="id109"/>
+			<target ref="id113"/>
+			<label kind="guard" x="-272" y="-229">open==2</label>
+			<label kind="synchronisation" x="-238" y="-212">off?</label>
+			<label kind="assignment" x="-289" y="-195">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id113"/>
+			<target ref="id112"/>
+			<label kind="guard" x="-8" y="-391">open==2</label>
+			<label kind="synchronisation" x="-8" y="-374">on?</label>
+			<label kind="assignment" x="-8" y="-357">update_K(1),
+r = true</label>
+			<nail x="-136" y="-340"/>
+			<nail x="187" y="-340"/>
+		</transition>
+		<transition>
+			<source ref="id112"/>
+			<target ref="id113"/>
+			<label kind="guard" x="0" y="-314">open==2</label>
+			<label kind="synchronisation" x="0" y="-297">off?</label>
+			<label kind="assignment" x="0" y="-280">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id109"/>
+			<target ref="id105"/>
+			<label kind="guard" x="-178" y="-59">open==0&amp;&amp;!r</label>
+			<label kind="synchronisation" x="-178" y="-42">off?</label>
+			<label kind="assignment" x="-178" y="-25">update_K(0)</label>
+			<nail x="-178" y="-25"/>
+		</transition>
+		<transition>
+			<source ref="id105"/>
+			<target ref="id109"/>
+			<label kind="guard" x="-272" y="-26">open==1</label>
+			<label kind="synchronisation" x="-229" y="-9">on?</label>
+			<label kind="assignment" x="-289" y="8">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id108"/>
+			<target ref="id104"/>
+			<label kind="guard" x="187" y="-51">open==0</label>
+			<label kind="synchronisation" x="229" y="-34">on?</label>
+			<label kind="assignment" x="187" y="-17">update_K(1)</label>
+		</transition>
+		<transition>
+			<source ref="id104"/>
+			<target ref="id108"/>
+			<label kind="guard" x="280" y="-25">open==1</label>
+			<label kind="synchronisation" x="280" y="-8">off?</label>
+			<label kind="assignment" x="280" y="8">update_K(0)</label>
+			<nail x="280" y="-25"/>
+		</transition>
+		<transition>
+			<source ref="id109"/>
+			<target ref="id111"/>
+			<label kind="guard" x="-289" y="-161">x&gt;=T_s</label>
+			<nail x="-272" y="-144"/>
+		</transition>
+		<transition>
+			<source ref="id111"/>
+			<target ref="id109"/>
+			<label kind="assignment" x="-314" y="-127">x=0,
+update_Tr(1, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id108"/>
+			<target ref="id110"/>
+			<label kind="guard" x="357" y="-144">x&gt;=T_s</label>
+			<nail x="331" y="-136"/>
+		</transition>
+		<transition>
+			<source ref="id110"/>
+			<target ref="id108"/>
+			<label kind="assignment" x="314" y="-127">x=0,
+update_Tr(0, 1)</label>
+		</transition>
+		<transition>
+			<source ref="id109"/>
+			<target ref="id108"/>
+			<label kind="guard" x="34" y="-144">open==1</label>
+			<label kind="synchronisation" x="42" y="-127">off?</label>
+			<label kind="assignment" x="0" y="-110">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id108"/>
+			<target ref="id109"/>
+			<label kind="guard" x="34" y="-85">open==1</label>
+			<label kind="synchronisation" x="42" y="-68">on?</label>
+			<label kind="assignment" x="17" y="-51">update_K(1)</label>
+			<nail x="196" y="-68"/>
+			<nail x="-76" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id103"/>
+			<target ref="id104"/>
+			<label kind="assignment" x="263" y="101">x=0,
+update_Tr(1, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id105"/>
+			<target ref="id106"/>
+			<label kind="guard" x="-178" y="118">x&gt;=T_s</label>
+			<nail x="-178" y="118"/>
+		</transition>
+		<transition>
+			<source ref="id104"/>
+			<target ref="id103"/>
+			<label kind="guard" x="179" y="110">x&gt;=T_s</label>
+			<nail x="238" y="110"/>
+		</transition>
+		<transition>
+			<source ref="id106"/>
+			<target ref="id105"/>
+			<label kind="assignment" x="-297" y="144">x=0,
+update_Tr(0, 0)</label>
+		</transition>
+		<transition>
+			<source ref="id104"/>
+			<target ref="id105"/>
+			<label kind="guard" x="-34" y="25">open==0&amp;&amp;!r</label>
+			<label kind="synchronisation" x="-34" y="42">off?</label>
+			<label kind="assignment" x="-34" y="59">update_K(0)</label>
+		</transition>
+		<transition>
+			<source ref="id105"/>
+			<target ref="id104"/>
+			<label kind="guard" x="-34" y="93">open==0</label>
+			<label kind="synchronisation" x="-34" y="110">on?</label>
+			<label kind="assignment" x="-34" y="127">update_K(1)</label>
+			<nail x="-144" y="110"/>
+			<nail x="187" y="110"/>
+		</transition>
+		<transition>
+			<source ref="id107"/>
+			<target ref="id105"/>
+			<label kind="assignment" x="-450" y="42">init_r()</label>
+		</transition>
+	</template>
+	<system>t = Thermostat(15.0, 25.0);
+r = Room_4(15.2);
+
+system t, r;
+    </system>
+	<queries>
+		<query>
+			<formula>Pr[&lt;=200](&lt;&gt; r.OFF_2 &amp;&amp; r.already_on)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate 10 [&lt;=TAU] {r.R}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate[&lt;=TAU; 10] {r.open}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate 10 [&lt;=TAU] {r.K}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate[&lt;=TAU; 300] {t.ON, T_r, r.open}</formula>
+			<comment>r.ON_0, r.ON_1, r.ON_2,
+r.OFF_0, r.OFF_1, r.OFF_2</comment>
+		</query>
+	</queries>
+</nta>

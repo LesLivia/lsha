@@ -1,0 +1,1 @@
+simulate[<=TAU] {t.ON, T_r, r.open}
