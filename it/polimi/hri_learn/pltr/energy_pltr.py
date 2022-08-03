@@ -93,6 +93,11 @@ def distr_hist(values: Dict[int, List[float]]):
 
     for i, ax in enumerate(axs):
         ax.set_title('D_{}'.format(i))
-        ax.hist(values[i][1], bins=25, density=True, stacked=True)
+        ax.hist(values[i][1], bins=25, density=False, histtype='step')
+        with open(SAVE_PATH + '{}.txt'.format('histogram_values'), 'a') as f:
+                f.write('D_{}:\n'.format(i))
+                lines = [str(x)+'\n' for x in values[i][1]]
+                print(lines)
+                f.writelines(lines)
     fig.savefig(SAVE_PATH + '{}.pdf'.format('histograms'))
     del fig
