@@ -35,11 +35,13 @@ def on_model(interval: List[Timestamp], T_0: float):
     return [coeff - (coeff - T_0) * math.exp(-(1 / CLOSED_R) * (t - interval[0])) for t in interval]
 
 
-def off_model_2(interval: List[float], T_0: float):
+def off_model_2(interval: List[Timestamp], T_0: float):
+    interval = [ts.to_secs() for ts in interval]
     return [T_0 - 1 / OFF_DISTR[0] * (t - interval[0]) for t in interval]
 
 
-def on_model_2(interval: List[float], T_0: float):
+def on_model_2(interval: List[Timestamp], T_0: float):
+    interval = [ts.to_secs() for ts in interval]
     return [T_0 + ON_DISTR[0] * (t - interval[0]) for t in interval]
 
 
@@ -78,7 +80,7 @@ args = {'name': 'thermostat', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'def
 thermostat_cs = SystemUnderLearning([temperature], events, parse_data, label_event, get_thermo_param, is_chg_pt,
                                     args=args)
 
-test = True
+test = False
 if test:
     # test event configuration
     print(thermostat_cs.symbols)
