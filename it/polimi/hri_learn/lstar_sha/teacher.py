@@ -230,32 +230,34 @@ class Teacher:
                             if len(self.hist[distr]) == 0 or len(metrics) == 0:
                                 continue
 
-                            v1 = [avg_metrics] * 50
                             if CS == 'THERMO':
+                                v1 = metrics
                                 noise1 = [0] * len(v1)
                             else:
+                                v1 = [avg_metrics] * 50
                                 noise1 = np.random.normal(0.0, 0.5, size=len(v1))
 
                             v1 = [x + noise1[i] for i, x in enumerate(v1)]
 
                             v2 = []
-                            for m in self.hist[distr]:
-                                v2 += [m] * 10
                             if CS == 'THERMO':
+                                v2 = self.hist[distr]
                                 noise2 = [0] * len(v2)
                             else:
+                                for m in self.hist[distr]:
+                                    v2 += [m] * 10
                                 noise2 = np.random.normal(0.0, 0.5, size=len(v2))
                             v2 = [x + noise2[i] for i, x in enumerate(v2)]
 
                             statistic, pvalue = stats.ks_2samp(v1, v2)
                             fits = [d for d in eligible_distributions if d.d_id == distr]
-                            if statistic <= min_dist and len(fits) > 0:
+                            if statistic <= min_dist and pvalue >= 0.05 and len(fits) > 0:
                                 min_dist = statistic
                                 best_fit = fits[0]
                     except AttributeError:
                         pass
 
-                    if (CS == 'THERMO' and best_fit is not None) or (min_dist < 0.75):
+                    if (CS == 'THERMO' and best_fit is not None and min_dist <= 1.0) or (min_dist < 0.75):
                         self.to_hist(metrics, best_fit.d_id, update=True)
                         return best_fit
                     else:
