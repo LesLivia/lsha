@@ -72,6 +72,8 @@ class Teacher:
             if len(segments) > 0:
                 if len(self.flows[0]) == 1:
                     return self.flows[0][0]
+                if CS == 'THERMO' and word[-1].symbol == 'h_0':
+                    return self.flows[0][2]
 
                 fits = []
                 for segment in segments:

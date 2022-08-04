@@ -47,8 +47,6 @@ def on_model_2(interval: List[Timestamp], T_0: float):
 
 on_fc = FlowCondition(0, on_model)
 off_fc = FlowCondition(1, off_model)
-on_fc2 = FlowCondition(2, on_model_2)
-off_fc2 = FlowCondition(3, off_model_2)
 
 models: List[FlowCondition] = [on_fc, off_fc]
 
@@ -66,10 +64,13 @@ if CS_VERSION in [3, 8, 9, 10]:
     on_event3 = Event('open2', 'on', 'h_2')
     off_event3 = Event('open2', 'off', 'c_2')
     events += [on_event3, off_event3]
-if CS_VERSION in [8]:
-    models += [off_fc2]
-if CS_VERSION in [8, 9, 10]:
+if CS_VERSION in [9, 10]:
+    on_fc2 = FlowCondition(2, off_model_2)
     models += [on_fc2]
+if CS_VERSION in [8]:
+    on_fc2 = FlowCondition(2, on_model_2)
+    off_fc2 = FlowCondition(3, off_model_2)
+    models += [on_fc2, off_fc2]
 
 model_to_distr = {}
 for m in models:
@@ -94,7 +95,7 @@ if test:
     plot_traces = [(i, t) for i, t in enumerate(thermostat_cs.traces) if t.startswith(test_trace)]
 
     # test visualization
-    for tup in plot_traces[:20]:
+    for tup in plot_traces[:1]:
         print(tup[1])
         thermostat_cs.plot_trace(index=tup[0], title='test', xlabel='time [s]', ylabel='degrees C°')
 
