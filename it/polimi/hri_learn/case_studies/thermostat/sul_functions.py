@@ -70,7 +70,7 @@ def get_thermo_param(segment: List[SignalPoint], flow: FlowCondition):
     try:
         val = [pt.value for pt in segment]
         if flow.f_id in [0, 2]:
-            if CS_VERSION in [1, 2, 3, 4, 5, 6, 7]:
+            if CS_VERSION in [1, 2, 3, 4, 5, 6, 7] or (CS_VERSION in [8, 9, 10] and flow.f_id in [0]):
                 increments = []
                 for (i, pt) in enumerate(val):
                     if i > 0 and pt != val[i - 1]:
@@ -80,24 +80,27 @@ def get_thermo_param(segment: List[SignalPoint], flow: FlowCondition):
                 LOGGER.info('Estimating rate with heat on ({})'.format(flow.f_id))
                 est_rate = sum(Ks) / len(Ks) if len(Ks) > 0 else None
             else:
-                increments = []
-                for (i, pt) in enumerate(val):
-                    if i > 0:
-                        increments.append(pt - val[i - 1])
+                increments = [pt - val[i - 1] for i, pt in enumerate(val) if i > 0]
                 increments = [i for i in increments if i != 0]
                 LOGGER.info('Estimating rate with heat on ({})'.format(flow.f_id))
                 est_rate = sum(increments) / len(increments) if len(increments) > 0 else None
         else:
-            increments = []
-            for (i, pt) in enumerate(val):
-                if i > 0:
-                    increments.append(pt / val[i - 1])
+            if CS_VERSION in [1, 2, 3, 4, 5, 6, 7] or (CS_VERSION in [8, 9, 10] and flow.f_id in [1]):
+                increments = []
+                for (i, pt) in enumerate(val):
+                    if i > 0:
+                        increments.append(pt / val[i - 1])
 
-            Rs = [-1 / math.log(delta_t) for delta_t in increments if delta_t != 1]
+                Rs = [-1 / math.log(delta_t) for delta_t in increments if delta_t != 1]
 
-            LOGGER.info('Estimating rate with heat off ({})'.format(flow.f_id))
-            est_rate = sum(Rs) / len(Rs) if len(Rs) > 0 else None
-
+                LOGGER.info('Estimating rate with heat off ({})'.format(flow.f_id))
+                est_rate = sum(Rs) / len(Rs) if len(Rs) > 0 else None
+            else:
+                increments = [pt - val[i - 1] for i, pt in enumerate(val) if i > 0]
+                increments = [x for x in increments if x != 0]
+                increments = [-1/x for x in increments]
+                LOGGER.info('Estimating rate with heat off ({})'.format(flow.f_id))
+                est_rate = sum(increments) / len(increments) if len(increments) > 0 else None
         return est_rate
     except ValueError:
         return None

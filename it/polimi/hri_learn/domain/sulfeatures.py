@@ -99,7 +99,7 @@ class SystemUnderLearning:
     #
     # VISUALIZATION METHODS
     #
-    def plot_trace(self, i=None, title=None, xlabel=None, ylabel=None):
+    def plot_trace(self, index, title=None, xlabel=None, ylabel=None):
         plt.figure(figsize=(10, 5))
 
         if title is not None:
@@ -110,21 +110,21 @@ class SystemUnderLearning:
             plt.ylabel(ylabel, fontsize=18)
 
         signal_to_plot = [i for i, s in enumerate(self.signals[0]) if s.label == self.vars[0].label][0]
-        to_plot = [self.timed_traces[i]] if i is not None else self.timed_traces
-        for i, tt in enumerate(to_plot):
-            sig = self.signals[i][signal_to_plot].points
-            t = [pt.timestamp.to_secs() for pt in sig]
-            v = [pt.value for pt in sig]
+        tt = self.timed_traces[index]
 
-            plt.xlim(min(t) - 5, max(t) + 5)
-            plt.ylim(0, max(v) + .05)
-            plt.plot(t, v, 'k', linewidth=.5)
+        sig = self.signals[index][signal_to_plot].points
+        t = [pt.timestamp.to_secs() for pt in sig]
+        v = [pt.value for pt in sig]
 
-            plt.vlines([ts.to_secs() for ts in tt.t], [0] * len(tt), [max(v)] * len(tt), 'b', '--')
-            for index, evt in enumerate(tt.e):
-                plt.text(tt.t[index].to_secs() - 7, max(v) + .01, str(evt), fontsize=18, color='blue')
+        plt.xlim(min(t) - 5, max(t) + 5)
+        plt.ylim(0, max(v) + .05)
+        plt.plot(t, v, 'k', linewidth=.5)
 
-            plt.show()
+        plt.vlines([ts.to_secs() for ts in tt.t], [0] * len(tt), [max(v)] * len(tt), 'b', '--')
+        for index, evt in enumerate(tt.e):
+            plt.text(tt.t[index].to_secs() - 7, max(v) + .01, str(evt), fontsize=18, color='blue')
+
+        plt.show()
 
     def plot_distributions(self):
         for flow in self.flows[0]:

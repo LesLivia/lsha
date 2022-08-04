@@ -90,21 +90,25 @@ if test:
     for trace in thermo_traces:
         thermostat_cs.process_data('./resources/traces/uppaal/' + trace)
 
+    test_trace = Trace([on_event])
+    plot_traces = [(i, t) for i, t in enumerate(thermostat_cs.traces) if t.startswith(test_trace)]
+
     # test visualization
-    for t in thermostat_cs.traces:
-        print(t)
-        # thermostat_cs.plot_trace(title='test', xlabel='time [s]', ylabel='degrees C°')
+    for tup in plot_traces[:20]:
+        print(tup[1])
+        thermostat_cs.plot_trace(index=tup[0], title='test', xlabel='time [s]', ylabel='degrees C°')
 
     # test segment identification
-    segments = thermostat_cs.get_segments(Trace([on_event]))
+    segments = thermostat_cs.get_segments(test_trace)
     print(len(segments))
 
     # test model identification query
     teacher = Teacher(thermostat_cs)
-    print(teacher.mi_query(Trace([])))
+    id_flow = teacher.mi_query(test_trace)
+    print(id_flow)
 
     # test hypothesis testing query
-    metrics = [get_thermo_param(s, on_fc) for s in segments]
+    metrics = [get_thermo_param(s, id_flow) for s in segments]
     print(metrics)
     print(thermostat_cs.vars[0].model2distr[0])
     print(teacher.ht_query(Trace([on_event]), on_fc, save=True))
