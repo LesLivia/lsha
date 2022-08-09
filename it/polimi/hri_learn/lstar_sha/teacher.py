@@ -259,7 +259,7 @@ class Teacher:
                     except AttributeError:
                         pass
 
-                    if (CS == 'THERMO' and best_fit is not None and min_dist <= 1.0) or (min_dist < 0.75):
+                    if best_fit is not None and min_dist < 1.0:
                         self.to_hist(metrics, best_fit.d_id, update=True)
                         return best_fit
                     else:
@@ -354,8 +354,8 @@ class Teacher:
     def get_counterexample(self, table: ObsTable):
         LOGGER.msg('Looking for counterexample...')
 
-        # if len(self.timed_traces) >= 2000:
-        #    return None
+        if CS == 'THERMO' and len(self.timed_traces) >= 2000:
+            return None
 
         S = table.get_S()
         low_S = table.get_low_S()

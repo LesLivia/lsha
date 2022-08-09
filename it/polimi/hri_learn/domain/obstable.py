@@ -64,32 +64,35 @@ class ObsTable:
 
     def __str__(self, filter_empty=False):
         result = ''
-        max_tabs = max([len(word) for word in self.get_S() + self.get_low_S()])
 
-        HEADER = '\t' * max_tabs + '|\t\t'
+        rows = self.get_upper_observations() + self.get_lower_observations()
+        populated_rows = [i for i, row in enumerate(rows) if row.is_populated()]
 
-        # print column labels
-        for t_word in self.get_E():
-            HEADER += str(t_word) + '\t\t|\t\t'
+        max_tabs = max([len(str(word)) for i, word in enumerate(self.get_S() + self.get_low_S()) if i in populated_rows])
+        HEADER = ' ' * max_tabs + '|'
+
+        len_row_cells = [[len(s.label) for s in r.state] for r in rows]
+        col_width = [max([l for r in len_row_cells for j_2, l in enumerate(r) if j_2==j]) for j, e in enumerate(self.get_E())]
+
+        # column (E set) labels
+        HEADER += '|'.join([str(e)+' '*(col_width[j]-len(str(e))) for j, e in enumerate(self.get_E())])
         result += HEADER + '\n'
 
-        SEPARATOR = '----' * max_tabs + '+' + '---------------+' * len(self.get_E())
+        SEPARATOR = '-' * max_tabs + '+' + '+'.join(['-'*c for c in col_width])
         result += SEPARATOR + '\n'
 
         # print short words row labels
-        for (i, s_word) in enumerate(self.get_S() + self.get_low_S()):
+        for i, s_word in enumerate(self.get_S() + self.get_low_S()):
             if i == len(self.get_S()):
                 result += SEPARATOR + '\n'
-            row = self.get_upper_observations()[i] if i < len(self.get_S()) else self.get_lower_observations()[
-                i - len(self.get_S())]
+            row = rows[i]
             if filter_empty and not row.is_populated():
                 pass
             else:
                 ROW = str(s_word)
-                ROW += '\t' * (max_tabs + 1 - len(s_word)) + '|\t' if len(s_word) < max_tabs - 1 or max_tabs <= 4 \
-                    else '\t' * (max_tabs + 2 - len(s_word)) + '|\t'
-                ROW += str(row) + '\n'
-                result += ROW
+                ROW += ' ' * (max_tabs - len(str(s_word))) + '|'
+                ROW += '|'.join([s.label + ' '*(col_width[j]-len(s.label)) for j,s in enumerate(row.state)])
+                result += ROW + '\n'
 
         result += SEPARATOR + '\n'
         return result
