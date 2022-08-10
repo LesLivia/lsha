@@ -4,12 +4,14 @@ from datetime import datetime
 
 import it.polimi.hri_learn.pltr.ha_pltr as ha_pltr
 import it.polimi.hri_learn.pltr.lsha_report as report
-from it.polimi.hri_learn.case_studies.thermostat.sul_definition import thermostat_cs
 from it.polimi.hri_learn.case_studies.energy.sul_definition import energy_cs
+from it.polimi.hri_learn.case_studies.hri.sul_definition import hri_cs
+from it.polimi.hri_learn.case_studies.thermostat.sul_definition import thermostat_cs
+from it.polimi.hri_learn.domain.lshafeatures import Trace
+from it.polimi.hri_learn.domain.obstable import ObsTable
+from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning
 from it.polimi.hri_learn.lstar_sha.learner import Learner
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
-from it.polimi.hri_learn.domain.obstable import ObsTable
-from it.polimi.hri_learn.domain.lshafeatures import Trace
 from it.polimi.hri_learn.pltr.energy_pltr import distr_hist
 
 # LEARNING PROCEDURE SETUP
@@ -25,7 +27,14 @@ CS = config['SUL CONFIGURATION']['CASE_STUDY']
 CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
 RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 
-SUL = energy_cs
+SUL: SystemUnderLearning
+if CS == 'THERMO':
+    SUL = thermostat_cs
+elif CS == 'HRI':
+    SUL = hri_cs
+else:
+    SUL = energy_cs
+
 TEACHER = Teacher(SUL)
 
 long_traces = [Trace(events=[e]) for e in SUL.events]
