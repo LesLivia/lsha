@@ -1,0 +1,26 @@
+EXP 1-3:
+
+u_2: walk after sitting
+u_3: run
+u_4: walk after standing
+d_2: sit
+d_3: sit after running
+d_4: stand
+
+
+EXP 4:
+
+u_j: run in uncomfortable environment (e.g., high humidity, high temperature)
+u_n: run
+u_p: carry a load in uncomfortable environment (e.g., high humidity, high temperature)
+u_r: walk in uncomfortable environment (e.g., high humidity, high temperature)
+u_t: carry a load
+u_u: walk with support equipment (e.g., crutches)
+u_v: walk
+d_7: sit after running
+d_b: sit in uncomfortable environment (e.g., high humidity, high temperature)
+d_f: sit
+d_j: stand after running in uncomfortable environment (e.g., high humidity, high temperature)
+d_p: stand after carrying load in uncomfortable environment (e.g., high humidity, high temperature)
+d_r: stand in uncomfortable environment (e.g., high humidity, high temperature)
+d_v: stand

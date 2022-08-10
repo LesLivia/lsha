@@ -1,0 +1,22 @@
+EXP 1:
+
+h_0: heating on
+c_0: heating off
+
+
+EXP 2, 4-7:
+
+h_0: heating on, window closed
+c_0: heating off, window closed
+h_1: heating on, window open
+c_1: heating off, window open
+
+
+EXP 3, 8-10:
+
+h_0: heating on, windows closed
+c_0: heating off, windows closed
+h_1: heating on, 1 window open
+c_1: heating off, 1 window open
+h_2: heating on, 2 windows open
+c_2: heating off, 2 windows open

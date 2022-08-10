@@ -1,0 +1,22 @@
+EXP 1:
+
+u_1: walk
+d_1: stand
+
+
+EXP 2:
+
+u_1: walk after sitting
+d_1: sit
+u_2: walk
+d_2: stand
+
+
+EXP 3-5:
+
+u_2: walk after sitting
+u_3: run
+u_4: walk after standing
+d_2: sit
+d_3: sit after running
+d_4: stand
