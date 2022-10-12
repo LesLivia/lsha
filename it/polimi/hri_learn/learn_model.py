@@ -5,6 +5,7 @@ from datetime import datetime
 import it.polimi.hri_learn.pltr.ha_pltr as ha_pltr
 import it.polimi.hri_learn.pltr.lsha_report as report
 from it.polimi.hri_learn.case_studies.energy.sul_definition import energy_cs
+from it.polimi.hri_learn.case_studies.energy_sim.sul_definition import energy_sim_cs
 from it.polimi.hri_learn.case_studies.hri.sul_definition import hri_cs
 from it.polimi.hri_learn.case_studies.thermostat.sul_definition import thermostat_cs
 from it.polimi.hri_learn.domain.lshafeatures import Trace
@@ -33,7 +34,12 @@ if CS == 'THERMO':
 elif CS == 'HRI':
     SUL = hri_cs
 else:
-    SUL = energy_cs
+    if RESAMPLE_STRATEGY == 'SIM':
+        SUL = energy_sim_cs
+    elif RESAMPLE_STRATEGY == 'REAL':
+        SUL = energy_cs
+    else:
+        raise RuntimeError
 
 TEACHER = Teacher(SUL)
 
