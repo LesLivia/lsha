@@ -33,13 +33,15 @@ if CS == 'THERMO':
     SUL = thermostat_cs
 elif CS == 'HRI':
     SUL = hri_cs
-else:
+elif CS == 'ENERGY':
     if RESAMPLE_STRATEGY == 'SIM':
         SUL = energy_sim_cs
     elif RESAMPLE_STRATEGY == 'REAL':
         SUL = energy_cs
     else:
         raise RuntimeError
+else:
+    raise RuntimeError
 
 TEACHER = Teacher(SUL)
 
