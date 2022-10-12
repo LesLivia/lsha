@@ -34,6 +34,9 @@ class Timestamp:
     def __lt__(self, other):
         return self.to_secs() < other.to_secs()
 
+    def __sub__(self, other):
+        return self.to_secs() - other.to_secs()
+
 
 class SignalPoint:
     def __init__(self, t: Timestamp, val: float):

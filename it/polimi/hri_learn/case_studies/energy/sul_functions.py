@@ -133,12 +133,23 @@ def parse_data(path: str):
         nosecs_speed_pts = [SignalPoint(Timestamp(pt.timestamp.year, pt.timestamp.month,
                                                   pt.timestamp.day, pt.timestamp.hour,
                                                   pt.timestamp.min, 0), pt.value) for pt in speed.points]
-        filtered_speed_ts = list(set([pt.timestamp for pt in nosecs_speed_pts]))
-        filtered_speed_ts.sort()
-        filtered_speed_pts: List[SignalPoint] = []
-        for ts in filtered_speed_ts:
-            batch_pts = list(filter(lambda pt: pt.timestamp == ts, nosecs_speed_pts))
-            filtered_speed_pts.extend([SignalPoint(ts, max([pt.value for pt in batch_pts]))] * len(batch_pts))
+        filtered_speed_pts: List[SignalPoint] = [nosecs_speed_pts[0]]
+        last_switch = nosecs_speed_pts[0].timestamp
+        count = 1
+        max_batch = nosecs_speed_pts[0].value
+        for i, pt in enumerate(nosecs_speed_pts):
+            if i == 0:
+                continue
+
+            if pt.timestamp == last_switch:
+                max_batch = max(max_batch, pt.value)
+                count += 1
+            else:
+                filtered_speed_pts.extend([SignalPoint(nosecs_speed_pts[i - 1].timestamp, max_batch)] * count)
+                last_switch = pt.timestamp
+                max_batch = pt.value
+                count = 1
+
         filtered_speed = SampledSignal(filtered_speed_pts, label='w')
 
         return [power, filtered_speed, pressure]
