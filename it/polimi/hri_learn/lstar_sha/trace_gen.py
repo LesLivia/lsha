@@ -145,7 +145,7 @@ class TraceGenerator:
 
         if CS.lower() == 'energy':
             sims = os.listdir(SIM_LOGS_PATH.format(CS))
-            sims = list(filter(lambda s: s.startswith('_W') and s not in self.processed_traces, sims))
+            sims = list(filter(lambda s: s.startswith('_') and s not in self.processed_traces, sims))
             sims.sort()
         else:
             sims = os.listdir(SIM_LOGS_PATH.format(config['SUL CONFIGURATION']['CS_VERSION']))
