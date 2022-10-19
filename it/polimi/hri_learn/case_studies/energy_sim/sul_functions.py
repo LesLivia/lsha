@@ -20,12 +20,14 @@ LOGGER = Logger('SUL DATA HANDLER')
 
 
 def is_chg_pt(curr, prev):
-    return abs(curr - prev) > SPEED_RANGE
+    return abs(curr[0] - prev[0]) > SPEED_RANGE or curr[1] != prev[1]
 
 
 def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp):
     speed_sig = signals[1]
+    pressure_sig = signals[2]
     speed = {pt.timestamp: (i, pt.value) for i, pt in enumerate(speed_sig.points)}
+    pressure = {pt.timestamp: (i, pt.value) for i, pt in enumerate(pressure_sig.points)}
 
     SPEED_INTERVALS: List[Tuple[int, int]] = []
     for i in range(MIN_SPEED, MAX_SPEED, SPEED_RANGE):
@@ -44,10 +46,26 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
     else:
         prev_speed = curr_speed
 
+    curr_press_index, curr_press = pressure[t]
+    if curr_press_index > 0:
+        try:
+            prev_index = [tup[0] for tup in pressure.values() if tup[0] < curr_press_index][-1]
+            prev_press = pressure_sig.points[prev_index].value
+        except IndexError:
+            prev_press = None
+    else:
+        prev_press = curr_press
+
     identified_event = None
+
+    if curr_press != prev_press:
+        if curr_press == 1.0 and prev_press == 0.0:
+            identified_event = events[-2]
+        else:
+            identified_event = events[-1]
     # if spindle was moving previously and now it is idle, return "stop" event
-    if curr_speed < MIN_SPEED and (prev_speed is not None and prev_speed >= MIN_SPEED):
-        identified_event = events[-1]
+    elif curr_speed < MIN_SPEED and (prev_speed is not None and prev_speed >= MIN_SPEED):
+        identified_event = events[-3]
     else:
         # if spindle is now moving at a different speed than before,
         # return 'new speed' event, which varies depending on current speed range
@@ -64,7 +82,8 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
 
 
 def parse_ts(ts: str):
-    return Timestamp(0, 0, 0, 0, int(ts), 0)
+    fields = ts.split(':')
+    return Timestamp(0, 0, int(fields[0]), int(fields[1]), int(fields[2]), int(fields[3]))
 
 
 def parse_data(path: str):
@@ -75,19 +94,39 @@ def parse_data(path: str):
 
     with open(path) as csv_file:
         reader = csv.reader(csv_file, delimiter=',')
-        for i, row in enumerate(reader):
-            if i > 0:
-                ts = parse_ts(row[1])
+        counter = 0
 
+        for i, row in enumerate(reader):
+            if i == 0:
+                continue
+
+            ts = parse_ts(row[2] + ':' + row[0])
+
+            if i > 1 and ts == speed.points[-1].timestamp:
                 # parse power value
-                power.points.append(SignalPoint(ts, float(row[7])))
+                power.points[-1].value = (power.points[-1].value * counter + float(row[4])) / (counter + 1)
 
                 # parse speed value: round to closest [100]
-                speed_v = round(float(row[6]) / 100) * 100
+                speed_v = round(float(row[3]) / 100) * 100
+                speed.points[-1].value = min(speed_v, speed.points[-1].value)
+
+                # parse pallet pressure value
+                pressure_v = float(row[1] != 'UNLOAD')
+                pressure.points[-1].value = min(pressure_v, pressure.points[-1].value)
+
+                counter += 1
+            else:
+                counter = 0
+
+                # parse power value
+                power.points.append(SignalPoint(ts, float(row[4])))
+
+                # parse speed value: round to closest [100]
+                speed_v = round(float(row[3]) / 100) * 100
                 speed.points.append(SignalPoint(ts, speed_v))
 
                 # parse pallet pressure value
-                pressure_v = float(row[4].replace(',', '.'))
+                pressure_v = float(not (row[1] == 'UNLOAD' or (row[1] == 'LOAD' and i == 1)))
                 pressure.points.append(SignalPoint(ts, pressure_v))
 
         return [power, speed, pressure]

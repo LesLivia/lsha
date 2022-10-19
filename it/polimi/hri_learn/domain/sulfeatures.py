@@ -37,18 +37,18 @@ class SystemUnderLearning:
     #
     # TRACE PROCESSING METHODS
     #
-    def find_chg_pts(self, driver: SampledSignal):
-        timestamps = [pt.timestamp for pt in driver.points]
-        values = [pt.value for pt in driver.points]
+    def find_chg_pts(self, driver: List[SampledSignal]):
+        timestamps = [[pt.timestamp for pt in sig.points] for sig in driver][0]
+        values = [[pt.value for pt in sig.points] for sig in driver]
         chg_pts: List[ChangePoint] = []
 
-        if values[0] > 0:
-            chg_pts.append(ChangePoint(timestamps[0]))
+        # if values[0][0] > 0:
+        #    chg_pts.append(ChangePoint(timestamps[0]))
 
         # IDENTIFY CHANGE PTS IN DRIVER OVERLAY
-        prev = values[0]
-        for i in range(1, len(values)):
-            curr = values[i]
+        prev = [val_list[0] for val_list in values]
+        for i, ts in enumerate(timestamps):
+            curr = [val_list[i] for val_list in values]
             if self.is_chg_pt(curr, prev):
                 chg_pts.append(ChangePoint(timestamps[i]))
             prev = curr
@@ -59,7 +59,7 @@ class SystemUnderLearning:
         new_signals: List[SampledSignal] = self.parse_f(path)
         self.signals.append(new_signals)
 
-        driver_sig = [sig for sig in new_signals if sig.label == self.driver][0]
+        driver_sig = [sig for sig in new_signals if sig.label in self.driver]
 
         chg_pts = self.find_chg_pts(driver_sig)
         events = [self.label_f(self.events, new_signals, pt.t) for pt in chg_pts]
@@ -91,7 +91,7 @@ class SystemUnderLearning:
             else:
                 end_timestamp = main_sig.points[-1].timestamp.to_secs()
 
-            segment = [pt for pt in main_sig.points if start_timestamp <= pt.timestamp.to_secs() <= end_timestamp]
+            segment = [pt for pt in main_sig.points if start_timestamp <= pt.timestamp.to_secs() < end_timestamp]
             segments.append(segment)
         else:
             return segments

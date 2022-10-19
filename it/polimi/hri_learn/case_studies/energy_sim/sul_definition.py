@@ -2,13 +2,12 @@ import configparser
 import os
 from typing import List
 
-from it.polimi.hri_learn.case_studies.energy_sim.sul_functions import label_event, parse_data, get_power_param, is_chg_pt
+from it.polimi.hri_learn.case_studies.energy_sim.sul_functions import label_event, parse_data, get_power_param, \
+    is_chg_pt
 from it.polimi.hri_learn.domain.lshafeatures import Event, NormalDistribution, Trace
 from it.polimi.hri_learn.domain.sigfeatures import Timestamp, SampledSignal
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
-from it.polimi.hri_learn.pltr.energy_pltr import distr_hist
-from it.polimi.hri_learn.pltr.energy_pltr import double_plot
 
 config = configparser.ConfigParser()
 config.sections()
@@ -49,7 +48,10 @@ spindle_off = Event('', 'stop', 'i_0')
 
 events.append(spindle_off)
 
-DRIVER_SIG = 'w'
+events.append(Event('', 'load', 'l'))
+events.append(Event('', 'unload', 'u'))
+
+DRIVER_SIG = ['w', 'pr']
 DEFAULT_M = 0
 DEFAULT_DISTR = 0
 
@@ -66,9 +68,9 @@ if test:
         # testing data to signals conversion
         new_signals: List[SampledSignal] = parse_data(TEST_PATH + file)
         # testing chg pts identification
-        chg_pts = energy_sim_cs.find_chg_pts([sig for sig in new_signals if sig.label == DRIVER_SIG][0])
+        chg_pts = energy_sim_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
         # testing event labeling
-        id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
+        id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts]
         # testing signal to trace conversion
         energy_sim_cs.process_data(TEST_PATH + file)
         trace = energy_sim_cs.timed_traces[-1]
