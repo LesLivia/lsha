@@ -248,12 +248,12 @@ class Teacher:
                             else:
                                 for m in self.hist[distr]:
                                     v2 += [m] * 10
-                                noise2 = np.random.normal(0.0, 0.5, size=len(v2))
+                                noise2 = np.random.normal(0.0, 10.0, size=len(v2))
                             v2 = [x + noise2[i] for i, x in enumerate(v2)]
 
                             statistic, pvalue = stats.ks_2samp(v1, v2)
                             fits = [d for d in eligible_distributions if d.d_id == distr]
-                            if statistic <= min_dist and pvalue >= 0.01 and len(fits) > 0:
+                            if statistic <= min_dist and pvalue >= 0.00 and len(fits) > 0:
                                 min_dist = statistic
                                 best_fit = fits[0]
                     except AttributeError:

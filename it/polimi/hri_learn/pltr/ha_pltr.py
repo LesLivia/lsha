@@ -47,7 +47,8 @@ def to_graphviz(ha: HybridAutomaton, name: str, SAVE_PATH: str, view=False):
     edges = ha.edges
 
     for loc in locations:
-        label = style_label([loc.name, '<br/><b>' + loc.flow_cond + '</b>'], [8, 6], ['black', '#ad0c00'])
+        flow_cond_label = loc.flow_cond if loc.flow_cond != 'null' else '-'
+        label = style_label([loc.name, '<br/><b>' + flow_cond_label + '</b>'], [8, 6], ['black', '#ad0c00'])
         f.node(loc.name, label=label)
 
     for edge in edges:

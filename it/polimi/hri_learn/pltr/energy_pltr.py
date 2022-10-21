@@ -97,7 +97,7 @@ def distr_hist(values: Dict[int, List[float]], name: str):
         if CS == 'THERMO':
             ax.hist(values[i][1], bins=25)
         else:
-            ax.hist(values[i][1], bins=25, density=False, histtype='step')
+            ax.hist(values[i][1], bins=25, density=True, histtype='step')
             with open(SAVE_PATH + '{}.txt'.format('histogram_values'), 'a') as f:
                     f.write('D_{}:\n'.format(i))
                     lines = [str(x)+'\n' for x in values[i][1]]

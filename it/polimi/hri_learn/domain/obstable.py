@@ -68,17 +68,19 @@ class ObsTable:
         rows = self.get_upper_observations() + self.get_lower_observations()
         populated_rows = [i for i, row in enumerate(rows) if row.is_populated()]
 
-        max_tabs = max([len(str(word)) for i, word in enumerate(self.get_S() + self.get_low_S()) if i in populated_rows])
+        max_tabs = max(
+            [len(str(word)) for i, word in enumerate(self.get_S() + self.get_low_S()) if i in populated_rows])
         HEADER = ' ' * max_tabs + '|'
 
         len_row_cells = [[len(s.label) for s in r.state] for r in rows]
-        col_width = [max([l for r in len_row_cells for j_2, l in enumerate(r) if j_2==j]) for j, e in enumerate(self.get_E())]
+        col_width = [max([l for r in len_row_cells for j_2, l in enumerate(r) if j_2 == j]) for j, e in
+                     enumerate(self.get_E())]
 
         # column (E set) labels
-        HEADER += '|'.join([str(e)+' '*(col_width[j]-len(str(e))) for j, e in enumerate(self.get_E())])
+        HEADER += '|'.join([str(e) + ' ' * (col_width[j] - len(str(e))) for j, e in enumerate(self.get_E())])
         result += HEADER + '\n'
 
-        SEPARATOR = '-' * max_tabs + '+' + '+'.join(['-'*c for c in col_width])
+        SEPARATOR = '-' * max_tabs + '+' + '+'.join(['-' * c for c in col_width])
         result += SEPARATOR + '\n'
 
         # print short words row labels
@@ -91,7 +93,7 @@ class ObsTable:
             else:
                 ROW = str(s_word)
                 ROW += ' ' * (max_tabs - len(str(s_word))) + '|'
-                ROW += '|'.join([s.label + ' '*(col_width[j]-len(s.label)) for j,s in enumerate(row.state)])
+                ROW += '|'.join([s.label + ' ' * (col_width[j] - len(s.label)) for j, s in enumerate(row.state)])
                 result += ROW + '\n'
 
         result += SEPARATOR + '\n'
@@ -125,7 +127,7 @@ class ObsTable:
                 return loc
 
             for i, row in enumerate(self.get_upper_observations()):
-                if self.get_S()[i] in seq_to_loc.keys() and teacher.eqr_query(curr_row, row):
+                if self.get_S()[i] in seq_to_loc.keys() and teacher.eqr_query(curr_row, row, strict=True):
                     loc = [l for l in locations if l.name == seq_to_loc[self.get_S()[i]]][0]
         return loc
 
@@ -164,7 +166,7 @@ class ObsTable:
         for index, seq in enumerate(unique_sequences):
             seq_index = self.get_S().index(seq)
             row = upp_obs[seq_index]
-            new_name = HybridAutomaton.LOCATION_FORMATTER.format(seq_index)
+            new_name = HybridAutomaton.LOCATION_FORMATTER.format(len(locations))
             new_flow = row.state[0].vars[0][0].label + ', ' + row.state[0].vars[0][1].label
             locations.append(Location(new_name, new_flow))
             unique_sequences_dict[seq] = new_name
