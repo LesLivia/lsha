@@ -2,7 +2,7 @@ from typing import List
 
 from graphviz import Digraph
 
-from it.polimi.hri_learn.domain.hafeatures import HybridAutomaton
+from it.polimi.hri_learn.domain.shafeatures import StochasticHybridAutomaton
 
 FONT_OPEN_TAG = '<FONT {}>'
 FONT_CLOSE_TAG = '</FONT>'
@@ -34,7 +34,7 @@ def style_label(args: List[str], font_sizes: List[int] = None, font_colors: List
     return label
 
 
-def to_graphviz(ha: HybridAutomaton, name: str, SAVE_PATH: str, view=False):
+def to_graphviz(ha: StochasticHybridAutomaton, name: str, SAVE_PATH: str, view=False):
     f = Digraph('hybrid_automaton', filename=SAVE_PATH + name)
     f.attr(rankdir='LR', size='2')
     f.attr('node', shape='circle')
@@ -47,8 +47,10 @@ def to_graphviz(ha: HybridAutomaton, name: str, SAVE_PATH: str, view=False):
     edges = ha.edges
 
     for loc in locations:
-        flow_cond_label = loc.flow_cond if loc.flow_cond != 'null' else '-'
-        label = style_label([loc.name, '<br/><b>' + flow_cond_label + '</b>'], [8, 6], ['black', '#ad0c00'])
+        if loc.flow_cond is not None:
+            label = style_label([loc.name, '<br/><b>' + loc.flow_cond + '</b>'], [8, 6], ['black', '#ad0c00'])
+        else:
+            label = style_label([loc.name], [8, 6], ['black', '#ad0c00'])
         f.node(loc.name, label=label)
 
     for edge in edges:

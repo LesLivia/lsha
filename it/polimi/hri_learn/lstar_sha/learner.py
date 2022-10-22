@@ -1,8 +1,9 @@
 import configparser
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Set
 
 from it.polimi.hri_learn.domain.lshafeatures import State, FlowCondition, ProbDistribution
 from it.polimi.hri_learn.domain.obstable import ObsTable, Row, Trace
+from it.polimi.hri_learn.domain.shafeatures import StochasticHybridAutomaton, Location, Edge
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
 
@@ -175,6 +176,74 @@ class Learner:
         self.obs_table.set_upper_observations(upp_obs)
         self.obs_table.set_lower_observations(low_obs)
 
+    @staticmethod
+    def get_nondetermistic_edge(sha: StochasticHybridAutomaton, loc: Location):
+        outgoing_edges = [e for e in sha.edges if e.start == loc]
+        seen_events: Set[str] = set()
+        for edge in outgoing_edges:
+            if edge.sync in seen_events:
+                LOGGER.warn('NON-DETERMINISM DETECTED! Location: {}, Event: {}'.format(loc.name, edge.sync))
+                return edge.sync
+            else:
+                seen_events.add(edge.sync)
+        return None
+
+    def merge_loc(self, sha: StochasticHybridAutomaton, loc: Location,
+                  event: str, loc_dic: Dict[Trace, str]):
+        competing_locs = [edge.dest for edge in sha.edges if edge.start == loc and edge.sync == event]
+        # If ambiguous rows have different flow/distr, they cannot be merged.
+        if len(set([l.flow_cond for l in competing_locs])) > 1:
+            return sha, False
+
+        ambig_traces = [tr for tr in loc_dic.keys() for l in competing_locs if loc_dic[tr] == l.name]
+        ambig_rows = [row for i, row in enumerate(self.obs_table.get_upper_observations()) for tr in ambig_traces if
+                      self.obs_table.get_S().index(tr) == i]
+
+        # if two among the competing rows are not at least weakly equal,
+        # merging is not possible
+        checked_pairs: List[Tuple[Row, Row]] = []
+        for i, row_1 in enumerate(ambig_rows):
+            for j, row_2 in enumerate(ambig_rows):
+                if i != j and (row_1, row_2) not in checked_pairs and (row_2, row_1) not in checked_pairs:
+                    if not self.TEACHER.eqr_query(row_1, row_2):
+                        return sha, False
+                    else:
+                        checked_pairs.append((row_1, row_2))
+
+        # otherwise, merge.
+        ending_in_competing = [e for e in sha.edges if e.dest in competing_locs[1:] and e.start == loc]
+        starting_in_competing = [e for e in sha.edges if e.start in competing_locs[1:]]
+        for e in ending_in_competing:
+            sha.edges.remove(e)
+        for e in starting_in_competing:
+            sha.edges.append(Edge(competing_locs[0], e.dest, e.guard, e.sync))
+            sha.edges.remove(e)
+
+        for l in competing_locs[1:]:
+            sha.locations.remove(l)
+
+        return sha, True
+
+    def sanity_check(self, sha: StochasticHybridAutomaton, loc_dic: Dict[Trace, str]):
+        to_check: Set[Location] = set(sha.locations)
+
+        while len(to_check) > 0:
+            for loc in sha.locations:
+                non_det_event = Learner.get_nondetermistic_edge(sha, loc)
+                if non_det_event is not None:
+                    sha, merged = self.merge_loc(sha, loc, non_det_event, loc_dic)
+                    if merged:
+                        to_check = set(sha.locations)
+                        break
+                    else:
+                        LOGGER.warn('MERGING LOCATIONS UNSUCCESSFUL.')
+                        to_check = set()
+                        break
+                else:
+                    to_check.remove(loc)
+
+        return sha
+
     def run_lsha(self, debug_print=True, filter_empty=False):
         # Fill Observation Table with Answers to Queries (from TEACHER)
         step0 = True  # work around to implement a do-while structure
@@ -237,4 +306,6 @@ class Learner:
             self.obs_table.print(filter_empty)
         # Build Hypothesis Automaton
         LOGGER.info('BUILDING HYP. AUTOMATON...')
-        return self.obs_table.to_sha(self.TEACHER)
+        hypsha, loc_dict = self.obs_table.to_sha(self.TEACHER)
+        hypsha = self.sanity_check(hypsha, loc_dict)
+        return hypsha

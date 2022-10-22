@@ -20,6 +20,15 @@ class Location:
         same_flow = self.flow_cond == other.flow_cond
         return same_name and same_flow
 
+    def __str__(self):
+        if self.flow_cond is not None:
+            return self.name + ' ' + self.flow_cond
+        else:
+            return self.name
+
+    def __hash__(self):
+        return hash(str(self))
+
 
 LOCATIONS: List[Location] = [Location(LocLabels.IDLE.value, None), Location(LocLabels.BUSY.value, None)]
 
@@ -45,7 +54,7 @@ class Edge:
         return same_start and same_dest and same_guard and same_sync
 
 
-class HybridAutomaton:
+class StochasticHybridAutomaton:
     LOCATION_FORMATTER = 'q_{}'
 
     def __init__(self, loc: List[Location], edges: List[Edge]):

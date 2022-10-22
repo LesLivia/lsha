@@ -2,7 +2,7 @@ import configparser
 import warnings
 from datetime import datetime
 
-import it.polimi.hri_learn.pltr.ha_pltr as ha_pltr
+import it.polimi.hri_learn.pltr.sha_pltr as ha_pltr
 import it.polimi.hri_learn.pltr.lsha_report as report
 from it.polimi.hri_learn.case_studies.energy.sul_definition import energy_cs
 from it.polimi.hri_learn.case_studies.energy_sim.sul_definition import energy_sim_cs

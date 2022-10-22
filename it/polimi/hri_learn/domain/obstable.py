@@ -1,7 +1,10 @@
 from typing import List, Dict
 
-from it.polimi.hri_learn.domain.hafeatures import HybridAutomaton, Location, Edge
 from it.polimi.hri_learn.domain.lshafeatures import Trace, State, EMPTY_STRING
+from it.polimi.hri_learn.domain.shafeatures import StochasticHybridAutomaton, Location, Edge
+from it.polimi.hri_learn.lstar_sha.logger import Logger
+
+LOGGER = Logger('Obs.Table Handler')
 
 
 class Row:
@@ -132,7 +135,7 @@ class ObsTable:
         return loc
 
     def add_init_edges(self, locations: List[Location], edges: List[Edge], seq_to_loc: Dict[Trace, str], teacher):
-        init_loc = Location('__init__', 'null')
+        init_loc = Location('__init__', None)
         locations.append(init_loc)
 
         one_word_upper = [word for word in self.get_S() if len(word) == 1]
@@ -166,7 +169,7 @@ class ObsTable:
         for index, seq in enumerate(unique_sequences):
             seq_index = self.get_S().index(seq)
             row = upp_obs[seq_index]
-            new_name = HybridAutomaton.LOCATION_FORMATTER.format(len(locations))
+            new_name = StochasticHybridAutomaton.LOCATION_FORMATTER.format(len(locations))
             new_flow = row.state[0].vars[0][0].label + ', ' + row.state[0].vars[0][1].label
             locations.append(Location(new_name, new_flow))
             unique_sequences_dict[seq] = new_name
@@ -211,4 +214,4 @@ class ObsTable:
 
         locations, edges = self.add_init_edges(locations, edges, unique_sequences_dict, teacher)
 
-        return HybridAutomaton(locations, edges)
+        return StochasticHybridAutomaton(locations, edges), unique_sequences_dict
