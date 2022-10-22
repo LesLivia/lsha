@@ -13,6 +13,7 @@ config.sections()
 
 CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
 SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])
+PR_RANGE = int(config['ENERGY CS']['PR_RANGE'])
 MIN_SPEED = int(config['ENERGY CS']['MIN_SPEED'])
 MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
 
@@ -20,12 +21,14 @@ LOGGER = Logger('SUL DATA HANDLER')
 
 
 def is_chg_pt(curr, prev):
-    return abs(curr - prev) > SPEED_RANGE
+    return abs(curr[0] - prev[0]) > SPEED_RANGE or abs(curr[1] - prev[1]) > PR_RANGE
 
 
 def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp):
     speed_sig = signals[1]
+    pressure_sig = signals[2]
     speed = {pt.timestamp: (i, pt.value) for i, pt in enumerate(speed_sig.points)}
+    pressure = {pt.timestamp: (i, pt.value) for i, pt in enumerate(pressure_sig.points)}
 
     SPEED_INTERVALS: List[Tuple[int, int]] = []
     for i in range(MIN_SPEED, MAX_SPEED, SPEED_RANGE):
@@ -44,10 +47,25 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
     else:
         prev_speed = curr_speed
 
+    curr_press_index, curr_press = pressure[t]
+    if curr_press_index > 0:
+        try:
+            prev_index = [tup[0] for tup in pressure.values() if tup[0] < curr_press_index][-1]
+            prev_press = pressure_sig.points[prev_index].value
+        except IndexError:
+            prev_press = None
+    else:
+        prev_press = curr_press
+
     identified_event = None
     # if spindle was moving previously and now it is idle, return "stop" event
-    if curr_speed < 100 and (prev_speed is not None and prev_speed >= 100):
-        identified_event = events[-1]
+    if abs(curr_press - prev_press) > PR_RANGE:
+        if curr_press > 500 and prev_press <= 500:
+            identified_event = events[-2]
+        else:
+            identified_event = events[-1]
+    elif curr_speed < MIN_SPEED and (prev_speed is not None and prev_speed >= MIN_SPEED):
+        identified_event = events[-3]
     else:
         # if spindle is now moving at a different speed than before,
         # return 'new speed' event, which varies depending on current speed range
@@ -79,6 +97,9 @@ def parse_data(path: str):
 
     with open(path) as csv_file:
         reader = csv.reader(csv_file, delimiter=',')
+
+        prev_p = 0
+
         for i, row in enumerate(reader):
             if i > 0:
                 ts = parse_ts(row[1])
@@ -105,8 +126,9 @@ def parse_data(path: str):
                 # parse pallet pressure value
                 try:
                     pressure_v = float(row[4].replace(',', '.'))
+                    prev_p = pressure_v
                 except ValueError:
-                    pressure_v = None
+                    pressure_v = prev_p
                 pressure.points.append(SignalPoint(ts, pressure_v))
 
         # transform energy signal into power signal by computing
@@ -130,27 +152,42 @@ def parse_data(path: str):
         power.points = power_pts
 
         # filter speed signal
-        nosecs_speed_pts = [SignalPoint(Timestamp(pt.timestamp.year, pt.timestamp.month,
-                                                  pt.timestamp.day, pt.timestamp.hour,
-                                                  pt.timestamp.min, 0), pt.value) for pt in speed.points]
-        filtered_speed_pts: List[SignalPoint] = [nosecs_speed_pts[0]]
-        last_switch = nosecs_speed_pts[0].timestamp
-        count = 1
-        max_batch = nosecs_speed_pts[0].value
-        for i, pt in enumerate(nosecs_speed_pts):
-            if i == 0:
-                continue
-
-            if pt.timestamp == last_switch:
+        filtered_speed_pts: List[SignalPoint] = [speed.points[0]]
+        last_switch = Timestamp(speed.points[0].timestamp.year, speed.points[0].timestamp.month,
+                                speed.points[0].timestamp.day, speed.points[0].timestamp.hour,
+                                speed.points[0].timestamp.min, 0)
+        max_batch = speed.points[0].value
+        timestamps: List[Timestamp] = []
+        for i, pt in enumerate(speed.points):
+            curr_ts = Timestamp(pt.timestamp.year, pt.timestamp.month, pt.timestamp.day,
+                                pt.timestamp.hour, pt.timestamp.min, 0)
+            if curr_ts == last_switch and i < len(speed.points) - 1:
+                timestamps.append(pt.timestamp)
                 max_batch = max(max_batch, pt.value)
-                count += 1
-            else:
-                filtered_speed_pts.extend([SignalPoint(nosecs_speed_pts[i - 1].timestamp, max_batch)] * count)
-                last_switch = pt.timestamp
+            elif curr_ts != last_switch or i == len(speed.points) - 1:
+                for t in timestamps:
+                    filtered_speed_pts.append(SignalPoint(t, max_batch))
+                last_switch = curr_ts
                 max_batch = pt.value
-                count = 1
+                timestamps = [curr_ts]
 
         filtered_speed = SampledSignal(filtered_speed_pts, label='w')
+
+        # infer pressure signal if absent
+        non_zero_pts = [pt for pt in pressure.points if pt.value > 0]
+        if len(non_zero_pts) == 0:
+            inferred_pressure: List[SignalPoint] = []
+            last_non_zero_speed_ts = filtered_speed.points[0].timestamp
+            for pt in filtered_speed.points:
+                delta = pt.timestamp.to_secs() - last_non_zero_speed_ts.to_secs()
+                if pt.value > MIN_SPEED or delta < 600:
+                    if pt.value > MIN_SPEED:
+                        last_non_zero_speed_ts = pt.timestamp
+                    pressure_v = 800
+                else:
+                    pressure_v = 0
+                inferred_pressure.append(SignalPoint(pt.timestamp, pressure_v))
+            pressure = SampledSignal(inferred_pressure, label='pr')
 
         return [power, filtered_speed, pressure]
 

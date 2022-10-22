@@ -38,19 +38,15 @@ class SystemUnderLearning:
     # TRACE PROCESSING METHODS
     #
     def find_chg_pts(self, driver: List[SampledSignal]):
-        timestamps = [[pt.timestamp for pt in sig.points] for sig in driver][0]
-        values = [[pt.value for pt in sig.points] for sig in driver]
+        values = [{pt.timestamp: pt.value for pt in sig.points} for sig in driver]
         chg_pts: List[ChangePoint] = []
 
-        # if values[0][0] > 0:
-        #    chg_pts.append(ChangePoint(timestamps[0]))
-
         # IDENTIFY CHANGE PTS IN DRIVER OVERLAY
-        prev = [val_list[0] for val_list in values]
-        for i, ts in enumerate(timestamps):
-            curr = [val_list[i] for val_list in values]
+        prev = [sig.points[0].value for sig in driver]
+        for ts in [pt.timestamp for pt in driver[0].points]:
+            curr = [val_dic[ts] for val_dic in values]
             if self.is_chg_pt(curr, prev):
-                chg_pts.append(ChangePoint(timestamps[i]))
+                chg_pts.append(ChangePoint(ts))
             prev = curr
 
         return chg_pts

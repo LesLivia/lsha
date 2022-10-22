@@ -20,18 +20,10 @@ MIN_SPEED = int(config['ENERGY CS']['MIN_SPEED'])
 MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
 
 
-# FIXME: temporarily approximated to constant function
 def pwr_model(interval: List[Timestamp], P_0):
     interval = [ts.to_secs() for ts in interval]
     AVG_PW = 1.0
     return [AVG_PW] * len(interval)
-
-
-def stopping_model(interval: List[Timestamp], P_0):
-    interval = [ts.to_secs() - interval[0].to_secs() for ts in interval]
-    COEFF = 1.0
-    values = [max(0, P_0 - COEFF * t) for t in interval]
-    return values
 
 
 # define flow conditions
@@ -52,13 +44,13 @@ for i in range(MIN_SPEED, MAX_SPEED, SPEED_RANGE):
         new_guard = '{}<=w'.format(i)
     events.append(Event(new_guard, 'start', 'm_{}'.format(len(events))))
 
-spindle_on9 = Event('2000<=w', 'start', 'm_8')
-
 spindle_off = Event('', 'stop', 'i_0')
 
 events.append(spindle_off)
+events.append(Event('', 'load', 'l'))
+events.append(Event('', 'unload', 'u'))
 
-DRIVER_SIG = 'w'
+DRIVER_SIG = ['w', 'pr']
 DEFAULT_M = 0
 DEFAULT_DISTR = 0
 
@@ -67,7 +59,7 @@ energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_po
 
 test = False
 if test:
-    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/energy/'
+    TEST_PATH = config['TRACE GENERATION']['SIM_LOGS_PATH'].format('ENERGY')
     traces_files = os.listdir(TEST_PATH)
     traces_files = [file for file in traces_files if file.startswith('_')]
 
@@ -75,7 +67,7 @@ if test:
         # testing data to signals conversion
         new_signals: List[SampledSignal] = parse_data(TEST_PATH + file)
         # testing chg pts identification
-        chg_pts = energy_cs.find_chg_pts([sig for sig in new_signals if sig.label == DRIVER_SIG][0])
+        chg_pts = energy_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
         # testing event labeling
         id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
         # testing signal to trace conversion
