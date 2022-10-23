@@ -21,8 +21,8 @@ config.read('./resources/config/config.ini')
 config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
-NOISE = config['LSHA PARAMETERS']['NOISE']
-P_VALUE = config['LSHA PARAMETERS']['NOISE']
+NOISE = float(config['LSHA PARAMETERS']['NOISE'])
+P_VALUE = float(config['LSHA PARAMETERS']['NOISE'])
 
 
 class Teacher:
