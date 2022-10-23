@@ -21,6 +21,8 @@ config.read('./resources/config/config.ini')
 config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
+NOISE = config['LSHA PARAMETERS']['NOISE']
+P_VALUE = config['LSHA PARAMETERS']['NOISE']
 
 
 class Teacher:
@@ -177,7 +179,7 @@ class Teacher:
                             noise1 = [0] * len(v1)
                         else:
                             v1 = [avg_metrics] * 50
-                            noise1 = np.random.normal(0.0, 0.5, size=len(v1))
+                            noise1 = np.random.normal(0.0, NOISE, size=len(v1))
 
                         v1 = [x + noise1[i] for i, x in enumerate(v1)]
 
@@ -193,7 +195,7 @@ class Teacher:
 
                         statistic, pvalue = stats.ks_2samp(v1, v2)
                         fits = [d for d in eligible_distributions if d.d_id == distr]
-                        if statistic <= min_dist and pvalue >= 0.00 and len(fits) > 0:
+                        if statistic <= min_dist and pvalue >= P_VALUE and len(fits) > 0:
                             min_dist = statistic
                             best_fit = fits[0]
                 except AttributeError:
