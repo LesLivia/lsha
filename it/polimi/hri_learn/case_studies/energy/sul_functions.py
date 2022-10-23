@@ -1,6 +1,6 @@
 import configparser
 import csv
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 from it.polimi.hri_learn.domain.lshafeatures import Event, FlowCondition
 from it.polimi.hri_learn.domain.sigfeatures import SampledSignal, Timestamp, SignalPoint
@@ -152,23 +152,35 @@ def parse_data(path: str):
         power.points = power_pts
 
         # filter speed signal
-        filtered_speed_pts: List[SignalPoint] = [speed.points[0]]
+        filtered_speed_pts: List[SignalPoint] = []
         last_switch = Timestamp(speed.points[0].timestamp.year, speed.points[0].timestamp.month,
                                 speed.points[0].timestamp.day, speed.points[0].timestamp.hour,
                                 speed.points[0].timestamp.min, 0)
         max_batch = speed.points[0].value
         timestamps: List[Timestamp] = []
+        value_to_mul: Dict[float, int] = dict()
         for i, pt in enumerate(speed.points):
             curr_ts = Timestamp(pt.timestamp.year, pt.timestamp.month, pt.timestamp.day,
                                 pt.timestamp.hour, pt.timestamp.min, 0)
             if curr_ts == last_switch and i < len(speed.points) - 1:
                 timestamps.append(pt.timestamp)
-                max_batch = max(max_batch, pt.value)
+                max_batch = min(max_batch, pt.value)
+                if pt.value in value_to_mul:
+                    value_to_mul[pt.value] += 1
+                else:
+                    value_to_mul[pt.value] = 1
             elif curr_ts != last_switch or i == len(speed.points) - 1:
+                max_mul = 0
+                max_val = 0
+                for val in value_to_mul:
+                    if value_to_mul[val] > max_mul:
+                        max_mul = value_to_mul[val]
+                        max_val = val
                 for t in timestamps:
-                    filtered_speed_pts.append(SignalPoint(t, max_batch))
+                    filtered_speed_pts.append(SignalPoint(t, max_val))
                 last_switch = curr_ts
                 max_batch = pt.value
+                value_to_mul.clear()
                 timestamps = [curr_ts]
 
         filtered_speed = SampledSignal(filtered_speed_pts, label='w')
