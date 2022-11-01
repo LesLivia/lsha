@@ -211,12 +211,16 @@ class Learner:
                         checked_pairs.append((row_1, row_2))
 
         # otherwise, merge.
-        ending_in_competing = [e for e in sha.edges if e.dest in competing_locs[1:] and e.start == loc]
+        to_remove = [e for e in sha.edges if e.dest in competing_locs[1:] and e.start == loc]
         starting_in_competing = [e for e in sha.edges if e.start in competing_locs[1:]]
-        for e in ending_in_competing:
+        ending_in_competing = [e for e in sha.edges if e.dest in competing_locs[1:] and e.start != loc]
+        for e in to_remove:
             sha.edges.remove(e)
         for e in starting_in_competing:
             sha.edges.append(Edge(competing_locs[0], e.dest, e.guard, e.sync))
+            sha.edges.remove(e)
+        for e in ending_in_competing:
+            sha.edges.append(Edge(e.start, competing_locs[0], e.guard, e.sync))
             sha.edges.remove(e)
 
         for l in competing_locs[1:]:

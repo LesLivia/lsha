@@ -368,9 +368,13 @@ class Teacher:
                                         not_counter.append(prefix)
                         else:
                             not_counter.append(prefix)
-        # TODO: check che l'ultimo sia sempre il più lungo
         else:
-            if CS != 'THERMO' and len(not_counter) > 0:
-                return not_counter[-1]
+            if CS == 'ENERGY' and len(not_counter) > 0:
+                new_events = set([e.symbol for e in not_counter[0].events]) - \
+                             set([e.symbol for t in S for e in t.events])
+                if len(new_events) > 0:
+                    return not_counter[0]
+                else:
+                    return None
             else:
                 return None

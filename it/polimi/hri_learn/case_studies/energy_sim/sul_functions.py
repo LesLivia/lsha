@@ -83,7 +83,7 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
 
 def parse_ts(ts: str):
     fields = ts.split(':')
-    return Timestamp(0, 0, int(fields[0]), int(fields[1]), int(fields[2]), int(fields[3]))
+    return Timestamp(0, 0, 0, int(fields[0]), int(fields[1]), int(fields[2]))
 
 
 def parse_data(path: str):
@@ -100,7 +100,7 @@ def parse_data(path: str):
             if i == 0:
                 continue
 
-            ts = parse_ts(row[2] + ':' + row[0])
+            ts = parse_ts(row[2])
 
             if i > 1 and ts == speed.points[-1].timestamp:
                 # parse power value
