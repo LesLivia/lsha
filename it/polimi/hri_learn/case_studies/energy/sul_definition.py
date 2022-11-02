@@ -76,34 +76,37 @@ if test:
         print(Trace(tt=trace))
         power_pts = new_signals[0].points
         speed_pts = new_signals[1].points
+        pressure_pts = new_signals[2].points
         double_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
                     [pt.timestamp for pt in speed_pts], [pt.value for pt in speed_pts],
-                    trace, title=file, filtered=True)
+                    trace, title=file, filtered=True,
+                    timestamps3=[pt.timestamp for pt in pressure_pts],
+                    v3=[pt.value for pt in pressure_pts])
 
     # test segment identification
-    test_trace = Trace(energy_cs.traces[0][:1])
-    segments = energy_cs.get_segments(test_trace)
-
-    # test model identification
-    TEACHER = Teacher(energy_cs)
-    identified_model: FlowCondition = TEACHER.mi_query(test_trace)
-    print(identified_model)
-
-    # test distr identification
-    for i, trace in enumerate(TEACHER.timed_traces):
-        for j, event in enumerate(trace.e):
-            test_trace = Trace(energy_cs.traces[i][:j])
-            identified_distr = TEACHER.ht_query(test_trace, identified_model, save=True)
-
-            segments = energy_cs.get_segments(test_trace)
-            avg_metrics = sum([TEACHER.sul.get_ht_params(segment, identified_model)
-                               for segment in segments]) / len(segments)
-
-            try:
-                print('{}:\t{:.3f}->{}'.format(test_trace.events[-1].symbol, avg_metrics, identified_distr.params))
-            except IndexError:
-                print('{}:\t{:.3f}->{}'.format(test_trace, avg_metrics, identified_distr.params))
-
-    for d in energy_cs.vars[0].distr:
-        print(d.params)
-    distr_hist(TEACHER.hist)
+    # test_trace = Trace(energy_cs.traces[0][:1])
+    # segments = energy_cs.get_segments(test_trace)
+    #
+    # # test model identification
+    # TEACHER = Teacher(energy_cs)
+    # identified_model: FlowCondition = TEACHER.mi_query(test_trace)
+    # print(identified_model)
+    #
+    # # test distr identification
+    # for i, trace in enumerate(TEACHER.timed_traces):
+    #     for j, event in enumerate(trace.e):
+    #         test_trace = Trace(energy_cs.traces[i][:j])
+    #         identified_distr = TEACHER.ht_query(test_trace, identified_model, save=True)
+    #
+    #         segments = energy_cs.get_segments(test_trace)
+    #         avg_metrics = sum([TEACHER.sul.get_ht_params(segment, identified_model)
+    #                            for segment in segments]) / len(segments)
+    #
+    #         try:
+    #             print('{}:\t{:.3f}->{}'.format(test_trace.events[-1].symbol, avg_metrics, identified_distr.params))
+    #         except IndexError:
+    #             print('{}:\t{:.3f}->{}'.format(test_trace, avg_metrics, identified_distr.params))
+    #
+    # for d in energy_cs.vars[0].distr:
+    #     print(d.params)
+    # distr_hist(TEACHER.hist)
