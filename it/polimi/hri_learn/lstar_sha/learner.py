@@ -221,7 +221,10 @@ class Learner:
             sha.edges.remove(e)
         for e in ending_in_competing:
             sha.edges.append(Edge(e.start, competing_locs[0], e.guard, e.sync))
-            sha.edges.remove(e)
+            try:
+                sha.edges.remove(e)
+            except ValueError:
+                LOGGER.warn('Edge already removed.')
 
         for l in competing_locs[1:]:
             sha.locations.remove(l)

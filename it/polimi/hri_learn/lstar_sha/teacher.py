@@ -370,7 +370,7 @@ class Teacher:
                             not_counter.append(prefix)
         else:
             if CS == 'ENERGY' and len(not_counter) > 0:
-                new_events = set([e.symbol for e in not_counter[0].events]) - \
+                new_events = set([e.symbol for x in not_counter for e in x.events]) - \
                              set([e.symbol for t in S for e in t.events])
                 if len(new_events) > 0:
                     return not_counter[0]
