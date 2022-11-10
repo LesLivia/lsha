@@ -227,7 +227,10 @@ class Learner:
                 LOGGER.warn('Edge already removed.')
 
         for l in competing_locs[1:]:
-            sha.locations.remove(l)
+            try:
+                sha.locations.remove(l)
+            except ValueError:
+                LOGGER.warn('Location already removed.')
 
         return sha, True
 
