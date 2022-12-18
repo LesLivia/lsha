@@ -200,6 +200,13 @@ def parse_data(path: str):
                     pressure_v = 0
                 inferred_pressure.append(SignalPoint(pt.timestamp, pressure_v))
             pressure = SampledSignal(inferred_pressure, label='pr')
+        pressure.points[0].value = 0
+        pressure.points[-2].value = 0
+        pressure.points[-1].value = 0
+        filtered_speed.points[0].value = 0.0
+        filtered_speed.points[1].value = 0.0
+        filtered_speed.points[-1].value = 0.0
+        filtered_speed.points[-2].value = 0.0
 
         return [power, filtered_speed, pressure]
 
