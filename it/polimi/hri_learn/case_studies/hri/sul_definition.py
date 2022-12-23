@@ -98,18 +98,20 @@ args = {'name': 'hri', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d'
 hri_cs = SystemUnderLearning([fatigue], events, parse_data, label_event, get_ftg_param, is_chg_pt,
                              args=args)
 
-test = False
+test = True
 if test:
     # test event configuration
     print(hri_cs.symbols)
 
     # test trace processing
-    TRACE_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/1/'
-    hri_traces = [file for file in os.listdir(TRACE_PATH) if file.startswith('_')]
+    TRACE_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/{}/'.format(CS_VERSION)
+    hri_traces = [file for file in os.listdir(TRACE_PATH) if file.startswith('SIM')]
+    hri_traces.sort()
     for trace in hri_traces:
         hri_cs.process_data(TRACE_PATH + trace + '/')
+        print(hri_cs.traces[-1])
 
-    test_trace = Trace([events[4]])
+    test_trace = Trace([events[6]])
     plot_traces = [(i, t) for i, t in enumerate(hri_cs.traces) if t.startswith(test_trace)]
 
     # test segment identification
@@ -127,5 +129,5 @@ if test:
     print(hri_cs.vars[0].model2distr[1])
     print(teacher.ht_query(test_trace, id_flow, save=True))
 
-    double_plot(teacher.signals[0][0], teacher.signals[0][1], teacher.signals[0][3],
-                teacher.sul.timed_traces[0], trace, events)
+    # double_plot(teacher.signals[0][0], teacher.signals[0][1], teacher.signals[0][3],
+    #            teacher.sul.timed_traces[0], trace, events)

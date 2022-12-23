@@ -24,6 +24,12 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
     posX = signals[1]
     moving = signals[2]
 
+    '''
+    Repeat for every channel in the system
+    '''
+    curr_mov = list(filter(lambda x: x.timestamp == t, moving.points))[0]
+    identified_channel = 'start' if curr_mov.value == 1 else 'stop'
+
     identified_guard = ''
     if (SAMPLE_STRATEGY == 'SIM' and CS_VERSION in [1, 2, 3]) or \
             (SAMPLE_STRATEGY == 'UPPAAL' and CS_VERSION in [2, 3, 4, 5]):
@@ -53,7 +59,7 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
         curr_posy = list(filter(lambda x: x.timestamp <= t, posY.points))[-1]
 
         close_to_chair = 16 <= curr_posx.value <= 20.0 and 3.0 <= curr_posy.value <= 6.0
-        identified_guard += 's' if close_to_chair else '!s'
+        identified_guard += 's' if close_to_chair and identified_channel == 'stop' else '!s'
 
         next_sig_x = list(filter(lambda x: x.timestamp > t, posX.points))
         next_sig_y = list(filter(lambda x: x.timestamp > t, posY.points))
@@ -61,20 +67,16 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
         nexty = next_sig_y[0] if len(next_sig_y) > 0 else curr_posy
         dist = math.sqrt((nextx.value - curr_posx.value) ** 2 + (nexty.value - curr_posy.value) ** 2)
         vel = dist / 2.0
-        identified_guard += 'r' if vel > 1.0 else '!r'
 
         room = signals[4]
-        curr_room_status = list(filter(lambda x: x.timestamp <= t, room.points))[-1]
-        identified_guard += 'h' if curr_room_status else '!h'
+        curr_room_status = list(filter(lambda x: x.timestamp <= t.to_secs(), room.points))[-1]
+        identified_guard += 'r' if vel > 0.8 and ((close_to_chair and identified_channel == 'stop')
+                                                  or curr_room_status.value) else '!r'
+        identified_guard += 'h' if curr_room_status.value and not (close_to_chair and vel > 1.0) else '!h'
 
-        identified_guard += 'l' if vel < 0.2 else '!l'
-        identified_guard += 'a' if False else '!a'
-
-    '''
-    Repeat for every channel in the system
-    '''
-    curr_mov = list(filter(lambda x: x.timestamp == t, moving.points))[0]
-    identified_channel = 'start' if curr_mov.value == 1 else 'stop'
+        identified_guard += 'l' if 0.2 <= vel < 0.4 and not close_to_chair \
+                                   and (identified_channel == 'start' or curr_room_status.value) else '!l'
+        identified_guard += 'a' if vel < 0.2 and not curr_room_status else '!a'
 
     '''
     Find symbol associated with guard-channel combination
