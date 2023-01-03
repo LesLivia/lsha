@@ -62,7 +62,7 @@ if test:
     TEST_PATH = config['TRACE GENERATION']['SIM_LOGS_PATH'].format('ENERGY')
     traces_files = os.listdir(TEST_PATH)
     traces_files = [file for file in traces_files if file.startswith('_')]
-
+    traces_files.sort()
     for file in traces_files:
         # testing data to signals conversion
         new_signals: List[SampledSignal] = parse_data(TEST_PATH + file)
@@ -73,15 +73,17 @@ if test:
         # testing signal to trace conversion
         energy_cs.process_data(TEST_PATH + file)
         trace = energy_cs.timed_traces[-1]
-        print(Trace(tt=trace))
+        print('{}\t{}\t{}\t{}'.format(file, Trace(tt=trace),
+                                      trace.t[-1].to_secs()-trace.t[0].to_secs(), len(trace)))
         power_pts = new_signals[0].points
         speed_pts = new_signals[1].points
         pressure_pts = new_signals[2].points
         double_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
-                    [pt.timestamp for pt in speed_pts], [pt.value for pt in speed_pts],
-                    trace, title=file, filtered=True,
-                    timestamps3=[pt.timestamp for pt in pressure_pts],
-                    v3=[pt.value for pt in pressure_pts])
+                   [pt.timestamp for pt in speed_pts], [pt.value for pt in speed_pts],
+                   trace, title=file, filtered=True,
+                   timestamps3=[pt.timestamp for pt in pressure_pts],
+                   v3=[pt.value for pt in pressure_pts])
+        pass
 
     # test segment identification
     # test_trace = Trace(energy_cs.traces[0][:1])

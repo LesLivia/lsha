@@ -8,6 +8,7 @@ from it.polimi.hri_learn.domain.lshafeatures import Event, NormalDistribution, T
 from it.polimi.hri_learn.domain.sigfeatures import Timestamp, SampledSignal
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
+from it.polimi.hri_learn.pltr.energy_pltr import double_plot
 
 config = configparser.ConfigParser()
 config.sections()
@@ -69,11 +70,19 @@ if test:
         # testing chg pts identification
         chg_pts = energy_sim_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
         # testing event labeling
-        id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts]
+        id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
         # testing signal to trace conversion
         energy_sim_cs.process_data(TEST_PATH + file)
         trace = energy_sim_cs.timed_traces[-1]
         print(Trace(tt=trace))
+        power_pts = new_signals[0].points
+        speed_pts = new_signals[1].points
+        pressure_pts = new_signals[2].points
+        double_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
+                    [pt.timestamp for pt in speed_pts], [pt.value for pt in speed_pts],
+                    trace, title=file, filtered=True,
+                    timestamps3=[pt.timestamp for pt in pressure_pts],
+                    v3=[pt.value for pt in pressure_pts])
 
     # test segment identification
     test_trace = Trace(energy_sim_cs.traces[0][:1])
