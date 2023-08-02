@@ -1,0 +1,3 @@
+[submodule "submodules/ekg_extractor"]
+	path = submodules/ekg_extractor
+	url = https://github.com/LesLivia/ekg_extractor.git
