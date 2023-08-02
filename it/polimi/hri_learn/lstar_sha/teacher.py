@@ -23,6 +23,8 @@ config.sections()
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
 NOISE = float(config['LSHA PARAMETERS']['NOISE'])
 P_VALUE = float(config['LSHA PARAMETERS']['P_VALUE'])
+MI_QUERY = bool(config['LSHA PARAMETERS']['MI_QUERY'])
+HT_QUERY = bool(config['LSHA PARAMETERS']['HT_QUERY'])
 
 
 class Teacher:
@@ -63,7 +65,7 @@ class Teacher:
     # If not enough data are available to draw a conclusion, returns None
     #############################################
     def mi_query(self, word: Trace):
-        if word == '':
+        if not MI_QUERY or word == '':
             return self.flows[0][self.sul.default_m]
         else:
             segments = self.sul.get_segments(word)
@@ -154,7 +156,7 @@ class Teacher:
         if flow is None:
             return None
 
-        if word == '':
+        if not HT_QUERY or word == '':
             return self.distributions[self.sul.default_d]
         else:
             segments = self.sul.get_segments(word)
