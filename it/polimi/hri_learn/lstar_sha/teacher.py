@@ -23,8 +23,8 @@ config.sections()
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
 NOISE = float(config['LSHA PARAMETERS']['NOISE'])
 P_VALUE = float(config['LSHA PARAMETERS']['P_VALUE'])
-MI_QUERY = bool(config['LSHA PARAMETERS']['MI_QUERY'])
-HT_QUERY = bool(config['LSHA PARAMETERS']['HT_QUERY'])
+MI_QUERY = config['LSHA PARAMETERS']['MI_QUERY'] == 'True'
+HT_QUERY = config['LSHA PARAMETERS']['HT_QUERY'] == 'True'
 
 
 class Teacher:

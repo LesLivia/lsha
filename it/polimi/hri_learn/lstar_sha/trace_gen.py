@@ -4,8 +4,10 @@ import random
 import subprocess
 from typing import List, Set
 
+import src.ekg_extractor.mgrs.db_connector as conn
 from it.polimi.hri_learn.domain.lshafeatures import Trace, Event
 from it.polimi.hri_learn.lstar_sha.logger import Logger
+from src.ekg_extractor.mgrs.ekg_queries import Ekg_Querier
 
 config = configparser.ConfigParser()
 config.sections()
@@ -136,8 +138,23 @@ class TraceGenerator:
     def get_traces(self, n: int = 1):
         if RESAMPLE_STRATEGY == 'UPPAAL':
             return self.get_traces_uppaal(n)
+        elif RESAMPLE_STRATEGY == 'EKG':
+            return self.get_traces_ekg(n)
         else:
             return self.get_traces_sim(n)
+
+    def get_traces_ekg(self, n: int = 1):
+        driver = conn.get_driver()
+        querier: Ekg_Querier = Ekg_Querier(driver)
+
+        entities = querier.get_entities()
+        evt_seqs = []
+        for entity in entities[:n]:
+            evt_seqs.append(
+                querier.get_events_by_entity(str(entity.extra_attr[querier.schema['entity_properties']['en_id']])))
+
+        conn.close_connection(driver)
+        return evt_seqs
 
     def get_traces_sim(self, n: int = 1):
         # if self.ONCE:

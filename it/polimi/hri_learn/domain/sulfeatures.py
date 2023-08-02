@@ -51,7 +51,7 @@ class SystemUnderLearning:
 
         return chg_pts
 
-    def process_data(self, path: str):
+    def process_data(self, path):
         new_signals: List[SampledSignal] = self.parse_f(path)
         self.signals.append(new_signals)
 

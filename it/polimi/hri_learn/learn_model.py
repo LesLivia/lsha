@@ -2,8 +2,9 @@ import configparser
 import warnings
 from datetime import datetime
 
-import it.polimi.hri_learn.pltr.sha_pltr as ha_pltr
 import it.polimi.hri_learn.pltr.lsha_report as report
+import it.polimi.hri_learn.pltr.sha_pltr as ha_pltr
+from it.polimi.hri_learn.case_studies.auto_twin.sul_definition import auto_twin_cs
 from it.polimi.hri_learn.case_studies.energy.sul_definition import energy_cs
 from it.polimi.hri_learn.case_studies.energy_sim.sul_definition import energy_sim_cs
 from it.polimi.hri_learn.case_studies.hri.sul_definition import hri_cs
@@ -40,6 +41,8 @@ elif CS == 'ENERGY':
         SUL = energy_cs
     else:
         raise RuntimeError
+elif CS == 'AUTO_TWIN':
+    SUL = auto_twin_cs
 else:
     raise RuntimeError
 
