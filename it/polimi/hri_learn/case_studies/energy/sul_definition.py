@@ -6,9 +6,7 @@ from it.polimi.hri_learn.case_studies.energy.sul_functions import label_event, p
 from it.polimi.hri_learn.domain.lshafeatures import Event, NormalDistribution, Trace
 from it.polimi.hri_learn.domain.sigfeatures import Timestamp, SampledSignal
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
-from it.polimi.hri_learn.lstar_sha.teacher import Teacher
-from it.polimi.hri_learn.pltr.energy_pltr import distr_hist
-from it.polimi.hri_learn.pltr.energy_pltr import double_plot
+from it.polimi.hri_learn.pltr.energy_pltr import single_plot
 
 config = configparser.ConfigParser()
 config.sections()
@@ -57,7 +55,7 @@ DEFAULT_DISTR = 0
 args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 
-test = False
+test = True
 if test:
     TEST_PATH = config['TRACE GENERATION']['SIM_LOGS_PATH'].format('ENERGY')
     traces_files = os.listdir(TEST_PATH)
@@ -74,15 +72,18 @@ if test:
         energy_cs.process_data(TEST_PATH + file)
         trace = energy_cs.timed_traces[-1]
         print('{}\t{}\t{}\t{}'.format(file, Trace(tt=trace),
-                                      trace.t[-1].to_secs()-trace.t[0].to_secs(), len(trace)))
+                                      trace.t[-1].to_secs() - trace.t[0].to_secs(), len(trace)))
         power_pts = new_signals[0].points
         speed_pts = new_signals[1].points
         pressure_pts = new_signals[2].points
-        double_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
-                   [pt.timestamp for pt in speed_pts], [pt.value for pt in speed_pts],
-                   trace, title=file, filtered=True,
-                   timestamps3=[pt.timestamp for pt in pressure_pts],
-                   v3=[pt.value for pt in pressure_pts])
+        sim_power = [0.0, 0.0, 8.2, 0.0, 3.12, 0.0, 2.4, 0.0, 1.5, 8.0, 0.0, 0.8, 0.0]
+        single_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
+                    energy_cs.timed_traces[-1].t, sim_power, trace)
+        # double_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
+        #           [pt.timestamp for pt in speed_pts], [pt.value for pt in speed_pts],
+        #           trace, title=file, filtered=True,
+        #           timestamps3=[pt.timestamp for pt in pressure_pts],
+        #           v3=[pt.value for pt in pressure_pts])
         pass
 
     # test segment identification

@@ -19,9 +19,75 @@ MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
 
 
+def single_plot(timestamps1, v1, timestamps2, v2, ttr: TimedTrace):
+    plt.figure(figsize=(60, 10))
+
+    SIG_WIDTH = 2.0
+
+    t1 = [x.to_secs() for x in timestamps1]
+    plt.plot(t1, v1, 'k-', label='Field Data', linewidth=SIG_WIDTH)
+    # plt.plot(t1, [0] * len(v1), 'k--', linewidth=.5)
+
+    sim_power = []
+
+    for i, t in enumerate(timestamps2):
+        if i == len(timestamps2) - 1:
+            continue
+        pts = [pt for pt in timestamps1 if t <= pt < timestamps2[i + 1]]
+        sim_power += [v2[i + 1]] * len(pts)
+
+    plt.plot(t1[:-3], sim_power, color="blue", linewidth=SIG_WIDTH * 2.0, label="Simulated Signal")
+
+    colors = ['orange', 'b', 'green', 'red']
+    EVENT_WIDTH = 2.0
+    MARKER_SIZE = 30
+    height1 = max(v1) + 1
+
+    i = 0
+    labels = [e.symbol for e in ttr.e]
+    events = [ts.to_secs() for ts in ttr.t]
+    plt.vlines(events, [0] * len(events), [height1] * len(events), color=colors[i], linewidth=EVENT_WIDTH)
+    for i, e in enumerate(events):
+        if labels[i] == 'l':
+            color = colors[2]
+            marker = '^'
+        elif labels[i] == 'u':
+            color = colors[3]
+            marker = 'v'
+        elif labels[i] == 'i_0':
+            color = colors[1]
+            marker = 'v'
+        else:
+            color = colors[0]
+            marker = '^'
+        plt.plot(e, height1, marker, color=color, markersize=MARKER_SIZE)
+        plt.vlines(e, 0, height1, color='k', linewidth=EVENT_WIDTH)
+
+    LABEL_FONT = 36
+    TICK_FONT = 30
+    PAD = 0.1
+    step = 300
+    plt.xlabel("t[s]", fontsize=LABEL_FONT)
+    plt.ylabel("[kW]", fontsize=LABEL_FONT)
+    xticks = [str(x.hour) + ':' + str(x.min).zfill(2) for x in timestamps1][::step]
+    plt.xticks(ticks=[x for x in t1[::step]], labels=xticks, fontsize=TICK_FONT)
+    xmin, xmax = plt.xlim()
+    plt.xlim(xmin - PAD, xmax)
+    yticks = np.arange(0, max(v1) + 2, 2)
+    plt.yticks(ticks=yticks, labels=yticks, fontsize=TICK_FONT)
+    ymin, ymax = plt.ylim()
+    plt.ylim(0, ymax)
+
+    plt.legend(fontsize=LABEL_FONT)
+    plt.title("Spindle Power", fontsize=LABEL_FONT)
+
+    plt.tight_layout(pad=10.0)
+    plt.savefig(SAVE_PATH + '{}.pdf'.format("Spindle_Power"))
+
+
 def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered=False, timestamps3=None, v3=None):
     subplots = 2 if timestamps3 is None else 3
-    fig, axs = plt.subplots(subplots, figsize=(60, 30), gridspec_kw={'height_ratios': [3, 3, 3]})
+    fig, axs = plt.subplots(subplots, figsize=(60, 20), gridspec_kw={'height_ratios': [3, 2, 1]})
 
     SIG_WIDTH = 2.0
 
@@ -133,7 +199,7 @@ def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered
     axs[0].set_xticklabels(labels=xticks, fontsize=TICK_FONT)
     xmin, xmax = axs[0].get_xlim()
     axs[0].set_xlim(xmin - PAD, xmax)
-    yticks = np.arange(0, max(v1) + 1, 1)
+    yticks = np.arange(0, max(v1) + 2, 2)
     axs[0].set_yticks(ticks=yticks)
     axs[0].set_yticklabels(labels=yticks, fontsize=TICK_FONT)
     ymin, ymax = axs[0].get_ylim()
@@ -146,7 +212,7 @@ def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered
     axs[1].set_xticklabels(labels=xticks, fontsize=TICK_FONT)
     xmin, xmax = axs[1].get_xlim()
     axs[1].set_xlim(xmin - PAD, xmax)
-    yticks = np.arange(0, max(v2) + 400, 400)
+    yticks = np.arange(0, max(v2) + 800, 800)
     axs[1].set_yticks(ticks=yticks)
     axs[1].set_yticklabels(labels=yticks, fontsize=TICK_FONT)
     ymin, ymax = axs[1].get_ylim()
