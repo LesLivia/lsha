@@ -36,7 +36,7 @@ def parse_data(path):
     sensor_id: SampledSignal = SampledSignal([], label='s_id')
     sensor_id.points.append(SignalPoint(Timestamp(0, 0, 0, 0, 0, 0), 0))
     for ekg_event in path:
-        sensor_id.points.append(SignalPoint(parse_ts(ekg_event.t), float(int(ekg_event.sensor.replace('S', '')))))
+        sensor_id.points.append(SignalPoint(parse_ts(ekg_event.date), float(int(ekg_event.activity.replace('S', '')))))
 
     last_ts = sensor_id.points[-1].timestamp
     sensor_id.points.append(

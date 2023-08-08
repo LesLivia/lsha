@@ -150,8 +150,7 @@ class TraceGenerator:
         entities = querier.get_entities()
         evt_seqs = []
         for entity in entities[:n]:
-            evt_seqs.append(
-                querier.get_events_by_entity(str(entity.extra_attr[querier.schema['entity_properties']['en_id']])))
+            evt_seqs.append(querier.get_events_by_entity(str(entity._id)))
 
         conn.close_connection(driver)
         return evt_seqs
