@@ -32,7 +32,8 @@ s_id = RealValuedVar([foo_fc], [], model2distr, label='s_id')
 driver = conn.get_driver()
 querier: Ekg_Querier = Ekg_Querier(driver)
 unique_events = querier.get_unique_events()
-events: List[Event] = [Event('', e, e.lower()) for e in unique_events]
+events: List[Event] = [Event('', e.replace('Pass Sensor ', ''), e.replace('Pass Sensor ', '').lower()) for e in
+                       unique_events]
 
 DRIVER_SIG = ['s_id']
 DEFAULT_M = 0

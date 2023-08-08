@@ -4,7 +4,6 @@ from typing import List
 from it.polimi.hri_learn.domain.lshafeatures import Event, FlowCondition
 from it.polimi.hri_learn.domain.sigfeatures import SampledSignal, Timestamp, SignalPoint
 from it.polimi.hri_learn.lstar_sha.logger import Logger
-import src.ekg_extractor.model.schema as ekg_schema
 
 config = configparser.ConfigParser()
 config.sections()
@@ -28,15 +27,23 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
     return identified_event
 
 
-def parse_ts(ts: ekg_schema.Timestamp):
-    return Timestamp(ts.year, ts.month, ts.day, ts.hour, ts.mins, ts.sec)
+def parse_ts(ts):
+    try:
+        return Timestamp(ts.year, ts.month, ts.day, ts.hour, ts.mins, ts.sec)
+    except AttributeError:
+        return Timestamp(0, 0, 0, 0, 0, ts)
 
 
 def parse_data(path):
     sensor_id: SampledSignal = SampledSignal([], label='s_id')
     sensor_id.points.append(SignalPoint(Timestamp(0, 0, 0, 0, 0, 0), 0))
     for ekg_event in path:
-        sensor_id.points.append(SignalPoint(parse_ts(ekg_event.date), float(int(ekg_event.activity.replace('S', '')))))
+        if ekg_event.date is None:
+            ts = parse_ts(ekg_event.timestamp)
+        else:
+            ts = parse_ts(ekg_event.date)
+        value = float(int(ekg_event.activity.replace('Pass Sensor ', '').replace('S', '')))
+        sensor_id.points.append(SignalPoint(ts, value))
 
     last_ts = sensor_id.points[-1].timestamp
     sensor_id.points.append(
