@@ -17,7 +17,7 @@ class Timestamp:
         days = months + self.day - 1 if self.day > 0 else 0
         minutes = self.hour * 60 + self.min
         seconds = minutes * 60 + self.sec
-        return days * 24 * 60 + seconds
+        return days * 24 * 3600 + seconds
 
     def __str__(self):
         return '{}/{}/{} {}:{}:{}'.format(self.day, self.month, self.year, self.hour, self.min, self.sec)

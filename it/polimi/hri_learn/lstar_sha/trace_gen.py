@@ -163,7 +163,7 @@ class TraceGenerator:
             if 'Resource' in seq[0].split('-') or 'Station' in seq[0].split('-'):
                 continue
 
-            entities = querier.get_entities_by_labels(seq[0].split('-'), limit=n)  # FIXME
+            entities = querier.get_entities_by_labels(seq[0].split('-'), limit=n, random=True)  # FIXME
             for entity in entities[:n]:
                 if entity not in self.processed_entities:
                     entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
