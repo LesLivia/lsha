@@ -158,10 +158,15 @@ class TraceGenerator:
 
         evt_seqs = []
         for seq in self.labels_hierarchy:
-            entities = querier.get_entities_by_labels(seq[0].split('-'))  # FIXME
+            # TODO this should become part of the configuration,
+            # whether the POV is item-based or resource-based
+            if 'Resource' in seq[0].split('-') or 'Station' in seq[0].split('-'):
+                continue
+
+            entities = querier.get_entities_by_labels(seq[0].split('-'), limit=n)  # FIXME
             for entity in entities[:n]:
                 if entity not in self.processed_entities:
-                    entity_tree = querier.get_entity_tree(entity._id, EntityForest([]), reverse=True)
+                    entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
                     events = querier.get_events_by_entity_tree(entity_tree[0])
                     if len(events) > 0:
                         evt_seqs.append(events)
