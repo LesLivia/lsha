@@ -2,12 +2,14 @@ import configparser
 import os
 import random
 import subprocess
-from typing import List, Set
+from typing import List, Set, Dict
 
 import src.ekg_extractor.mgrs.db_connector as conn
 from it.polimi.hri_learn.domain.lshafeatures import Trace, Event
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 from src.ekg_extractor.mgrs.ekg_queries import Ekg_Querier
+from src.ekg_extractor.model.schema import Entity
+from src.ekg_extractor.model.semantics import EntityForest, EntityTree
 
 config = configparser.ConfigParser()
 config.sections()
@@ -55,6 +57,10 @@ class TraceGenerator:
 
         self.ONCE = False
         self.processed_traces: Set[str] = set()
+
+        if RESAMPLE_STRATEGY == 'EKG':
+            self.labels_hierarchy: List[List[str]] = []
+            self.processed_entities: Dict[Entity, EntityTree] = {}
 
     def set_word(self, w: Trace):
         self.events = w.events
@@ -147,10 +153,19 @@ class TraceGenerator:
         driver = conn.get_driver()
         querier: Ekg_Querier = Ekg_Querier(driver)
 
-        entities = querier.get_entities()
+        if len(self.labels_hierarchy) == 0:
+            self.labels_hierarchy = querier.get_entity_labels_hierarchy()
+
         evt_seqs = []
-        for entity in entities[:n]:
-            evt_seqs.append(querier.get_events_by_entity(str(entity._id)))
+        for seq in self.labels_hierarchy:
+            entities = querier.get_entities_by_labels(seq[0].split('-'))  # FIXME
+            for entity in entities[:n]:
+                if entity not in self.processed_entities:
+                    entity_tree = querier.get_entity_tree(entity._id, EntityForest([]), reverse=True)
+                    events = querier.get_events_by_entity_tree(entity_tree[0])
+                    if len(events) > 0:
+                        evt_seqs.append(events)
+                    self.processed_entities[entity] = entity_tree[0]
 
         conn.close_connection(driver)
         return evt_seqs
