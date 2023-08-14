@@ -58,7 +58,7 @@ class TraceGenerator:
         self.ONCE = False
         self.processed_traces: Set[str] = set()
 
-        if RESAMPLE_STRATEGY == 'EKG':
+        if RESAMPLE_STRATEGY == 'SKG':
             self.labels_hierarchy: List[List[str]] = []
             self.processed_entities: Dict[Entity, EntityTree] = {}
 
@@ -144,12 +144,12 @@ class TraceGenerator:
     def get_traces(self, n: int = 1):
         if RESAMPLE_STRATEGY == 'UPPAAL':
             return self.get_traces_uppaal(n)
-        elif RESAMPLE_STRATEGY == 'EKG':
-            return self.get_traces_ekg(n)
+        elif RESAMPLE_STRATEGY == 'SKG':
+            return self.get_traces_skg(n)
         else:
             return self.get_traces_sim(n)
 
-    def get_traces_ekg(self, n: int = 1):
+    def get_traces_skg(self, n: int = 1):
         driver = conn.get_driver()
         querier: Ekg_Querier = Ekg_Querier(driver)
 
@@ -157,20 +157,18 @@ class TraceGenerator:
             self.labels_hierarchy = querier.get_entity_labels_hierarchy()
 
         evt_seqs = []
-        for seq in self.labels_hierarchy:
-            # TODO this should become part of the configuration,
-            # whether the POV is item-based or resource-based
-            if 'Resource' in seq[0].split('-') or 'Station' in seq[0].split('-'):
-                continue
+        if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'item':
+            entities = querier.get_items(labels_hierarchy=self.labels_hierarchy, limit=n, random=True)
+        else:
+            entities = querier.get_resources(labels_hierarchy=self.labels_hierarchy, limit=n, random=True)
 
-            entities = querier.get_entities_by_labels(seq[0].split('-'), limit=n, random=True)  # FIXME
-            for entity in entities[:n]:
-                if entity not in self.processed_entities:
-                    entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
-                    events = querier.get_events_by_entity_tree(entity_tree[0])
-                    if len(events) > 0:
-                        evt_seqs.append(events)
-                    self.processed_entities[entity] = entity_tree[0]
+        for entity in entities[:n]:
+            if entity not in self.processed_entities:
+                entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
+                events = querier.get_events_by_entity_tree(entity_tree[0])
+                if len(events) > 0:
+                    evt_seqs.append(events)
+                self.processed_entities[entity] = entity_tree[0]
 
         conn.close_connection(driver)
         return evt_seqs
