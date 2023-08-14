@@ -8,6 +8,7 @@ from it.polimi.hri_learn.domain.lshafeatures import Event, ProbDistribution
 from it.polimi.hri_learn.domain.sigfeatures import Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from src.ekg_extractor.mgrs.ekg_queries import Ekg_Querier
+from src.ekg_extractor.model.semantics import EntityForest
 
 config = configparser.ConfigParser()
 config.sections()
@@ -48,13 +49,25 @@ if test:
     driver = conn.get_driver()
     querier: Ekg_Querier = Ekg_Querier(driver)
 
-    test_entities = [1, 2]
+    TEST_N = 10
+
+    labels_hierarchy = querier.get_entity_labels_hierarchy()
+
     evt_seqs = []
-    for entity in test_entities:
-        evt_seqs.append(querier.get_events_by_entity(str(entity)))
+    if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'item':
+        entities = querier.get_items(labels_hierarchy=labels_hierarchy, limit=TEST_N, random=True)
+    else:
+        entities = querier.get_resources(labels_hierarchy=labels_hierarchy, limit=TEST_N, random=True)
+
+    for entity in entities[:TEST_N]:
+        entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
+        events = querier.get_events_by_entity_tree(entity_tree[0])
+        if len(events) > 0:
+            evt_seqs.append(events)
 
     for seq in evt_seqs:
         auto_twin_cs.process_data(seq)
         print(auto_twin_cs.traces[-1])
+        auto_twin_cs.plot_trace(-1)
 
     conn.close_connection(driver)

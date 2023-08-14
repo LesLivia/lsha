@@ -37,13 +37,25 @@ def parse_ts(ts):
 def parse_data(path):
     sensor_id: SampledSignal = SampledSignal([], label='s_id')
     sensor_id.points.append(SignalPoint(Timestamp(0, 0, 0, 0, 0, 0), 0))
-    for ekg_event in path:
+    for i, ekg_event in enumerate(path):
         if ekg_event.date is None:
             ts = parse_ts(ekg_event.timestamp)
+            if i < len(path) - 1:
+                next_ts = parse_ts(path[i + 1].timestamp)
+                new_tss = [Timestamp.from_secs(t) for t in range(ts.to_secs(), next_ts.to_secs(), 100)]
+            else:
+                new_tss = [ts]
         else:
             ts = parse_ts(ekg_event.date)
+            if i < len(path) - 1:
+                next_ts = parse_ts(path[i + 1].date)
+                new_tss = [Timestamp.from_secs(t) for t in range(ts.to_secs(), next_ts.to_secs(), 100)]
+            else:
+                new_tss = [ts]
+
+        # FIXME: this should be generic.
         value = float(int(ekg_event.activity.replace('Pass Sensor ', '').replace('S', '')))
-        sensor_id.points.append(SignalPoint(ts, value))
+        sensor_id.points.extend([SignalPoint(t, value) for t in new_tss])
 
     last_ts = sensor_id.points[-1].timestamp
     sensor_id.points.append(

@@ -12,9 +12,29 @@ class Timestamp:
         self.min = min
         self.sec = sec
 
+    @staticmethod
+    def from_secs(secs: int):
+        new_ts = Timestamp(int(secs / (365 * 24 * 3600)), 0, 0, 0, 0, 0)
+        if secs > 365 * 24 * 3600:
+            secs -= new_ts.year * 365 * 24 * 3600
+        sum_d = 0
+        for i, month_d in enumerate(DAYS_PER_MONTH):
+            sum_d += month_d
+            if secs <= sum_d * 24 * 3600:
+                new_ts.month = i + 1
+                secs -= (sum_d - month_d) * 24 * 3600
+                break
+        new_ts.day = int(secs / (24 * 3600)) + 1
+        secs -= (new_ts.day - 1) * 24 * 3600
+        new_ts.hour = int(secs / 3600)
+        secs -= new_ts.hour * 3600
+        new_ts.min = int(secs / 60)
+        new_ts.sec = secs - new_ts.min * 60
+        return new_ts
+
     def to_secs(self):
         months = sum(DAYS_PER_MONTH[:self.month - 1]) if self.month > 0 else 0
-        days = months + self.day - 1 if self.day > 0 else 0
+        days = self.year * 365 + months + self.day - 1 if self.day > 0 else 0
         minutes = self.hour * 60 + self.min
         seconds = minutes * 60 + self.sec
         return days * 24 * 3600 + seconds

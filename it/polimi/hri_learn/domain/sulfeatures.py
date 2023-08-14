@@ -96,7 +96,7 @@ class SystemUnderLearning:
     # VISUALIZATION METHODS
     #
     def plot_trace(self, index, title=None, xlabel=None, ylabel=None):
-        plt.figure(figsize=(10, 5))
+        plt.figure(figsize=(50, 5))
 
         if title is not None:
             plt.title(title, fontsize=18)
@@ -112,7 +112,7 @@ class SystemUnderLearning:
         t = [pt.timestamp.to_secs() for pt in sig]
         v = [pt.value for pt in sig]
 
-        plt.xlim(min(t) - 5, max(t) + 5)
+        plt.xlim(min(t[1:]) - 5, max(t) + 5)
         plt.ylim(0, max(v) + .05)
         plt.plot(t, v, 'k', linewidth=.5)
 
