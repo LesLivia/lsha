@@ -167,11 +167,12 @@ class TraceGenerator:
 
         for entity in entities[:n]:
             if entity not in self.processed_entities:
-                entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
                 pov = config['AUTO-TWIN CONFIGURATION']['POV'].lower()
                 if pov == 'item':
+                    entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
                     events = querier.get_events_by_entity_tree(entity_tree[0], pov)
                 else:
+                    entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]))
                     events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
                 if len(events) > 0:
                     evt_seqs.append(events)
