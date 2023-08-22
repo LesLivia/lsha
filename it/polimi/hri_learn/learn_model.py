@@ -66,11 +66,10 @@ sha_source = graphviz_sha.source
 with open(HA_SAVE_PATH + SHA_NAME + '_source.txt', 'w') as f:
     f.write(sha_source)
 
-if config['DEFAULT']['PLOT_DISTR'] == 'True':
+if config['DEFAULT']['PLOT_DISTR'] == 'True' and config['LSHA PARAMETERS']['HT_QUERY_TYPE'] == 'S':
     TEACHER.sul.plot_distributions()
+    distr_hist(TEACHER.hist, SHA_NAME)
 
 report.save_data(TEACHER.symbols, TEACHER.distributions, LEARNER.obs_table,
                  len(TEACHER.signals), datetime.now() - startTime, SHA_NAME)
 print('----> EXPERIMENTAL RESULTS SAVED IN: {}{}.txt'.format(config['SUL CONFIGURATION']['REPORT_SAVE_PATH'], SHA_NAME))
-
-distr_hist(TEACHER.hist, SHA_NAME)

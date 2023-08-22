@@ -25,6 +25,7 @@ NOISE = float(config['LSHA PARAMETERS']['NOISE'])
 P_VALUE = float(config['LSHA PARAMETERS']['P_VALUE'])
 MI_QUERY = config['LSHA PARAMETERS']['MI_QUERY'] == 'True'
 HT_QUERY = config['LSHA PARAMETERS']['HT_QUERY'] == 'True'
+HT_QUERY_TYPE = config['LSHA PARAMETERS']['HT_QUERY_TYPE']
 
 
 class Teacher:
@@ -158,60 +159,100 @@ class Teacher:
 
         if not HT_QUERY or word == '':
             return self.distributions[self.sul.default_d]
+
+        if HT_QUERY_TYPE == 'D':
+            return self.ht_d_query(word, flow, save)
         else:
-            segments = self.sul.get_segments(word)
-            if len(segments) > 0:
-                # distr associated with selected flow
-                eligible_distributions = self.sul.vars[0].get_distr_for_flow(flow.f_id)
+            return self.ht_s_query(word, flow, save)
 
-                # randomly distributed metrics for each segment
-                metrics = [self.sul.get_ht_params(segment, flow) for segment in segments]
-                metrics = [met for met in metrics if met is not None]
-                avg_metrics = sum(metrics) / len(metrics)
+    def ht_d_query(self, word: Trace, flow: FlowCondition, save=True):
+        segments = self.sul.get_segments(word)
+        if len(segments) > 0:
+            eligible_distributions = self.sul.vars[0].get_distr_for_flow(flow.f_id)
 
-                min_dist, best_fit = 1000, None
+            metrics = [self.sul.get_ht_params(segment, flow) for segment in segments]
+            metrics = [met for met in metrics if met is not None]
+            unique_metrics = list(set(metrics))
+            if len(unique_metrics) > 1:
+                LOGGER.error('INCONSISTENT PHYSICAL BEHAVIOR')
+                raise RuntimeError
 
-                try:
-                    for distr in self.hist:
-                        if len(self.hist[distr]) == 0 or len(metrics) == 0:
-                            continue
+            best_fit: ProbDistribution = None
 
-                        if CS == 'THERMO':
-                            v1 = metrics
-                            noise1 = [0] * len(v1)
-                        else:
-                            v1 = [avg_metrics] * 50
-                            noise1 = np.random.normal(0.0, NOISE, size=len(v1))
+            try:
+                for distr in self.hist:
+                    value = self.hist[distr][0]
+                    fits = [e_d for e_d in eligible_distributions if e_d.d_id == distr]
+                    if value == unique_metrics[0] and len(fits) > 0:
+                        best_fit = fits[0]
+                        break
+            except AttributeError:
+                pass
 
-                        v1 = [x + noise1[i] for i, x in enumerate(v1)]
+            if best_fit is None:
+                new_distr = ProbDistribution(len(self.distributions[0]), {'avg': unique_metrics[0]})
+                if save:
+                    self.add_distribution(new_distr, flow)
+                    self.to_hist(metrics, new_distr.d_id)
+                return new_distr
+            else:
+                self.to_hist(metrics, best_fit.d_id, update=True)
+                return best_fit
 
-                        v2 = []
-                        if CS == 'THERMO':
-                            v2 = self.hist[distr]
-                            noise2 = [0] * len(v2)
-                        else:
-                            for m in self.hist[distr]:
-                                v2 += [m] * 10
-                            noise2 = np.random.normal(0.0, NOISE, size=len(v2))
-                        v2 = [x + noise2[i] for i, x in enumerate(v2)]
+    def ht_s_query(self, word: Trace, flow: FlowCondition, save=True):
+        segments = self.sul.get_segments(word)
+        if len(segments) > 0:
+            # distr associated with selected flow
+            eligible_distributions = self.sul.vars[0].get_distr_for_flow(flow.f_id)
 
-                        statistic, pvalue = stats.ks_2samp(v1, v2)
-                        fits = [d for d in eligible_distributions if d.d_id == distr]
-                        if statistic <= min_dist and pvalue >= P_VALUE and len(fits) > 0:
-                            min_dist = statistic
-                            best_fit = fits[0]
-                except AttributeError:
-                    pass
+            # randomly distributed metrics for each segment
+            metrics = [self.sul.get_ht_params(segment, flow) for segment in segments]
+            metrics = [met for met in metrics if met is not None]
+            avg_metrics = sum(metrics) / len(metrics)
 
-                if best_fit is not None and min_dist < 1.0:
-                    self.to_hist(metrics, best_fit.d_id, update=True)
-                    return best_fit
-                else:
-                    new_distr = ProbDistribution(len(self.distributions[0]), {'avg': sum(metrics) / len(metrics)})
-                    if save:
-                        self.add_distribution(new_distr, flow)
-                        self.to_hist(metrics, new_distr.d_id)
-                    return new_distr
+            min_dist, best_fit = 1000, None
+
+            try:
+                for distr in self.hist:
+                    if len(self.hist[distr]) == 0 or len(metrics) == 0:
+                        continue
+
+                    if CS == 'THERMO':
+                        v1 = metrics
+                        noise1 = [0] * len(v1)
+                    else:
+                        v1 = [avg_metrics] * 50
+                        noise1 = np.random.normal(0.0, NOISE, size=len(v1))
+
+                    v1 = [x + noise1[i] for i, x in enumerate(v1)]
+
+                    v2 = []
+                    if CS == 'THERMO':
+                        v2 = self.hist[distr]
+                        noise2 = [0] * len(v2)
+                    else:
+                        for m in self.hist[distr]:
+                            v2 += [m] * 10
+                        noise2 = np.random.normal(0.0, NOISE, size=len(v2))
+                    v2 = [x + noise2[i] for i, x in enumerate(v2)]
+
+                    statistic, pvalue = stats.ks_2samp(v1, v2)
+                    fits = [d for d in eligible_distributions if d.d_id == distr]
+                    if statistic <= min_dist and pvalue >= P_VALUE and len(fits) > 0:
+                        min_dist = statistic
+                        best_fit = fits[0]
+            except AttributeError:
+                pass
+
+            if best_fit is not None and min_dist < 1.0:
+                self.to_hist(metrics, best_fit.d_id, update=True)
+                return best_fit
+            else:
+                new_distr = ProbDistribution(len(self.distributions[0]), {'avg': sum(metrics) / len(metrics)})
+                if save:
+                    self.add_distribution(new_distr, flow)
+                    self.to_hist(metrics, new_distr.d_id)
+                return new_distr
 
     #############################################
     # ROW EQUALITY QUERY:

@@ -9,6 +9,7 @@ from it.polimi.hri_learn.domain.sigfeatures import Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from src.ekg_extractor.mgrs.ekg_queries import Ekg_Querier
 from src.ekg_extractor.model.semantics import EntityForest
+from it.polimi.hri_learn.lstar_sha.teacher import Teacher
 
 config = configparser.ConfigParser()
 config.sections()
@@ -65,9 +66,13 @@ if test:
         if len(events) > 0:
             evt_seqs.append(events)
 
+    teacher = Teacher(auto_twin_cs)
+
     for seq in evt_seqs:
         auto_twin_cs.process_data(seq)
         print(auto_twin_cs.traces[-1])
-        auto_twin_cs.plot_trace(-1)
+        # auto_twin_cs.plot_trace(-1)
+        id_cluster = teacher.ht_query(auto_twin_cs.traces[-1], foo_fc)
+        print(id_cluster)
 
     conn.close_connection(driver)
