@@ -50,7 +50,7 @@ if test:
     driver = conn.get_driver()
     querier: Ekg_Querier = Ekg_Querier(driver)
 
-    TEST_N = 10
+    TEST_N = 30
 
     labels_hierarchy = querier.get_entity_labels_hierarchy()
 
@@ -60,9 +60,16 @@ if test:
     else:
         entities = querier.get_resources(labels_hierarchy=labels_hierarchy, limit=TEST_N, random=True)
 
+    START_T = int(config['AUTO-TWIN CONFIGURATION']['START_T'])
+    END_T = int(config['AUTO-TWIN CONFIGURATION']['END_T'])
+
     for entity in entities[:TEST_N]:
         entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
-        events = querier.get_events_by_entity_tree(entity_tree[0])
+        pov = config['AUTO-TWIN CONFIGURATION']['POV'].lower()
+        if pov == 'item':
+            events = querier.get_events_by_entity_tree(entity_tree[0], pov)
+        else:
+            events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
         if len(events) > 0:
             evt_seqs.append(events)
 

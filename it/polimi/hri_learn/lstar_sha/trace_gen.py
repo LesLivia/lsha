@@ -156,6 +156,9 @@ class TraceGenerator:
         if len(self.labels_hierarchy) == 0:
             self.labels_hierarchy = querier.get_entity_labels_hierarchy()
 
+        START_T = int(config['AUTO-TWIN CONFIGURATION']['START_T'])
+        END_T = int(config['AUTO-TWIN CONFIGURATION']['END_T'])
+
         evt_seqs = []
         if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'item':
             entities = querier.get_items(labels_hierarchy=self.labels_hierarchy, limit=n, random=True)
@@ -165,7 +168,11 @@ class TraceGenerator:
         for entity in entities[:n]:
             if entity not in self.processed_entities:
                 entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
-                events = querier.get_events_by_entity_tree(entity_tree[0])
+                pov = config['AUTO-TWIN CONFIGURATION']['POV'].lower()
+                if pov == 'item':
+                    events = querier.get_events_by_entity_tree(entity_tree[0], pov)
+                else:
+                    events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
                 if len(events) > 0:
                     evt_seqs.append(events)
                 self.processed_entities[entity] = entity_tree[0]
