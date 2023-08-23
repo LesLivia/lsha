@@ -160,23 +160,28 @@ class TraceGenerator:
         END_T = int(config['AUTO-TWIN CONFIGURATION']['END_T'])
 
         evt_seqs = []
-        if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'item':
-            entities = querier.get_items(labels_hierarchy=self.labels_hierarchy, limit=n, random=True)
+        if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'plant':
+            events = querier.get_events_by_timestamp(START_T, END_T)
+            if len(events) > 0:
+                evt_seqs.append(events)
         else:
-            entities = querier.get_resources(labels_hierarchy=self.labels_hierarchy, limit=n, random=True)
+            if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'item':
+                entities = querier.get_items(labels_hierarchy=self.labels_hierarchy, limit=n, random=True)
+            else:
+                entities = querier.get_resources(labels_hierarchy=self.labels_hierarchy, limit=n, random=True)
 
-        for entity in entities[:n]:
-            if entity not in self.processed_entities:
-                pov = config['AUTO-TWIN CONFIGURATION']['POV'].lower()
-                if pov == 'item':
-                    entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
-                    events = querier.get_events_by_entity_tree(entity_tree[0], pov)
-                else:
-                    entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]))
-                    events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
-                if len(events) > 0:
-                    evt_seqs.append(events)
-                self.processed_entities[entity] = entity_tree[0]
+            for entity in entities[:n]:
+                if entity not in self.processed_entities:
+                    pov = config['AUTO-TWIN CONFIGURATION']['POV'].lower()
+                    if pov == 'item':
+                        entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
+                        events = querier.get_events_by_entity_tree(entity_tree[0], pov)
+                    else:
+                        entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]))
+                        events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
+                    if len(events) > 0:
+                        evt_seqs.append(events)
+                    self.processed_entities[entity] = entity_tree[0]
 
         conn.close_connection(driver)
         return evt_seqs

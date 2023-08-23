@@ -205,7 +205,7 @@ class ObsTable:
                     dest_loc = self.get_loc_from_word(word, locations, unique_sequences_dict, teacher)
 
                     if word != '':
-                        labels = str(word).replace(str(entry_word), '')
+                        labels = str(word.sub_prefix(entry_word))
                     else:
                         labels = EMPTY_STRING
                     new_edge = Edge(start_loc, dest_loc, sync=labels)

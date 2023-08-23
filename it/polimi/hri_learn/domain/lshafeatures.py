@@ -106,6 +106,9 @@ class Trace:
     def __add__(self, other):
         return Trace(events=self.events + other.events)
 
+    def sub_prefix(self, prefix):
+        return Trace(events=self.events[len(prefix.events):])
+
     def __hash__(self):
         return hash(str(self))
 
