@@ -37,8 +37,20 @@ if pov == 'plant':
 # define events
 driver = conn.get_driver()
 querier: Ekg_Querier = Ekg_Querier(driver)
-unique_events = querier.get_unique_events()
-events: List[Event] = [Event('', e.replace('Pass Sensor ', ''), e.replace('Pass Sensor ', '').lower()) for e in
+unique_events = querier.get_activities()
+
+# FIXME should be generic
+if unique_events[0].act.startswith('Entrada'):
+    act_to_sensors = {"Entrada Material Sucio": 'S1', "Cargado en carro  L+D": 'S2',
+                      "Carga L+D iniciada": 'S3', "Carga L+D liberada": 'S4',
+                      "Montaje": 'S5', "Producción  montada": 'S6',
+                      "Composición de cargas": 'S7', "Carga de esterilizador liberada": 'S8',
+                      "Carga de esterilizadorliberada": 'S9'}
+    for e in unique_events:
+        e.act = act_to_sensors[e.act]
+
+
+events: List[Event] = [Event('', e.act.replace('Pass Sensor ', ''), e.act.replace('Pass Sensor ', '').lower()) for e in
                        unique_events]
 
 DRIVER_SIG = ['s_id']

@@ -61,7 +61,18 @@ def bin_to_dec(bool_vector: List[int]):
 
 
 def parse_value(path, i):
-    s_id = float(int(path[i].activity.replace('Pass Sensor ', '').replace('S', '')))
+    # FIXME should be generic
+    act_to_sensors = {"Entrada Material Sucio": 'S1', "Cargado en carro  L+D": 'S2',
+                      "Carga L+D iniciada": 'S3', "Carga L+D liberada": 'S4',
+                      "Montaje": 'S5', "Producción  montada": 'S6',
+                      "Composición de cargas": 'S7', "Carga de esterilizador liberada": 'S8',
+                      "Carga de esterilizadorliberada": 'S9'}
+    if path[i].activity not in act_to_sensors:
+        s_id = float(int(path[i].activity.replace('Pass Sensor ', '').replace('S', '')))
+    else:
+        sensor = act_to_sensors[path[i].activity]
+        s_id = float(int(sensor.replace('S', '')))
+
     if POV == 'plant':
         # determine resource state vector
         # TODO this should eventually become system-agnostic

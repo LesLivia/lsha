@@ -21,6 +21,7 @@ config = configparser.ConfigParser()
 config.sections()
 config.read('./resources/config/config.ini')
 config.sections()
+CASE_STUDY = config['SUL CONFIGURATION']['CASE_STUDY']
 CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
 
 
@@ -49,6 +50,8 @@ on_fc = FlowCondition(0, on_model)
 off_fc = FlowCondition(1, off_model)
 
 models: List[FlowCondition] = [on_fc, off_fc]
+
+events = []
 
 if CS_VERSION in [1]:
     on_event = Event('', 'on', 'h_0')
