@@ -79,7 +79,7 @@ if test:
     END_T = int(config['AUTO-TWIN CONFIGURATION']['END_T'])
 
     if pov != 'plant':
-        TEST_N = 30
+        TEST_N = 5
         labels_hierarchy = querier.get_entity_labels_hierarchy()
 
         if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'item':
