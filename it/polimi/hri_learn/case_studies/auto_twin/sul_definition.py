@@ -106,7 +106,7 @@ if test:
     for seq in evt_seqs:
         auto_twin_cs.process_data(seq)
         print(auto_twin_cs.traces[-1])
-        auto_twin_cs.plot_trace(-1)
+        # auto_twin_cs.plot_trace(-1)
         id_cluster = teacher.ht_query(auto_twin_cs.traces[-1], foo_fc)
         print(id_cluster)
 

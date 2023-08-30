@@ -4,6 +4,7 @@ from typing import List, Dict, Tuple
 from it.polimi.hri_learn.domain.lshafeatures import Event, FlowCondition
 from it.polimi.hri_learn.domain.sigfeatures import SampledSignal, Timestamp, SignalPoint
 from it.polimi.hri_learn.lstar_sha.logger import Logger
+from src.ekg_extractor.mgrs.ekg_queries import SCHEMA_NAME
 
 config = configparser.ConfigParser()
 config.sections()
@@ -34,9 +35,6 @@ def parse_ts(ts):
         return Timestamp(ts.year, ts.month, ts.day, ts.hour, ts.mins, ts.sec)
     except AttributeError:
         return Timestamp(0, 0, 0, 0, 0, ts)
-
-
-USE_CASE = 'pizzaV2'
 
 
 def update_state_vector(path, state_vector: List[int], sensor_to_station: Dict[str, Tuple[int, str]]):
@@ -75,8 +73,8 @@ def parse_value(path, i):
 
     if POV == 'plant':
         # determine resource state vector
-        # TODO this should eventually become system-agnostic
-        if USE_CASE == 'pizzaV1':
+        # TODO this should become system-agnostic
+        if SCHEMA_NAME == 'pizzaLineV1':
             state_vector = [0] * 5
             sensor_to_station = {'S1': (0, None), 'S2': (1, 'IN'), 'S3': (1, 'OUT'),
                                  'S7': (2, None), 'S4': (3, 'IN'), 'S5': (3, 'OUT'), 'S6': (4, None)}
@@ -91,7 +89,7 @@ def parse_value(path, i):
 
         update_state_vector(path[:i + 1], state_vector, sensor_to_station)
         idle_busy_vector = [int(v > 0) for v in state_vector]
-        # print([e.activity.replace('Pass Sensor ', '') for e in path[:i+1]], idle_busy_vector)
+        print(path[i].activity, state_vector, idle_busy_vector)
 
         return s_id, bin_to_dec(idle_busy_vector)
     else:
