@@ -9,6 +9,7 @@ from it.polimi.hri_learn.domain.lshafeatures import Trace, Event
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 from src.ekg_extractor.mgrs.ekg_queries import Ekg_Querier
 from src.ekg_extractor.model.schema import Entity
+from src.ekg_extractor.model.schema import Timestamp as skg_Timestamp
 from src.ekg_extractor.model.semantics import EntityForest, EntityTree
 
 config = configparser.ConfigParser()
@@ -156,8 +157,17 @@ class TraceGenerator:
         if len(self.labels_hierarchy) == 0:
             self.labels_hierarchy = querier.get_entity_labels_hierarchy()
 
-        START_T = int(config['AUTO-TWIN CONFIGURATION']['START_T'])
-        END_T = int(config['AUTO-TWIN CONFIGURATION']['END_T'])
+        if 'START_T' in config['AUTO-TWIN CONFIGURATION'] and 'END_T' in config['AUTO-TWIN CONFIGURATION']:
+            START_T = int(config['AUTO-TWIN CONFIGURATION']['START_T'])
+            END_T = int(config['AUTO-TWIN CONFIGURATION']['END_T'])
+        else:
+            def parse_date(s: str):
+                fields = s.split('-')
+                return skg_Timestamp(int(fields[0]), int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4]),
+                                     int(fields[5]))
+
+            START_T = parse_date(config['AUTO-TWIN CONFIGURATION']['START_DATE'])
+            END_T = parse_date(config['AUTO-TWIN CONFIGURATION']['END_DATE'])
 
         evt_seqs = []
         if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'plant':

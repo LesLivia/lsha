@@ -77,7 +77,7 @@ class SystemUnderLearning:
             main_sig_index = [i for i, s in enumerate(self.signals[0]) if s.label == self.vars[0].label][0]
             main_sig = self.signals[trace][main_sig_index]
 
-            if word != '':
+            if word != '' and str(word) != 'ε':
                 start_timestamp = self.timed_traces[trace].t[max(len(word) - 1, 0)].to_secs()
             else:
                 start_timestamp = Timestamp(0, 0, 0, 0, 0, 0).to_secs()

@@ -5,10 +5,11 @@ import src.ekg_extractor.mgrs.db_connector as conn
 from it.polimi.hri_learn.case_studies.auto_twin.sul_functions import label_event, parse_data, get_rand_param, \
     is_chg_pt
 from it.polimi.hri_learn.domain.lshafeatures import Event, ProbDistribution
-from it.polimi.hri_learn.domain.sigfeatures import Timestamp
+from it.polimi.hri_learn.domain.sigfeatures import Timestamp as lsha_Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
 from src.ekg_extractor.mgrs.ekg_queries import Ekg_Querier
+from src.ekg_extractor.model.schema import Timestamp as skg_Timestamp
 from src.ekg_extractor.model.semantics import EntityForest
 
 config = configparser.ConfigParser()
@@ -19,7 +20,7 @@ config.sections()
 pov = config['AUTO-TWIN CONFIGURATION']['POV'].lower()
 
 
-def foo_model(interval: List[Timestamp]):
+def foo_model(interval: List[lsha_Timestamp]):
     return interval
 
 
@@ -49,7 +50,6 @@ if unique_events[0].act.startswith('Entrada'):
     for e in unique_events:
         e.act = act_to_sensors[e.act]
 
-
 events: List[Event] = [Event('', e.act.replace('Pass Sensor ', ''), e.act.replace('Pass Sensor ', '').lower()) for e in
                        unique_events]
 
@@ -75,8 +75,18 @@ if test:
 
     evt_seqs = []
 
-    START_T = int(config['AUTO-TWIN CONFIGURATION']['START_T'])
-    END_T = int(config['AUTO-TWIN CONFIGURATION']['END_T'])
+    if 'START_T' in config['AUTO-TWIN CONFIGURATION'] and 'END_T' in config['AUTO-TWIN CONFIGURATION']:
+        START_T = int(config['AUTO-TWIN CONFIGURATION']['START_T'])
+        END_T = int(config['AUTO-TWIN CONFIGURATION']['END_T'])
+    else:
+        def parse_date(s: str):
+            fields = s.split('-')
+            return skg_Timestamp(int(fields[0]), int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4]),
+                                 int(fields[5]))
+
+
+        START_T = parse_date(config['AUTO-TWIN CONFIGURATION']['START_DATE'])
+        END_T = parse_date(config['AUTO-TWIN CONFIGURATION']['END_DATE'])
 
     if pov != 'plant':
         TEST_N = 5
@@ -95,6 +105,7 @@ if test:
                 entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]))
                 events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
             if len(events) > 0:
+                print('events found for {}'.format(entity.entity_id))
                 evt_seqs.append(events)
     else:
         events = querier.get_events_by_timestamp(START_T, END_T)
@@ -106,7 +117,7 @@ if test:
     for seq in evt_seqs:
         auto_twin_cs.process_data(seq)
         print(auto_twin_cs.traces[-1])
-        # auto_twin_cs.plot_trace(-1)
+        auto_twin_cs.plot_trace(-1)
         id_cluster = teacher.ht_query(auto_twin_cs.traces[-1], foo_fc)
         print(id_cluster)
 
