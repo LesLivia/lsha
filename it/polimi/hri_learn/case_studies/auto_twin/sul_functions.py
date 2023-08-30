@@ -89,7 +89,7 @@ def parse_value(path, i):
 
         update_state_vector(path[:i + 1], state_vector, sensor_to_station)
         idle_busy_vector = [int(v > 0) for v in state_vector]
-        print(path[i].activity, state_vector, idle_busy_vector)
+        # print(path[i].activity, state_vector, idle_busy_vector)
 
         return s_id, bin_to_dec(idle_busy_vector)
     else:
