@@ -64,9 +64,17 @@ def parse_value(path, i):
                       "Carga L+D iniciada": 'S3', "Carga L+D liberada": 'S4',
                       "Montaje": 'S5', "Producción  montada": 'S6',
                       "Composición de cargas": 'S7', "Carga de esterilizador liberada": 'S8',
-                      "Carga de esterilizadorliberada": 'S9'}
+                      "Carga de esterilizadorliberada": 'S9', 'Pass Sensor S1': 'S1', 'Pass Sensor S2': 'S2',
+                      'Pass Sensor S3': 'S3', 'Pass Sensor S4': 'S4',
+                      'Pass Sensor S5': 'S5', 'Pass Sensor S6': 'S6', 'Pass Sensor S101': 'S101',
+                      'Pass Sensor S105': 'S105', 'Pass Sensor S100': 'S100', 'Pass Sensor S7': 'S7',
+                      'Pass Sensor S8': 'S8', 'Pass Sensor S102': 'S102', 'Pass Sensor S104': 'S104',
+                      'Pass Sensor S9': 'S9', 'Pass Sensor S10': 'S10', 'Pass Sensor S103': 'S103',
+                      'Pass Sensor S11': 'S11', 'Pass Sensor S12': 'S12', 'Pass Sensor S13': 'S13',
+                      'Pass Sensor S14': 'S14', 'Pass Sensor S15': 'S15', 'Start Break': 'S200', 'Stop Break': 'S201',
+                      'Read Lock Status': 'S202', 'Read WIP amount': 'S203'}
     if path[i].activity not in act_to_sensors:
-        s_id = float(int(path[i].activity.replace('Pass Sensor ', '').replace('S', '')))
+        s_id = float(int(path[i].activity.replace('S', '')))
     else:
         sensor = act_to_sensors[path[i].activity]
         s_id = float(int(sensor.replace('S', '')))
@@ -75,7 +83,7 @@ def parse_value(path, i):
         # determine resource state vector
         # TODO this should become system-agnostic
         if SCHEMA_NAME == 'pizzaLineV1':
-            state_vector = [0] * 5
+            state_vector = [0, 3, 0, 1, 0]
             sensor_to_station = {'S1': (0, None), 'S2': (1, 'IN'), 'S3': (1, 'OUT'),
                                  'S7': (2, None), 'S4': (3, 'IN'), 'S5': (3, 'OUT'), 'S6': (4, None)}
         else:
@@ -99,6 +107,7 @@ def parse_value(path, i):
 def parse_data(path):
     sensor_id: SampledSignal = SampledSignal([], label='s_id')
     sensor_id.points.append(SignalPoint(Timestamp(0, 0, 0, 0, 0, 0), 0))
+    DELTA_T = 100
     if POV == 'plant':
         state_signal: SampledSignal = SampledSignal([], label='state_vec')
         state_signal.points.append(SignalPoint(Timestamp(0, 0, 0, 0, 0, 0), 0))
@@ -107,14 +116,14 @@ def parse_data(path):
             ts = parse_ts(ekg_event.timestamp)
             if i < len(path) - 1:
                 next_ts = parse_ts(path[i + 1].timestamp)
-                new_tss = [Timestamp.from_secs(t) for t in range(ts.to_secs(), next_ts.to_secs(), 100)]
+                new_tss = [Timestamp.from_secs(t) for t in range(ts.to_secs(), next_ts.to_secs(), DELTA_T)]
             else:
                 new_tss = [ts]
         else:
             ts = parse_ts(ekg_event.date)
             if i < len(path) - 1:
                 next_ts = parse_ts(path[i + 1].date)
-                new_tss = [Timestamp.from_secs(t) for t in range(ts.to_secs(), next_ts.to_secs(), 100)]
+                new_tss = [Timestamp.from_secs(t) for t in range(ts.to_secs(), next_ts.to_secs(), DELTA_T)]
             else:
                 new_tss = [ts]
 
@@ -124,7 +133,12 @@ def parse_data(path):
         else:
             value = parse_value(path, i)
 
-        if len(new_tss) > 1:
+        if i > 0 and ts == parse_ts(path[i - 1].timestamp):
+            # in case there are two events at the same time, the last one overrides.
+            sensor_id.points[-1].value = value
+            if POV == 'plant':
+                state_signal.points[-1].value = value_v
+        elif len(new_tss) > 1:
             sensor_id.points.extend([SignalPoint(t, value) for t in new_tss[:-1]])
             sensor_id.points.append(SignalPoint(new_tss[-1], 0.0))
             if POV == 'plant':
@@ -134,10 +148,10 @@ def parse_data(path):
             if POV == 'plant':
                 state_signal.points.append(SignalPoint(new_tss[-1], value_v))
         else:
-            # in case there are two events at the same time, the last one overrides.
-            sensor_id.points[-1].value = value
+            sensor_id.points.append(SignalPoint(ts, value))
             if POV == 'plant':
-                state_signal.points[-1].value = value_v
+                state_signal.points.append(SignalPoint(ts, value_v))
+
 
     last_ts = sensor_id.points[-1].timestamp
     sensor_id.points.append(

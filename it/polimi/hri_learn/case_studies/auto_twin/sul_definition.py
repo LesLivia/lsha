@@ -47,10 +47,21 @@ if unique_events[0].act.startswith('Entrada'):
                       "Montaje": 'S5', "Producción  montada": 'S6',
                       "Composición de cargas": 'S7', "Carga de esterilizador liberada": 'S8',
                       "Carga de esterilizadorliberada": 'S9'}
-    for e in unique_events:
+else:
+    act_to_sensors = {'Pass Sensor S1': 'S1', 'Pass Sensor S2': 'S2', 'Pass Sensor S3': 'S3', 'Pass Sensor S4': 'S4',
+                      'Pass Sensor S5': 'S5', 'Pass Sensor S6': 'S6', 'Pass Sensor S101': 'S101',
+                      'Pass Sensor S105': 'S105', 'Pass Sensor S100': 'S100', 'Pass Sensor S7': 'S7',
+                      'Pass Sensor S8': 'S8', 'Pass Sensor S102': 'S102', 'Pass Sensor S104': 'S104',
+                      'Pass Sensor S9': 'S9', 'Pass Sensor S10': 'S10', 'Pass Sensor S103': 'S103',
+                      'Pass Sensor S11': 'S11', 'Pass Sensor S12': 'S12', 'Pass Sensor S13': 'S13',
+                      'Pass Sensor S14': 'S14', 'Pass Sensor S15': 'S15', 'Start Break': 'S200', 'Stop Break': 'S201',
+                      'Read Lock Status': 'S202', 'Read WIP amount': 'S203'}
+
+for e in unique_events:
+    if e.act in act_to_sensors:
         e.act = act_to_sensors[e.act]
 
-events: List[Event] = [Event('', e.act.replace('Pass Sensor ', ''), e.act.replace('Pass Sensor ', '').lower()) for e in
+events: List[Event] = [Event('', e.act, e.act.lower()) for e in
                        unique_events]
 
 DRIVER_SIG = ['s_id']
@@ -89,7 +100,7 @@ if test:
         END_T = parse_date(config['AUTO-TWIN CONFIGURATION']['END_DATE'])
 
     if pov != 'plant':
-        TEST_N = 5
+        TEST_N = 50
         labels_hierarchy = querier.get_entity_labels_hierarchy()
 
         if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'item':
@@ -100,12 +111,13 @@ if test:
         for entity in entities[:TEST_N]:
             if pov == 'item':
                 entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
+                # entity_tree = querier.get_entity_tree("PZ_1000_37", EntityForest([]), reverse=True)
                 events = querier.get_events_by_entity_tree(entity_tree[0], pov)
             elif pov == 'resource':
                 entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]))
                 events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
             if len(events) > 0:
-                print('events found for {}'.format(entity.entity_id))
+                # print('events found for {}'.format(entity.entity_id))
                 evt_seqs.append(events)
     else:
         events = querier.get_events_by_timestamp(START_T, END_T)
@@ -117,7 +129,7 @@ if test:
     for seq in evt_seqs:
         auto_twin_cs.process_data(seq)
         print(auto_twin_cs.traces[-1])
-        auto_twin_cs.plot_trace(-1)
+        # auto_twin_cs.plot_trace(-1)
         id_cluster = teacher.ht_query(auto_twin_cs.traces[-1], foo_fc)
         print(id_cluster)
 
