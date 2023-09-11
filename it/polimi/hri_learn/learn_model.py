@@ -6,6 +6,7 @@ import it.polimi.hri_learn.pltr.sha_pltr as ha_pltr
 import it.polimi.hri_learn.pltr.lsha_report as report
 from it.polimi.hri_learn.case_studies.energy.sul_definition import energy_cs
 from it.polimi.hri_learn.case_studies.energy_sim.sul_definition import energy_sim_cs
+from it.polimi.hri_learn.case_studies.energy_made.sul_definition import energy_made
 from it.polimi.hri_learn.case_studies.hri.sul_definition import hri_cs
 from it.polimi.hri_learn.case_studies.thermostat.sul_definition import thermostat_cs
 from it.polimi.hri_learn.domain.lshafeatures import Trace
@@ -38,6 +39,8 @@ elif CS == 'ENERGY':
         SUL = energy_sim_cs
     elif RESAMPLE_STRATEGY == 'REAL':
         SUL = energy_cs
+    elif RESAMPLE_STRATEGY == 'MADE':
+        SUL = energy_made
     else:
         raise RuntimeError
 else:
