@@ -172,6 +172,9 @@ class TraceGenerator:
         evt_seqs = []
         if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'plant':
             events = querier.get_events_by_timestamp(START_T, END_T)
+            pov = config['AUTO-TWIN CONFIGURATION']['POV'].lower()
+            entity_tree = querier.get_entity_tree("Oven", EntityForest([]))
+            events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
             if len(events) > 0:
                 evt_seqs.append(events)
         else:

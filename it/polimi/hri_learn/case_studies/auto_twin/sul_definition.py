@@ -54,7 +54,8 @@ else:
                       'Pass Sensor S8': 'S8', 'Pass Sensor S102': 'S102', 'Pass Sensor S104': 'S104',
                       'Pass Sensor S9': 'S9', 'Pass Sensor S10': 'S10', 'Pass Sensor S103': 'S103',
                       'Pass Sensor S11': 'S11', 'Pass Sensor S12': 'S12', 'Pass Sensor S13': 'S13',
-                      'Pass Sensor S14': 'S14', 'Pass Sensor S15': 'S15', 'Start Break': 'S200', 'Stop Break': 'S201',
+                      'Pass Sensor S14': 'S14', 'Pass Sensor S15': 'S15', 'Pass Sensor S16': 'S16',
+                      'Pass Sensor S17': 'S17', 'Start Break': 'S200', 'Stop Break': 'S201',
                       'Read Lock Status': 'S202', 'Read WIP amount': 'S203'}
 
 for e in unique_events:
@@ -100,7 +101,7 @@ if test:
         END_T = parse_date(config['AUTO-TWIN CONFIGURATION']['END_DATE'])
 
     if pov != 'plant':
-        TEST_N = 50
+        TEST_N = 5
         labels_hierarchy = querier.get_entity_labels_hierarchy()
 
         if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'item':
@@ -111,16 +112,16 @@ if test:
         for entity in entities[:TEST_N]:
             if pov == 'item':
                 entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
-                # entity_tree = querier.get_entity_tree("PZ_1000_37", EntityForest([]), reverse=True)
                 events = querier.get_events_by_entity_tree(entity_tree[0], pov)
             elif pov == 'resource':
                 entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]))
                 events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
             if len(events) > 0:
-                # print('events found for {}'.format(entity.entity_id))
                 evt_seqs.append(events)
     else:
         events = querier.get_events_by_timestamp(START_T, END_T)
+        entity_tree = querier.get_entity_tree("Oven", EntityForest([]))
+        events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
         if len(events) > 0:
             evt_seqs.append(events)
 
