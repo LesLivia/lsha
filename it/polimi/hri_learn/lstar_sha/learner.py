@@ -267,9 +267,6 @@ class Learner:
 
         while counterexample is not None or step0:
             step0 = False
-            # plots currently known distributions
-            if config['DEFAULT']['PLOT_DISTR'] == 'True':
-                self.TEACHER.sul.plot_distributions()
             # if a counterexample was found, it (and all of its prefixes) are added to set S
             if counterexample is not None:
                 LOGGER.warn('FOUND COUNTEREXAMPLE: {}'.format(counterexample))
