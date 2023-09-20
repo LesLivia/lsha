@@ -61,7 +61,8 @@ test = False
 if test:
     TEST_PATH = config['TRACE GENERATION']['SIM_LOGS_PATH'].replace('{}/', 'ENERGY/')
     traces_files = os.listdir(TEST_PATH)
-    traces_files = [f for f in traces_files if not f.startswith('.')]
+    traces_files = [f for f in traces_files if f.startswith('_')]
+    traces_files.sort()
 
     for file in traces_files:
         # testing data to signals conversion

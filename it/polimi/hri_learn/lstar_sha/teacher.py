@@ -21,8 +21,8 @@ config.read('./resources/config/config.ini')
 config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
-NOISE = float(config['LSHA PARAMETERS']['NOISE'])
-P_VALUE = float(config['LSHA PARAMETERS']['P_VALUE'])
+NOISE = float(config['LSHA PARAMETERS']['DELTA'])
+P_VALUE = 0.00
 MI_QUERY = config['LSHA PARAMETERS']['MI_QUERY'] == 'True'
 HT_QUERY = config['LSHA PARAMETERS']['HT_QUERY'] == 'True'
 HT_QUERY_TYPE = config['LSHA PARAMETERS']['HT_QUERY_TYPE']
@@ -364,8 +364,10 @@ class Teacher:
                     if new_row.is_populated():
                         eq_rows = [row for row in table.get_upper_observations() if self.eqr_query(new_row, row)]
                         not_ambiguous = len(set(eq_rows)) <= 1
+                        diff_rows = [row for row in eq_rows if
+                                     not self.eqr_query(new_row, row, strict=True)]
 
-                        if len(eq_rows) == 0:
+                        if len(diff_rows) > 0:
                             # found non-closedness
                             LOGGER.warn("!! MISSED NON-CLOSEDNESS !!")
                             return prefix
@@ -415,7 +417,7 @@ class Teacher:
             if CS in ['ENERGY', 'AUTO_TWIN'] and len(not_counter) > 0:
                 new_events = set([e.symbol for x in not_counter for e in x.events]) - \
                              set([e.symbol for t in S for e in t.events])
-                if len(new_events) > 0: # or not_counter[-1] not in S:
+                if len(new_events) > 0:  # or not_counter[-1] not in S:
                     return not_counter[-1]
                 else:
                     return None
