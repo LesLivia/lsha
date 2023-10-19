@@ -59,7 +59,7 @@ test = False
 if test:
     TEST_PATH = config['TRACE GENERATION']['SIM_LOGS_PATH'].format('ENERGY')
     traces_files = os.listdir(TEST_PATH)
-    traces_files = [file for file in traces_files if file.startswith('_')]
+    traces_files = [file for file in traces_files if not file.startswith('.')]
     traces_files.sort()
     for file in traces_files:
         # testing data to signals conversion
@@ -73,12 +73,12 @@ if test:
         trace = energy_cs.timed_traces[-1]
         print('{}\t{}\t{}\t{}'.format(file, Trace(tt=trace),
                                       trace.t[-1].to_secs() - trace.t[0].to_secs(), len(trace)))
-        power_pts = new_signals[0].points
-        speed_pts = new_signals[1].points
-        pressure_pts = new_signals[2].points
-        sim_power = [0.0, 0.0, 8.2, 0.0, 3.12, 0.0, 2.4, 0.0, 1.5, 8.0, 0.0, 0.8, 0.0]
-        single_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
-                    energy_cs.timed_traces[-1].t, sim_power, trace)
+        # power_pts = new_signals[0].points
+        # speed_pts = new_signals[1].points
+        # pressure_pts = new_signals[2].points
+        # sim_power = [0.0, 0.0, 8.2, 0.0, 3.12, 0.0, 2.4, 0.0, 1.5, 8.0, 0.0, 0.8, 0.0]
+        # single_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
+        #             energy_cs.timed_traces[-1].t, sim_power, trace)
         # double_plot([pt.timestamp for pt in power_pts], [pt.value for pt in power_pts],
         #           [pt.timestamp for pt in speed_pts], [pt.value for pt in speed_pts],
         #           trace, title=file, filtered=True,
