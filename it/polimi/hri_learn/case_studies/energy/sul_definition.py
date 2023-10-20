@@ -1,12 +1,13 @@
 import configparser
 import os
-from typing import List
+from typing import List, Set, Tuple
+
+from pygad import GA
 
 from it.polimi.hri_learn.case_studies.energy.sul_functions import label_event, parse_data, get_power_param, is_chg_pt
 from it.polimi.hri_learn.domain.lshafeatures import Event, NormalDistribution, Trace
 from it.polimi.hri_learn.domain.sigfeatures import Timestamp, SampledSignal
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
-from it.polimi.hri_learn.pltr.energy_pltr import single_plot
 
 config = configparser.ConfigParser()
 config.sections()
@@ -58,8 +59,9 @@ energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_po
 test = False
 if test:
     TEST_PATH = config['TRACE GENERATION']['SIM_LOGS_PATH'].format('ENERGY')
+    N = 10
     traces_files = os.listdir(TEST_PATH)
-    traces_files = [file for file in traces_files if not file.startswith('.')]
+    traces_files = [file for file in traces_files if file[0] in ['_', 'W']]
     traces_files.sort()
     for file in traces_files:
         # testing data to signals conversion
@@ -85,6 +87,47 @@ if test:
         #           timestamps3=[pt.timestamp for pt in pressure_pts],
         #           v3=[pt.value for pt in pressure_pts])
         pass
+
+    unique_events: List[Tuple[str, Set[Event]]] = []
+    for i, t_trace in enumerate(energy_cs.timed_traces):
+        trace = Trace(tt=t_trace)
+        unique_events.append((traces_files[i], set(trace.events)))
+    unique_events.sort(key=lambda s: len(s[1]), reverse=True)
+    print(unique_events)
+
+    unique_events.sort(key=lambda s: s[0])
+    print(unique_events)
+
+
+    def fitness_function(ga_instance: GA, solution, solution_idx):
+        output = [unique_events[i] for i in solution]
+        output_set = set()
+        for tt in output:
+            output_set = output_set.union(tt[1])
+        return len(output_set) * sum([len(tt[1]) for tt in output])
+
+
+    CLUSTER_DIM = 9
+
+    ga_instance = GA(num_generations=50,
+                     num_parents_mating=4,
+                     fitness_func=fitness_function,
+                     sol_per_pop=8,
+                     num_genes=CLUSTER_DIM,
+                     gene_type=int,
+                     init_range_low=0,
+                     init_range_high=len(energy_cs.timed_traces) - 1,
+                     parent_selection_type="sss",
+                     keep_parents=1,
+                     crossover_type="single_point",
+                     mutation_type="random",
+                     mutation_percent_genes=10)
+
+    ga_instance.run()
+
+    solution, solution_fitness, solution_idx = ga_instance.best_solution()
+    print("Parameters of the best solution : {solution}".format(solution=solution))
+    print("Fitness value of the best solution = {solution_fitness}".format(solution_fitness=solution_fitness))
 
     # test segment identification
     # test_trace = Trace(energy_cs.traces[0][:1])

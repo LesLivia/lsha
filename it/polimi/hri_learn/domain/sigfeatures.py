@@ -89,6 +89,9 @@ class Event:
     def __eq__(self, other):
         return self.guard == other.guard and self.chan == other.chan
 
+    def __hash__(self):
+        return hash(self.label)
+
 
 class ChangePoint:
     def __init__(self, t: Timestamp):
