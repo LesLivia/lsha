@@ -22,7 +22,7 @@ config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
 NOISE = float(config['LSHA PARAMETERS']['DELTA'])
-P_VALUE = 0.00
+P_VALUE = 0.005
 MI_QUERY = config['LSHA PARAMETERS']['MI_QUERY'] == 'True'
 HT_QUERY = config['LSHA PARAMETERS']['HT_QUERY'] == 'True'
 HT_QUERY_TYPE = config['LSHA PARAMETERS']['HT_QUERY_TYPE']

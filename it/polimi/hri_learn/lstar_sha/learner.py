@@ -314,5 +314,8 @@ class Learner:
         # Build Hypothesis Automaton
         LOGGER.info('BUILDING HYP. AUTOMATON...')
         hypsha, loc_dict = self.obs_table.to_sha(self.TEACHER)
-        hypsha = self.sanity_check(hypsha, loc_dict)
+        try:
+            hypsha = self.sanity_check(hypsha, loc_dict)
+        except Exception:
+            LOGGER.error("Error occurred while fixing the SHA.")
         return hypsha
