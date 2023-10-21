@@ -316,6 +316,6 @@ class Learner:
         hypsha, loc_dict = self.obs_table.to_sha(self.TEACHER)
         try:
             hypsha = self.sanity_check(hypsha, loc_dict)
-        except Exception:
+        except:
             LOGGER.error("Error occurred while fixing the SHA.")
         return hypsha
