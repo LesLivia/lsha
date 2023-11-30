@@ -34,7 +34,10 @@ def parse_ts(ts):
     try:
         return Timestamp(ts.year, ts.month, ts.day, ts.hour, ts.mins, ts.sec)
     except AttributeError:
-        return Timestamp(0, 0, 0, 0, 0, ts)
+        try:
+            return Timestamp(ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second)
+        except AttributeError:
+            return Timestamp(0, 0, 0, 0, 0, ts)
 
 
 # FIXME should be generic
@@ -52,7 +55,14 @@ ACT_TO_SENSORS = {"Entrada Material Sucio": 'S1', "Cargado en carro  L+D": 'S2',
                   'Pass Sensor S14': 'S14', 'Pass Sensor S15': 'S15',
                   'Pass Sensor S16': 'S16', 'Pass Sensor S17': 'S17',
                   'Start Break': 'S200', 'Stop Break': 'S201',
-                  'Read Lock Status': 'S202', 'Read WIP amount': 'S203'}
+                  'Read Lock Status': 'S202', 'Read WIP amount': 'S203', '_LOAD_1': 'S11', '_PROCESS_1': 'S12',
+                  '_UNLOAD_1': 'S13',
+                  '_LOAD_2': 'S21', '_PROCESS_2': 'S22', '_UNLOAD_2': 'S23',
+                  '_FAIL_1': 'S14', '_BLOCK_2': 'S24', '_LOAD_3': 'S31',
+                  '_PROCESS_3': 'S32', '_LOAD_4': 'S41', '_UNLOAD_3': 'S33',
+                  '_PROCESS_4': 'S42', '_LOAD_5': 'S51', '_PROCESS_5': 'S52',
+                  '_UNLOAD_5': 'S53', '_UNLOAD_4': 'S43', '_FAIL_5': 'S54',
+                  '_BLOCK_1': 'S15', '_BLOCK_5': 'S55', '_BLOCK_3': 'S34', '_BLOCK_4': 'S44'}
 
 
 def update_state_vector(path, state_vector: List[int], sensor_to_station: Dict[str, Tuple[int, str]]):

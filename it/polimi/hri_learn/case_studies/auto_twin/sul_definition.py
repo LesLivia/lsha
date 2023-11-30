@@ -57,8 +57,9 @@ if CS == 'AUTO_TWIN':
                           "Montaje": 'S5', "Producción  montada": 'S6',
                           "Composición de cargas": 'S7', "Carga de esterilizador liberada": 'S8',
                           "Carga de esterilizadorliberada": 'S9'}
-    else:
-        act_to_sensors = {'Pass Sensor S1': 'S1', 'Pass Sensor S2': 'S2', 'Pass Sensor S3': 'S3', 'Pass Sensor S4': 'S4',
+    elif unique_events[0].act.startswith('Pass'):
+        act_to_sensors = {'Pass Sensor S1': 'S1', 'Pass Sensor S2': 'S2', 'Pass Sensor S3': 'S3',
+                          'Pass Sensor S4': 'S4',
                           'Pass Sensor S5': 'S5', 'Pass Sensor S6': 'S6', 'Pass Sensor S101': 'S101',
                           'Pass Sensor S105': 'S105', 'Pass Sensor S100': 'S100', 'Pass Sensor S7': 'S7',
                           'Pass Sensor S8': 'S8', 'Pass Sensor S102': 'S102', 'Pass Sensor S104': 'S104',
@@ -67,6 +68,14 @@ if CS == 'AUTO_TWIN':
                           'Pass Sensor S14': 'S14', 'Pass Sensor S15': 'S15', 'Pass Sensor S16': 'S16',
                           'Pass Sensor S17': 'S17', 'Start Break': 'S200', 'Stop Break': 'S201',
                           'Read Lock Status': 'S202', 'Read WIP amount': 'S203'}
+    else:
+        act_to_sensors = {'_LOAD_1': 'S11', '_PROCESS_1': 'S12', '_UNLOAD_1': 'S13',
+                          '_LOAD_2': 'S21', '_PROCESS_2': 'S22', '_UNLOAD_2': 'S23',
+                          '_FAIL_1': 'S14', '_BLOCK_2': 'S24', '_LOAD_3': 'S31',
+                          '_PROCESS_3': 'S32', '_LOAD_4': 'S41', '_UNLOAD_3': 'S33',
+                          '_PROCESS_4': 'S42', '_LOAD_5': 'S51', '_PROCESS_5': 'S52',
+                          '_UNLOAD_5': 'S53', '_UNLOAD_4': 'S43', '_FAIL_5': 'S54',
+                          '_BLOCK_1': 'S15', '_BLOCK_5': 'S55', '_BLOCK_3': 'S34', '_BLOCK_4': 'S44'}
 
     for e in unique_events:
         if e.act in act_to_sensors:
@@ -120,7 +129,7 @@ if test:
         for entity in entities[:TEST_N]:
             if pov == 'item':
                 entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
-                events = querier.get_events_by_entity_tree(entity_tree[0], pov)
+                events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
             elif pov == 'resource':
                 entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]))
                 events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
