@@ -57,7 +57,7 @@ if CS == 'AUTO_TWIN':
                           "Montaje": 'S5', "Producción  montada": 'S6',
                           "Composición de cargas": 'S7', "Carga de esterilizador liberada": 'S8',
                           "Carga de esterilizadorliberada": 'S9'}
-    elif unique_events[0].act.startswith('Pass'):
+    elif 'LOAD_1' not in unique_events[0].act:
         act_to_sensors = {'Pass Sensor S1': 'S1', 'Pass Sensor S2': 'S2', 'Pass Sensor S3': 'S3',
                           'Pass Sensor S4': 'S4',
                           'Pass Sensor S5': 'S5', 'Pass Sensor S6': 'S6', 'Pass Sensor S101': 'S101',
@@ -69,13 +69,14 @@ if CS == 'AUTO_TWIN':
                           'Pass Sensor S17': 'S17', 'Start Break': 'S200', 'Stop Break': 'S201',
                           'Read Lock Status': 'S202', 'Read WIP amount': 'S203'}
     else:
-        act_to_sensors = {'_LOAD_1': 'S11', '_PROCESS_1': 'S12', '_UNLOAD_1': 'S13',
-                          '_LOAD_2': 'S21', '_PROCESS_2': 'S22', '_UNLOAD_2': 'S23',
-                          '_FAIL_1': 'S14', '_BLOCK_2': 'S24', '_LOAD_3': 'S31',
-                          '_PROCESS_3': 'S32', '_LOAD_4': 'S41', '_UNLOAD_3': 'S33',
-                          '_PROCESS_4': 'S42', '_LOAD_5': 'S51', '_PROCESS_5': 'S52',
-                          '_UNLOAD_5': 'S53', '_UNLOAD_4': 'S43', '_FAIL_5': 'S54',
-                          '_BLOCK_1': 'S15', '_BLOCK_5': 'S55', '_BLOCK_3': 'S34', '_BLOCK_4': 'S44'}
+        act_to_sensors = {'Pass Sensor LOAD_1': 'S11', 'Pass Sensor PROCESS_1': 'S12', 'Pass Sensor UNLOAD_1': 'S13',
+                          'Pass Sensor LOAD_2': 'S21', 'Pass Sensor PROCESS_2': 'S22', 'Pass Sensor UNLOAD_2': 'S23',
+                          'Pass Sensor FAIL_1': 'S14', 'Pass Sensor BLOCK_2': 'S24', 'Pass Sensor LOAD_3': 'S31',
+                          'Pass Sensor PROCESS_3': 'S32', 'Pass Sensor LOAD_4': 'S41', 'Pass Sensor UNLOAD_3': 'S33',
+                          'Pass Sensor PROCESS_4': 'S42', 'Pass Sensor LOAD_5': 'S51', 'Pass Sensor PROCESS_5': 'S52',
+                          'Pass Sensor UNLOAD_5': 'S53', 'Pass Sensor UNLOAD_4': 'S43', 'Pass Sensor FAIL_5': 'S54',
+                          'Pass Sensor BLOCK_1': 'S15', 'Pass Sensor BLOCK_5': 'S55', 'Pass Sensor BLOCK_3': 'S34',
+                          'Pass Sensor BLOCK_4': 'S44'}
 
     for e in unique_events:
         if e.act in act_to_sensors:
