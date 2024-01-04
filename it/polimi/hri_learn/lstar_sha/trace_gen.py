@@ -4,13 +4,13 @@ import random
 import subprocess
 from typing import List, Set, Dict
 
-import src.ekg_extractor.mgrs.db_connector as conn
+import src.skg2automata.mgrs.skg_connector as conn
 from it.polimi.hri_learn.domain.lshafeatures import Trace, Event
 from it.polimi.hri_learn.lstar_sha.logger import Logger
-from src.ekg_extractor.mgrs.ekg_queries import Ekg_Querier
-from src.ekg_extractor.model.schema import Entity
-from src.ekg_extractor.model.schema import Timestamp as skg_Timestamp
-from src.ekg_extractor.model.semantics import EntityForest, EntityTree
+from src.skg2automata.mgrs.skg_extractor import Skg_Extractor
+from src.skg2automata.model.schema import Entity
+from src.skg2automata.model.schema import Timestamp as skg_Timestamp
+from src.skg2automata.model.semantics import EntityForest, EntityTree
 
 config = configparser.ConfigParser()
 config.sections()
@@ -152,7 +152,7 @@ class TraceGenerator:
 
     def get_traces_skg(self, n: int = 1):
         driver = conn.get_driver()
-        querier: Ekg_Querier = Ekg_Querier(driver)
+        querier: Skg_Extractor = Skg_Extractor(driver)
 
         if len(self.labels_hierarchy) == 0:
             self.labels_hierarchy = querier.get_entity_labels_hierarchy()

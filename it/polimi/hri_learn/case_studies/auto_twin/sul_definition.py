@@ -1,16 +1,16 @@
 import configparser
 from typing import List
 
-import src.ekg_extractor.mgrs.db_connector as conn
+import src.skg2automata.mgrs.skg_connector as conn
 from it.polimi.hri_learn.case_studies.auto_twin.sul_functions import label_event, parse_data, get_rand_param, \
     is_chg_pt
 from it.polimi.hri_learn.domain.lshafeatures import Event, ProbDistribution
 from it.polimi.hri_learn.domain.sigfeatures import Timestamp as lsha_Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
-from src.ekg_extractor.mgrs.ekg_queries import Ekg_Querier
-from src.ekg_extractor.model.schema import Timestamp as skg_Timestamp
-from src.ekg_extractor.model.semantics import EntityForest
+from src.skg2automata.mgrs.skg_extractor import Skg_Extractor
+from src.skg2automata.model.schema import Timestamp as skg_Timestamp
+from src.skg2automata.model.semantics import EntityForest
 
 config = configparser.ConfigParser()
 config.sections()
@@ -47,17 +47,17 @@ if CS == 'AUTO_TWIN':
 
     # define events
     driver = conn.get_driver()
-    querier: Ekg_Querier = Ekg_Querier(driver)
+    querier: Skg_Extractor = Skg_Extractor(driver)
     unique_events = querier.get_activities()
 
     # FIXME should be generic
-    if unique_events[0].act.startswith('Entrada'):
+    if 'Entrada' in [e.act.split(' ')[0] for e in unique_events]:
         act_to_sensors = {"Entrada Material Sucio": 'S1', "Cargado en carro  L+D": 'S2',
                           "Carga L+D iniciada": 'S3', "Carga L+D liberada": 'S4',
                           "Montaje": 'S5', "Producción  montada": 'S6',
                           "Composición de cargas": 'S7', "Carga de esterilizador liberada": 'S8',
                           "Carga de esterilizadorliberada": 'S9'}
-    elif 'LOAD_1' not in unique_events[0].act:
+    elif 'LOAD' not in [e.act.split('Pass Sensor ')[1].split('_')[0] for e in unique_events]:
         act_to_sensors = {'Pass Sensor S1': 'S1', 'Pass Sensor S2': 'S2', 'Pass Sensor S3': 'S3',
                           'Pass Sensor S4': 'S4',
                           'Pass Sensor S5': 'S5', 'Pass Sensor S6': 'S6', 'Pass Sensor S101': 'S101',
@@ -101,7 +101,7 @@ else:
 test = False
 if test:
     driver = conn.get_driver()
-    querier: Ekg_Querier = Ekg_Querier(driver)
+    querier: Skg_Extractor = Skg_Extractor(driver)
 
     evt_seqs = []
 

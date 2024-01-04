@@ -4,7 +4,7 @@ from typing import List, Dict, Tuple
 from it.polimi.hri_learn.domain.lshafeatures import Event, FlowCondition
 from it.polimi.hri_learn.domain.sigfeatures import SampledSignal, Timestamp, SignalPoint
 from it.polimi.hri_learn.lstar_sha.logger import Logger
-from src.ekg_extractor.mgrs.ekg_queries import SCHEMA_NAME
+from src.skg2automata.mgrs.skg_extractor import SCHEMA_NAME
 
 config = configparser.ConfigParser()
 config.sections()
