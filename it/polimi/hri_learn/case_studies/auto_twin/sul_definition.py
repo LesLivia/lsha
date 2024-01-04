@@ -8,7 +8,7 @@ from it.polimi.hri_learn.domain.lshafeatures import Event, ProbDistribution
 from it.polimi.hri_learn.domain.sigfeatures import Timestamp as lsha_Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
-from src.skg2automata.mgrs.skg_extractor import Skg_Extractor
+from src.skg2automata.mgrs.skg_reader import Skg_Reader
 from src.skg2automata.model.schema import Timestamp as skg_Timestamp
 from src.skg2automata.model.semantics import EntityForest
 
@@ -47,8 +47,8 @@ if CS == 'AUTO_TWIN':
 
     # define events
     driver = conn.get_driver()
-    querier: Skg_Extractor = Skg_Extractor(driver)
-    unique_events = querier.get_activities()
+    reader: Skg_Reader = Skg_Reader(driver)
+    unique_events = reader.get_activities()
 
     # FIXME should be generic
     if 'Entrada' in [e.act.split(' ')[0] for e in unique_events]:
@@ -86,8 +86,8 @@ if CS == 'AUTO_TWIN':
                            unique_events]
 
     if pov == 'plant':
-        labels_hierarchy = querier.get_entity_labels_hierarchy()
-        resources = querier.get_resources(labels_hierarchy=labels_hierarchy)
+        labels_hierarchy = reader.get_entity_labels_hierarchy()
+        resources = reader.get_resources(labels_hierarchy=labels_hierarchy)
     else:
         resources = []
 
@@ -101,7 +101,7 @@ else:
 test = False
 if test:
     driver = conn.get_driver()
-    querier: Skg_Extractor = Skg_Extractor(driver)
+    reader: Skg_Reader = Skg_Reader(driver)
 
     evt_seqs = []
 
@@ -120,26 +120,26 @@ if test:
 
     if pov != 'plant':
         TEST_N = 5
-        labels_hierarchy = querier.get_entity_labels_hierarchy()
+        labels_hierarchy = reader.get_entity_labels_hierarchy()
 
         if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'item':
-            entities = querier.get_items(labels_hierarchy=labels_hierarchy, limit=TEST_N, random=True)
+            entities = reader.get_items(labels_hierarchy=labels_hierarchy, limit=TEST_N, random=True)
         else:
-            entities = querier.get_resources(labels_hierarchy=labels_hierarchy, limit=TEST_N, random=True)
+            entities = reader.get_resources(labels_hierarchy=labels_hierarchy, limit=TEST_N, random=True)
 
         for entity in entities[:TEST_N]:
             if pov == 'item':
-                entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
-                events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
+                entity_tree = reader.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
+                events = reader.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
             elif pov == 'resource':
-                entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]))
-                events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
+                entity_tree = reader.get_entity_tree(entity.entity_id, EntityForest([]))
+                events = reader.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
             if len(events) > 0:
                 evt_seqs.append(events)
     else:
-        events = querier.get_events_by_timestamp(START_T, END_T)
-        entity_tree = querier.get_entity_tree("Oven", EntityForest([]))
-        events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
+        events = reader.get_events_by_timestamp(START_T, END_T)
+        entity_tree = reader.get_entity_tree("Oven", EntityForest([]))
+        events = reader.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
         if len(events) > 0:
             evt_seqs.append(events)
 

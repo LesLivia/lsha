@@ -7,7 +7,7 @@ from typing import List, Set, Dict
 import src.skg2automata.mgrs.skg_connector as conn
 from it.polimi.hri_learn.domain.lshafeatures import Trace, Event
 from it.polimi.hri_learn.lstar_sha.logger import Logger
-from src.skg2automata.mgrs.skg_extractor import Skg_Extractor
+from src.skg2automata.mgrs.skg_reader import Skg_Reader
 from src.skg2automata.model.schema import Entity
 from src.skg2automata.model.schema import Timestamp as skg_Timestamp
 from src.skg2automata.model.semantics import EntityForest, EntityTree
@@ -152,7 +152,7 @@ class TraceGenerator:
 
     def get_traces_skg(self, n: int = 1):
         driver = conn.get_driver()
-        querier: Skg_Extractor = Skg_Extractor(driver)
+        querier: Skg_Reader = Skg_Reader(driver)
 
         if len(self.labels_hierarchy) == 0:
             self.labels_hierarchy = querier.get_entity_labels_hierarchy()
