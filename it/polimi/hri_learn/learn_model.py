@@ -4,10 +4,10 @@ from datetime import datetime
 
 import it.polimi.hri_learn.pltr.lsha_report as report
 import it.polimi.hri_learn.pltr.sha_pltr as ha_pltr
-from it.polimi.hri_learn.case_studies.auto_twin.sul_definition import auto_twin_cs
+from it.polimi.hri_learn.case_studies.auto_twin.sul_definition import auto_twin_cs, act_to_sensors
 from it.polimi.hri_learn.case_studies.energy.sul_definition import energy_cs
-from it.polimi.hri_learn.case_studies.energy_sim.sul_definition import energy_sim_cs
 from it.polimi.hri_learn.case_studies.energy_made.sul_definition import energy_made_cs
+from it.polimi.hri_learn.case_studies.energy_sim.sul_definition import energy_sim_cs
 from it.polimi.hri_learn.case_studies.hri.sul_definition import hri_cs
 from it.polimi.hri_learn.case_studies.thermostat.sul_definition import thermostat_cs
 from it.polimi.hri_learn.domain.lshafeatures import Trace
@@ -31,6 +31,7 @@ CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
 RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 
 SUL: SystemUnderLearning
+events_labels_dict = None
 if CS == 'THERMO':
     SUL = thermostat_cs
 elif CS == 'HRI':
@@ -46,6 +47,7 @@ elif CS == 'ENERGY':
         raise RuntimeError
 elif CS == 'AUTO_TWIN':
     SUL = auto_twin_cs
+    events_labels_dict = act_to_sensors
 else:
     raise RuntimeError
 
@@ -73,5 +75,5 @@ if config['DEFAULT']['PLOT_DISTR'] == 'True' and config['LSHA PARAMETERS']['HT_Q
     distr_hist(TEACHER.hist, SHA_NAME)
 
 report.save_data(TEACHER.symbols, TEACHER.distributions, LEARNER.obs_table,
-                 len(TEACHER.signals), datetime.now() - startTime, SHA_NAME)
+                 len(TEACHER.signals), datetime.now() - startTime, SHA_NAME, events_labels_dict)
 print('----> EXPERIMENTAL RESULTS SAVED IN: {}{}.txt'.format(config['SUL CONFIGURATION']['REPORT_SAVE_PATH'], SHA_NAME))
