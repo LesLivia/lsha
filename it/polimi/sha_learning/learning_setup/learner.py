@@ -1,4 +1,5 @@
 import configparser
+import os
 from typing import List, Tuple, Dict, Set
 
 from it.polimi.sha_learning.domain.lshafeatures import State, FlowCondition, ProbDistribution
@@ -8,8 +9,11 @@ from it.polimi.sha_learning.learning_setup.logger import Logger
 from it.polimi.sha_learning.learning_setup.teacher import Teacher
 
 config = configparser.ConfigParser()
-config.sections()
-config.read('./resources/config/config.ini')
+if 'submodules' in os.listdir():
+    curr_path = os.getcwd() + '/submodules/lsha'
+else:
+    curr_path = os.getcwd().split('src/lsha')[0]
+config.read('{}/resources/config/config.ini'.format(curr_path))
 config.sections()
 
 LOGGER = Logger('LEARNER')

@@ -1,4 +1,5 @@
 import configparser
+import os
 import warnings
 from datetime import datetime
 
@@ -16,8 +17,11 @@ warnings.filterwarnings('ignore')
 startTime = datetime.now()
 
 config = configparser.ConfigParser()
-config.sections()
-config.read('./resources/config/config.ini')
+if 'submodules' in os.listdir():
+    curr_path = os.getcwd() + '/submodules/lsha'
+else:
+    curr_path = os.getcwd().split('src/lsha')[0]
+config.read('{}/resources/config/config.ini'.format(curr_path))
 config.sections()
 
 CS = 'AUTO_TWIN'
