@@ -4,7 +4,7 @@ from typing import List, Dict, Tuple
 from it.polimi.sha_learning.domain.lshafeatures import Event, FlowCondition
 from it.polimi.sha_learning.domain.sigfeatures import SampledSignal, Timestamp, SignalPoint
 from it.polimi.sha_learning.learning_setup.logger import Logger
-from src.skg_connector.mgrs.skg_reader import SCHEMA_NAME
+from skg_mgrs.skg_reader import SCHEMA_NAME
 
 config = configparser.ConfigParser()
 config.sections()
