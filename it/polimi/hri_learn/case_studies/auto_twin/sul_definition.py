@@ -1,16 +1,16 @@
 import configparser
 from typing import List
 
-import src.skg2automata.mgrs.skg_connector as conn
+import src.skg_connector.mgrs.connector_mgr as conn
 from it.polimi.hri_learn.case_studies.auto_twin.sul_functions import label_event, parse_data, get_rand_param, \
     is_chg_pt
 from it.polimi.hri_learn.domain.lshafeatures import Event, ProbDistribution
 from it.polimi.hri_learn.domain.sigfeatures import Timestamp as lsha_Timestamp
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
-from src.skg2automata.mgrs.skg_reader import Skg_Reader
-from src.skg2automata.model.schema import Timestamp as skg_Timestamp
-from src.skg2automata.model.semantics import EntityForest
+from src.skg_connector.mgrs.skg_reader import Skg_Reader
+from src.skg_connector.model.schema import Timestamp as skg_Timestamp
+from src.skg_connector.model.semantics import EntityForest
 
 config = configparser.ConfigParser()
 config.sections()
@@ -98,7 +98,7 @@ if CS == 'AUTO_TWIN':
 else:
     auto_twin_cs = SystemUnderLearning([], [], parse_data, label_event, get_rand_param, is_chg_pt, args=args)
 
-test = False
+test = True
 if test:
     driver = conn.get_driver()
     reader: Skg_Reader = Skg_Reader(driver)

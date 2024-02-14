@@ -4,13 +4,13 @@ import random
 import subprocess
 from typing import List, Set, Dict
 
-import src.skg2automata.mgrs.skg_connector as conn
+import src.skg_connector.mgrs.connector_mgr as conn
 from it.polimi.hri_learn.domain.lshafeatures import Trace, Event
 from it.polimi.hri_learn.lstar_sha.logger import Logger
-from src.skg2automata.mgrs.skg_reader import Skg_Reader
-from src.skg2automata.model.schema import Entity
-from src.skg2automata.model.schema import Timestamp as skg_Timestamp
-from src.skg2automata.model.semantics import EntityForest, EntityTree
+from src.skg_connector.mgrs.skg_reader import Skg_Reader
+from src.skg_connector.model.schema import Entity
+from src.skg_connector.model.schema import Timestamp as skg_Timestamp
+from src.skg_connector.model.semantics import EntityForest, EntityTree
 
 config = configparser.ConfigParser()
 config.sections()
