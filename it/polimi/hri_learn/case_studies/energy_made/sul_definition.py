@@ -2,19 +2,20 @@ import configparser
 import os
 from typing import List
 
-from it.polimi.hri_learn.case_studies.energy_made.sul_functions import label_event, parse_data, get_power_param, is_chg_pt
+from it.polimi.hri_learn.case_studies.energy_made.sul_functions import label_event, parse_data, get_power_param, \
+    is_chg_pt
 from it.polimi.hri_learn.domain.lshafeatures import Event, NormalDistribution, Trace
 from it.polimi.hri_learn.domain.sigfeatures import Timestamp, SampledSignal
 from it.polimi.hri_learn.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from it.polimi.hri_learn.lstar_sha.teacher import Teacher
 from it.polimi.hri_learn.pltr.energy_made_pltr import double_plot
 
-config = configparser.ConfigParser()        # open the configuration file
+config = configparser.ConfigParser()  # open the configuration file
 config.sections()
 config.read('./resources/config/config.ini')
 config.sections()
 
-SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])   # get all the constant values from the config file
+SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])  # get all the constant values from the config file
 MIN_SPEED = int(config['ENERGY CS']['MIN_SPEED'])
 MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
 
@@ -54,7 +55,7 @@ DEFAULT_M = 0
 DEFAULT_DISTR = 0
 
 args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
-energy_made = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
+energy_made_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 
 test = False
 if test:
@@ -93,7 +94,7 @@ if test:
     # test distr identification
     for i, trace in enumerate(TEACHER.timed_traces):
         for j, event in enumerate(trace.e):
-            test_trace = Trace(energy_made.traces[i][:j+1])
+            test_trace = Trace(energy_made.traces[i][:j + 1])
             identified_distr = TEACHER.ht_query(test_trace, identified_model, save=True)
 
             segments = energy_made.get_segments(test_trace)
