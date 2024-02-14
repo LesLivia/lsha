@@ -16,10 +16,10 @@ from it.polimi.sha_learning.learning_setup.trace_gen import TraceGenerator
 LOGGER = Logger('TEACHER')
 
 config = configparser.ConfigParser()
-if 'submodules' in os.listdir():
-    curr_path = os.getcwd() + '/submodules/lsha'
-else:
+if 'it' in os.listdir():
     curr_path = os.getcwd().split('src/lsha')[0]
+else:
+    curr_path = os.getcwd() + '/submodules/lsha'
 config.read('{}/resources/config/config.ini'.format(curr_path))
 config.sections()
 

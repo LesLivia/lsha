@@ -14,10 +14,10 @@ from skg_model.schema import Timestamp as skg_Timestamp
 from skg_model.semantics import EntityForest
 
 config = configparser.ConfigParser()
-if 'submodules' in os.listdir():
-    curr_path = os.getcwd() + '/submodules/lsha'
-else:
+if 'it' in os.listdir():
     curr_path = os.getcwd().split('src/lsha')[0]
+else:
+    curr_path = os.getcwd() + '/submodules/lsha'
 config.read('{}/resources/config/config.ini'.format(curr_path))
 config.sections()
 
@@ -102,7 +102,7 @@ if CS == 'AUTO_TWIN':
 else:
     auto_twin_cs = SystemUnderLearning([], [], parse_data, label_event, get_rand_param, is_chg_pt, args=args)
 
-test = False
+test = True
 if test:
     driver = conn.get_driver()
     reader: Skg_Reader = Skg_Reader(driver)

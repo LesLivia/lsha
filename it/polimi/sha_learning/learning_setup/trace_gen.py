@@ -13,10 +13,10 @@ from skg_model.schema import Timestamp as skg_Timestamp
 from skg_model.semantics import EntityForest, EntityTree
 
 config = configparser.ConfigParser()
-if 'submodules' in os.listdir():
-    curr_path = os.getcwd() + '/submodules/lsha'
-else:
+if 'it' in os.listdir():
     curr_path = os.getcwd().split('src/lsha')[0]
+else:
+    curr_path = os.getcwd() + '/submodules/lsha'
 config.read('{}/resources/config/config.ini'.format(curr_path))
 config.sections()
 
