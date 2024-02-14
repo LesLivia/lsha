@@ -1,17 +1,18 @@
 import configparser
 import csv
-from typing import List, Tuple
-from chardet import detect
+from typing import List, Tuple, Dict
+import pandas as pd
+
 from it.polimi.hri_learn.domain.lshafeatures import Event, FlowCondition
 from it.polimi.hri_learn.domain.sigfeatures import SampledSignal, Timestamp, SignalPoint
 from it.polimi.hri_learn.lstar_sha.logger import Logger
 
-config = configparser.ConfigParser()  # open the configuration file
+config = configparser.ConfigParser()        # open the configuration file
 config.sections()
 config.read('./resources/config/config.ini')
 config.sections()
 
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))  # get constants from the config file
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))       # get constants from the config file
 SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])
 MIN_SPEED = int(config['ENERGY CS']['MIN_SPEED'])
 MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
@@ -106,13 +107,6 @@ def parse_ts(string: str):
     return Timestamp(year, month, day, hour, minute, second)
 
 
-# get file encoding type
-def get_encoding_type(file):
-    with open(file, 'rb') as f:
-        rawdata = f.read()
-    return detect(rawdata)['encoding']
-
-
 def parse_data(path: str):
     # support method to parse traces sampled by ref query
     power: SampledSignal = SampledSignal([], label='P')
@@ -121,7 +115,7 @@ def parse_data(path: str):
     toolID: SampledSignal = SampledSignal([], label='id')
     speed_derivative: SampledSignal = SampledSignal([], label='wd')
 
-    with open(path, encoding=get_encoding_type(path)) as csv_file:
+    with open(path) as csv_file:
         reader = csv.DictReader(csv_file, delimiter=';')
 
         for i, row in enumerate(reader):
