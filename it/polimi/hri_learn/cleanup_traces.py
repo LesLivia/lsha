@@ -1,5 +1,5 @@
-import os
 import configparser
+import os
 
 config = configparser.ConfigParser()
 config.sections()

@@ -3,9 +3,9 @@ from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
-from it.polimi.hri_learn.domain.sigfeatures import SampledSignal
 
 from it.polimi.hri_learn.domain.lshafeatures import TimedTrace, Event
+from it.polimi.hri_learn.domain.sigfeatures import SampledSignal
 
 config = configparser.ConfigParser()
 config.sections()

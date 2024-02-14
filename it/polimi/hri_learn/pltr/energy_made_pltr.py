@@ -161,7 +161,7 @@ def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered
     axs[2].set_xlim(xmin - PAD, xmax)
     yticks = np.arange(0, max(v3) + 1, 800)
     axs[2].set_yticks(ticks=yticks)
-    #axs[2].set_yticklabels(labels=['unlocked', 'locked'], fontsize=TICK_FONT)
+    # axs[2].set_yticklabels(labels=['unlocked', 'locked'], fontsize=TICK_FONT)
     ymin, ymax = axs[2].get_ylim()
     axs[2].set_ylim(0, ymax)
 
