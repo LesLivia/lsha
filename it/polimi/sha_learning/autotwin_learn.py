@@ -1,6 +1,6 @@
 import configparser
-import datetime
 import warnings
+from datetime import datetime
 
 import it.polimi.sha_learning.pltr.lsha_report as report
 import it.polimi.sha_learning.pltr.sha_pltr as ha_pltr
