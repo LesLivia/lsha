@@ -51,7 +51,7 @@ LOGGER = Logger('TRACE GENERATOR')
 
 
 class TraceGenerator:
-    def __init__(self, word: Trace = Trace([])):
+    def __init__(self, word: Trace = Trace([]), pov: str = None, start: str = None, end: str = None):
         self.word = word
         self.events: List[Event] = word.events
         self.evt_int: List[int] = []
@@ -62,6 +62,9 @@ class TraceGenerator:
         if RESAMPLE_STRATEGY == 'SKG':
             self.labels_hierarchy: List[List[str]] = []
             self.processed_entities: Dict[Entity, EntityTree] = {}
+            self.pov = pov
+            self.start = start
+            self.end = end
 
     def set_word(self, w: Trace):
         self.events = w.events
@@ -158,34 +161,34 @@ class TraceGenerator:
             self.labels_hierarchy = querier.get_entity_labels_hierarchy()
 
         if 'START_T' in config['AUTO-TWIN CONFIGURATION'] and 'END_T' in config['AUTO-TWIN CONFIGURATION']:
-            START_T = int(config['AUTO-TWIN CONFIGURATION']['START_T'])
-            END_T = int(config['AUTO-TWIN CONFIGURATION']['END_T'])
+            START_T = int(self.start)
+            END_T = int(self.end)
         else:
             def parse_date(s: str):
                 fields = s.split('-')
                 return skg_Timestamp(int(fields[0]), int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4]),
                                      int(fields[5]))
 
-            START_T = parse_date(config['AUTO-TWIN CONFIGURATION']['START_DATE'])
-            END_T = parse_date(config['AUTO-TWIN CONFIGURATION']['END_DATE'])
+            START_T = parse_date(self.start)
+            END_T = parse_date(self.end)
 
         evt_seqs = []
-        if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'plant':
+        if self.pov.lower() == 'plant':
             events = querier.get_events_by_timestamp(START_T, END_T)
-            pov = config['AUTO-TWIN CONFIGURATION']['POV'].lower()
+            pov = self.pov.lower()
             entity_tree = querier.get_entity_tree("Oven", EntityForest([]))
             events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
             if len(events) > 0:
                 evt_seqs.append(events)
         else:
-            if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'item':
+            if self.pov.lower() == 'item':
                 entities = querier.get_items(labels_hierarchy=self.labels_hierarchy, limit=n, random=True)
             else:
                 entities = querier.get_resources(labels_hierarchy=self.labels_hierarchy, limit=n, random=True)
 
             for entity in entities[:n]:
                 if entity not in self.processed_entities:
-                    pov = config['AUTO-TWIN CONFIGURATION']['POV'].lower()
+                    pov = self.pov.lower()
                     if pov == 'item':
                         entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
                         events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)

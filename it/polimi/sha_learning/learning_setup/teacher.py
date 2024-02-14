@@ -13,7 +13,6 @@ from it.polimi.sha_learning.learning_setup.logger import Logger
 from it.polimi.sha_learning.learning_setup.trace_gen import TraceGenerator
 
 LOGGER = Logger('TEACHER')
-TG = TraceGenerator()
 
 config = configparser.ConfigParser()
 config.sections()
@@ -29,7 +28,7 @@ HT_QUERY_TYPE = config['LSHA PARAMETERS']['HT_QUERY_TYPE']
 
 
 class Teacher:
-    def __init__(self, sul: SystemUnderLearning):
+    def __init__(self, sul: SystemUnderLearning, pov: str = None, start: str = None, end: str = None):
         self.sul = sul
 
         # System-Dependent Attributes
@@ -40,6 +39,8 @@ class Teacher:
         # Trace-Dependent Attributes
         self.timed_traces: List[TimedTrace] = sul.timed_traces
         self.signals: List[List[SampledSignal]] = sul.signals
+
+        self.TG = TraceGenerator(pov=pov, start=start, end=end)
 
     def add_distribution(self, d: ProbDistribution, f: FlowCondition):
         self.sul.add_distribution(d, f)
@@ -319,8 +320,8 @@ class Teacher:
         for word in tqdm(uq, total=len(uq)):
             LOGGER.info('Requesting new traces for {}'.format(str(word)))
             for e in table.get_E():
-                TG.set_word(word + e)
-                path = TG.get_traces(n_resample)
+                self.TG.set_word(word + e)
+                path = self.TG.get_traces(n_resample)
                 if path is not None:
                     for sim in path:
                         self.sul.process_data(sim)
