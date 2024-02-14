@@ -57,7 +57,7 @@ if CS == 'AUTO_TWIN':
                           "Montaje": 'S5', "Producción  montada": 'S6',
                           "Composición de cargas": 'S7', "Carga de esterilizador liberada": 'S8',
                           "Carga de esterilizadorliberada": 'S9'}
-    elif 'LOAD' not in [e.act.split('Pass Sensor ')[1].split('_')[0] for e in unique_events]:
+    elif 'Read WIP amount' in [e.act for e in unique_events]:
         act_to_sensors = {'Pass Sensor S1': 'S1', 'Pass Sensor S2': 'S2', 'Pass Sensor S3': 'S3',
                           'Pass Sensor S4': 'S4',
                           'Pass Sensor S5': 'S5', 'Pass Sensor S6': 'S6', 'Pass Sensor S101': 'S101',
@@ -67,7 +67,7 @@ if CS == 'AUTO_TWIN':
                           'Pass Sensor S11': 'S11', 'Pass Sensor S12': 'S12', 'Pass Sensor S13': 'S13',
                           'Pass Sensor S14': 'S14', 'Pass Sensor S15': 'S15', 'Pass Sensor S16': 'S16',
                           'Pass Sensor S17': 'S17', 'Start Break': 'S200', 'Stop Break': 'S201',
-                          'Read Lock Status': 'S202', 'Read WIP amount': 'S203'}
+                          'Read Lock Status': 'S202', 'Read WIP amount': 'S203', 'Pass Sensor S106': 'S106'}
     else:
         act_to_sensors = {'Pass Sensor LOAD_1': 'S11', 'Pass Sensor PROCESS_1': 'S12', 'Pass Sensor UNLOAD_1': 'S13',
                           'Pass Sensor LOAD_2': 'S21', 'Pass Sensor PROCESS_2': 'S22', 'Pass Sensor UNLOAD_2': 'S23',
