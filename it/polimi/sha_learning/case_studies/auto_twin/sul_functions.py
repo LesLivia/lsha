@@ -1,4 +1,5 @@
 import configparser
+import os
 from typing import List, Dict, Tuple
 
 from it.polimi.sha_learning.domain.lshafeatures import Event, FlowCondition
@@ -7,8 +8,11 @@ from it.polimi.sha_learning.learning_setup.logger import Logger
 from skg_mgrs.skg_reader import SCHEMA_NAME
 
 config = configparser.ConfigParser()
-config.sections()
-config.read('./resources/config/config.ini')
+if 'submodules' in os.listdir():
+    curr_path = os.getcwd() + '/submodules/lsha'
+else:
+    curr_path = os.getcwd().split('src/lsha')[0]
+config.read('{}/resources/config/config.ini'.format(curr_path))
 config.sections()
 
 CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))

@@ -1,4 +1,5 @@
 import configparser
+import os
 from typing import Dict, List
 
 import matplotlib.pyplot as plt
@@ -9,8 +10,11 @@ from it.polimi.sha_learning.domain.lshafeatures import TimedTrace
 SAVE_PATH = 'resources/learned_ha/'
 
 config = configparser.ConfigParser()
-config.sections()
-config.read('./resources/config/config.ini')
+if 'submodules' in os.listdir():
+    curr_path = os.getcwd() + '/submodules/lsha'
+else:
+    curr_path = os.getcwd().split('src/lsha')[0]
+config.read('{}/resources/config/config.ini'.format(curr_path))
 config.sections()
 
 SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])

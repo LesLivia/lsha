@@ -1,10 +1,14 @@
 import configparser
+import os
 
 from it.polimi.sha_learning.learning_setup.learner import ObsTable
 
 config = configparser.ConfigParser()
-config.sections()
-config.read('./resources/config/config.ini')
+if 'submodules' in os.listdir():
+    curr_path = os.getcwd() + '/submodules/lsha'
+else:
+    curr_path = os.getcwd().split('src/lsha')[0]
+config.read('{}/resources/config/config.ini'.format(curr_path))
 config.sections()
 
 SAVE_PATH = config['SUL CONFIGURATION']['REPORT_SAVE_PATH']

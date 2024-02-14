@@ -1,4 +1,5 @@
 import configparser
+import os
 from typing import List
 
 import skg_mgrs.connector_mgr as conn
@@ -13,8 +14,11 @@ from skg_model.schema import Timestamp as skg_Timestamp
 from skg_model.semantics import EntityForest
 
 config = configparser.ConfigParser()
-config.sections()
-config.read('./resources/config/config.ini')
+if 'submodules' in os.listdir():
+    curr_path = os.getcwd() + '/submodules/lsha'
+else:
+    curr_path = os.getcwd().split('src/lsha')[0]
+config.read('{}/resources/config/config.ini'.format(curr_path))
 config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
