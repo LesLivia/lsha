@@ -4,7 +4,7 @@ import warnings
 from datetime import datetime
 
 import it.polimi.sha_learning.pltr.lsha_report as report
-import it.polimi.sha_learning.pltr.sha_pltr as ha_pltr
+import it.polimi.sha_learning.pltr.sha_pltr as sha_pltr
 from it.polimi.sha_learning.case_studies.auto_twin.sul_definition import auto_twin_cs, act_to_sensors
 from it.polimi.sha_learning.domain.lshafeatures import Trace
 from it.polimi.sha_learning.domain.obstable import ObsTable
@@ -52,7 +52,7 @@ def learn_automaton(pov: str, start: str, end: str):
         SHA_NAME += '-{}'.format(max_index + 1)
     else:
         SHA_NAME += '-0'
-    graphviz_sha = ha_pltr.to_graphviz(LEARNED_SHA, SHA_NAME, SHA_SAVE_PATH, view=True)
+    graphviz_sha = sha_pltr.to_graphviz(LEARNED_SHA, SHA_NAME, SHA_SAVE_PATH, view=True)
 
     # saving sha source to .txt file
     sha_source = graphviz_sha.source
@@ -66,3 +66,5 @@ def learn_automaton(pov: str, start: str, end: str):
                      len(TEACHER.signals), datetime.now() - startTime, SHA_NAME, events_labels_dict)
     print('----> EXPERIMENTAL RESULTS SAVED IN: {}{}.txt'.format(config['SUL CONFIGURATION']['REPORT_SAVE_PATH'],
                                                                  SHA_NAME))
+
+    return SHA_NAME
