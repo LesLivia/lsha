@@ -46,6 +46,12 @@ def learn_automaton(pov: str, start: str, end: str):
     SHA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH']
 
     SHA_NAME = '{}_{}_{}'.format(CS, RESAMPLE_STRATEGY, pov)
+    if SHA_NAME in [file.split('-')[0] for file in os.listdir(SHA_SAVE_PATH)]:
+        indexes = [file.split('-')[1][0] for file in os.listdir(SHA_SAVE_PATH) if SHA_NAME == file.split('-')[0]]
+        max_index = max([int(x) for x in indexes])
+        SHA_NAME += '-{}'.format(max_index + 1)
+    else:
+        SHA_NAME += '-0'
     graphviz_sha = ha_pltr.to_graphviz(LEARNED_SHA, SHA_NAME, SHA_SAVE_PATH, view=True)
 
     # saving sha source to .txt file
