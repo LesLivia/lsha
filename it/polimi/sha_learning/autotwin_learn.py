@@ -52,7 +52,7 @@ def learn_automaton(pov: str, start: str, end: str):
         SHA_NAME += '-{}'.format(max_index + 1)
     else:
         SHA_NAME += '-0'
-    graphviz_sha = sha_pltr.to_graphviz(LEARNED_SHA, SHA_NAME, SHA_SAVE_PATH, view=True)
+    graphviz_sha = sha_pltr.to_graphviz(LEARNED_SHA, SHA_NAME, SHA_SAVE_PATH)
 
     # saving sha source to .txt file
     sha_source = graphviz_sha.source
