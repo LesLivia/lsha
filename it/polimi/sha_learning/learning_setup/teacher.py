@@ -32,7 +32,8 @@ HT_QUERY_TYPE = config['LSHA PARAMETERS']['HT_QUERY_TYPE']
 
 
 class Teacher:
-    def __init__(self, sul: SystemUnderLearning, pov: str = None, start: str = None, end: str = None):
+    def __init__(self, sul: SystemUnderLearning, pov: str = None,
+                 start_dt: str = None, end_dt: str = None, start_ts: int = None, end_ts: int = None):
         self.sul = sul
 
         # System-Dependent Attributes
@@ -44,7 +45,7 @@ class Teacher:
         self.timed_traces: List[TimedTrace] = sul.timed_traces
         self.signals: List[List[SampledSignal]] = sul.signals
 
-        self.TG = TraceGenerator(pov=pov, start=start, end=end)
+        self.TG = TraceGenerator(pov=pov, start_dt=start_dt, end_dt=end_dt, start_ts=start_ts, end_ts=end_ts)
 
     def add_distribution(self, d: ProbDistribution, f: FlowCondition):
         self.sul.add_distribution(d, f)

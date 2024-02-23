@@ -54,7 +54,8 @@ LOGGER = Logger('TRACE GENERATOR')
 
 
 class TraceGenerator:
-    def __init__(self, word: Trace = Trace([]), pov: str = None, start: str = None, end: str = None):
+    def __init__(self, word: Trace = Trace([]), pov: str = None,
+                 start_dt: str = None, end_dt: str = None, start_ts: str = None, end_ts: str = None):
         self.word = word
         self.events: List[Event] = word.events
         self.evt_int: List[int] = []
@@ -66,8 +67,10 @@ class TraceGenerator:
             self.labels_hierarchy: List[List[str]] = []
             self.processed_entities: Dict[Entity, EntityTree] = {}
             self.pov = pov
-            self.start = start
-            self.end = end
+            self.start_dt = start_dt
+            self.end_dt = end_dt
+            self.start_ts = start_ts
+            self.end_ts = end_ts
 
     def set_word(self, w: Trace):
         self.events = w.events
@@ -164,16 +167,16 @@ class TraceGenerator:
             self.labels_hierarchy = querier.get_entity_labels_hierarchy()
 
         if 'START_T' in config['AUTO-TWIN CONFIGURATION'] and 'END_T' in config['AUTO-TWIN CONFIGURATION']:
-            START_T = int(self.start)
-            END_T = int(self.end)
+            START_T = int(self.start_ts)
+            END_T = int(self.end_ts)
         else:
             def parse_date(s: str):
                 fields = s.split('-')
                 return skg_Timestamp(int(fields[0]), int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4]),
                                      int(fields[5]))
 
-            START_T = parse_date(self.start)
-            END_T = parse_date(self.end)
+            START_T = parse_date(self.start_dt)
+            END_T = parse_date(self.end_dt)
 
         evt_seqs = []
         if self.pov.lower() == 'plant':

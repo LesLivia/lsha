@@ -29,11 +29,11 @@ CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
 RESAMPLE_STRATEGY = 'SKG'
 
 
-def learn_automaton(pov: str, start: str, end: str):
+def learn_automaton(pov: str, start_dt: str = None, end_dt: str = None, start_ts: int = None, end_ts: int = None):
     SUL: SystemUnderLearning = auto_twin_cs
     events_labels_dict = act_to_sensors
 
-    TEACHER = Teacher(SUL, pov, start, end)
+    TEACHER = Teacher(SUL, pov, start_dt, end_dt, start_ts, end_ts)
 
     long_traces = [Trace(events=[e]) for e in SUL.events]
     obs_table = ObsTable([], [Trace(events=[])], long_traces)
