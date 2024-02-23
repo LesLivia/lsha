@@ -67,7 +67,18 @@ ACT_TO_SENSORS = {"Entrada Material Sucio": 'S1', "Cargado en carro  L+D": 'S2',
                   'Pass Sensor PROCESS_4': 'S42', 'Pass Sensor LOAD_5': 'S51', 'Pass Sensor PROCESS_5': 'S52',
                   'Pass Sensor UNLOAD_5': 'S53', 'Pass Sensor UNLOAD_4': 'S43', 'Pass Sensor FAIL_5': 'S54',
                   'Pass Sensor BLOCK_1': 'S15', 'Pass Sensor BLOCK_5': 'S55', 'Pass Sensor BLOCK_3': 'S34',
-                  'Pass Sensor BLOCK_4': 'S44'}
+                  'Pass Sensor BLOCK_4': 'S44', 'Pass Sensor CS001': 'S1', 'Pass Sensor CS002': 'S2',
+                  'Pass Sensor CS003': 'S3',
+                  'Pass Sensor CS004': 'S4', 'Pass Sensor CS005': 'S5', 'Pass Sensor CS006': 'S6',
+                  'Pass Sensor CS101': 'S101', 'Pass Sensor CS105': 'S105', 'Pass Sensor CS100': 'S100',
+                  'Pass Sensor CS007': 'S7', 'Pass Sensor CS008': 'S8', 'Pass Sensor CS102': 'S102',
+                  'Pass Sensor CS104': 'S104', 'Pass Sensor CS009': 'S9', 'Pass Sensor CS010': 'S10',
+                  'Pass Sensor CS4102': 'S4102', 'Pass Sensor CS4103': 'S4103',
+                  'Pass Sensor CS4104': 'S4104', 'Pass Sensor CS4201': 'S4201',
+                  'Pass Sensor CS4202': 'S4202', 'Pass Sensor CS4301': 'S4301',
+                  'Pass Sensor CS4401': 'S4401', 'Pass Sensor CS106': 'S106', 'Pass Sensor CS011': 'S11',
+                  'Pass Sensor CS012': 'S12', 'Pass Sensor CS013': 'S13', 'Pass Sensor CS014': 'S14',
+                  'Pass Sensor CS015': 'S15', 'Pass Sensor CS016': 'S16', 'Pass Sensor CS4101': 'S4101'}
 
 
 def update_state_vector(path, state_vector: List[int], sensor_to_station: Dict[str, Tuple[int, str]]):
