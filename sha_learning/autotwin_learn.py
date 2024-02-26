@@ -39,7 +39,7 @@ def learn_automaton(pov: str, start_dt: str = None, end_dt: str = None, start_ts
     LEARNED_SHA = LEARNER.run_lsha(filter_empty=True)
 
     # PLOT (AND SAVE) RESULT
-    SHA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH'].format(os.environ['LSHA_RES_PATH'])
+    SHA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH'].format(os.environ['RES_PATH'])
 
     SHA_NAME = '{}_{}_{}'.format(CS, RESAMPLE_STRATEGY, pov)
     if SHA_NAME in [file.split('-')[0] for file in os.listdir(SHA_SAVE_PATH)]:
