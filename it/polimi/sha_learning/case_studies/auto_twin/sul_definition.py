@@ -2,16 +2,16 @@ import configparser
 import os
 from typing import List
 
-import skg_mgrs.connector_mgr as conn
+import skg_main.skg_mgrs.connector_mgr as conn
 from it.polimi.sha_learning.case_studies.auto_twin.sul_functions import label_event, parse_data, get_rand_param, \
     is_chg_pt
 from it.polimi.sha_learning.domain.lshafeatures import Event, ProbDistribution
 from it.polimi.sha_learning.domain.sigfeatures import Timestamp as lsha_Timestamp
 from it.polimi.sha_learning.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from it.polimi.sha_learning.learning_setup.teacher import Teacher
-from skg_mgrs.skg_reader import Skg_Reader
-from skg_model.schema import Timestamp as skg_Timestamp
-from skg_model.semantics import EntityForest
+from skg_main.skg_mgrs.skg_reader import Skg_Reader
+from skg_main.skg_model.schema import Timestamp as skg_Timestamp
+from skg_main.skg_model.semantics import EntityForest
 
 config = configparser.ConfigParser()
 if 'it' in os.listdir():
