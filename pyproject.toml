@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "lsha"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["livialestingi <livia.lestingi@polimi.it>"]
 readme = "README.md"
