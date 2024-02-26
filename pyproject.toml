@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "lsha"
+version = "0.1.0"
+description = ""
+authors = ["livialestingi <livia.lestingi@polimi.it>"]
+readme = "README.md"
+packages = [
+    { include = "sha_learning" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+neo4j = "^5.17.0"
+graphviz = "^0.20.1"
+pygraphviz = "^1.12"
+matplotlib = "^3.8.3"
+scipy = "^1.12.0"
+tqdm = "^4.66.2"
+pygad = "^3.3.1"
+pandas = "^2.2.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
