@@ -42,6 +42,7 @@ class Teacher:
         self.signals: List[List[SampledSignal]] = sul.signals
 
         self.TG = TraceGenerator(pov=pov, start_dt=start_dt, end_dt=end_dt, start_ts=start_ts, end_ts=end_ts)
+        self.hist = {}
 
     def add_distribution(self, d: ProbDistribution, f: FlowCondition):
         self.sul.add_distribution(d, f)

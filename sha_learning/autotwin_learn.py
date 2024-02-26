@@ -27,6 +27,7 @@ RESAMPLE_STRATEGY = 'SKG'
 
 def learn_automaton(pov: str, start_dt: str = None, end_dt: str = None, start_ts: int = None, end_ts: int = None):
     SUL: SystemUnderLearning = auto_twin_cs
+    SUL.reset_distributions()
     events_labels_dict = act_to_sensors
 
     TEACHER = Teacher(SUL, pov, start_dt, end_dt, start_ts, end_ts)

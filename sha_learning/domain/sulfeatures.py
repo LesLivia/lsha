@@ -34,6 +34,10 @@ class SystemUnderLearning:
         self.vars[0].distr.append(d)
         self.vars[0].model2distr[f.f_id].append(d.d_id)
 
+    def reset_distributions(self):
+        for i, v in enumerate(self.vars):
+            self.vars[i].distr = []
+
     #
     # TRACE PROCESSING METHODS
     #
