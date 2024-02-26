@@ -11,8 +11,8 @@ to infer a model of human behavior in human-robot interaction scenarios building
 - [*Statistical Model Checking of Human-Robot Interaction Scenarios*][paper1]
 
 The algorithm builds upon [L\*][angluin], whose main elements are:
-- a [Teacher](it/polimi/sha_learning/learning_setup/teacher.py) that stores the collected traces and answers queries based on currently accumulated knowledge 
-- a [Learner](it/polimi/sha_learning/learning_setup/learner.py) that progressively refines the hypothesis automaton by asking queries to the Teacher
+- a [Teacher](sha_learning/learning_setup/teacher.py) that stores the collected traces and answers queries based on currently accumulated knowledge 
+- a [Learner](sha_learning/learning_setup/learner.py) that progressively refines the hypothesis automaton by asking queries to the Teacher
 
 The teacher relies on **samples** of the System Under Learning (SUL) (i.e., it does not possess exact knowledge).
 To generate traces for the specific use case of human-robot interaction, we exploit either [Uppaal][uppaal] with manually drafted SHA to be learned or the [deployment framework][dep] to simulate the robotic application in a virtual environment and collect the simulation traces.
@@ -33,7 +33,7 @@ Learned SHA for the **human-robot interaction** case study can be found [here](r
 Configuration File Setup
 -----------
 
-The [main L\*_sha script](it/polimi/sha_learning/learn_model.py) requires as input parameter the path to a configuration file, whose template can be found within the [`./resources/config/`](resources/config) folder.
+The [main L\*_sha script](sha_learning/learn_model.py) requires as input parameter the path to a configuration file, whose template can be found within the [`./resources/config/`](resources/config) folder.
 
 Make sure to set each property to match your environment, specifically: 
 - **N_min** is the minimum number of observations for each trace to stop perfoming the refinement query (i.e., a value greater than 10 is advised);
