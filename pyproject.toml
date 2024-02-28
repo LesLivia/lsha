@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "lsha"
-version = "0.1.1"
-description = ""
+version = "0.1.0"
+description = "Automata Learning Algorithm for Stochastic Hybrid Automata"
 authors = ["livialestingi <livia.lestingi@polimi.it>"]
 readme = "README.md"
 packages = [
