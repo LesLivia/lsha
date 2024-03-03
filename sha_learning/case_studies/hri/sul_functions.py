@@ -11,7 +11,7 @@ config.sections()
 config.read('./resources/config/config.ini')
 config.sections()
 
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', '')[0])
 SAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 LOGGER = Logger('SUL DATA HANDLER')
 

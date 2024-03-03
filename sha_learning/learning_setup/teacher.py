@@ -10,6 +10,7 @@ from sha_learning.domain.lshafeatures import TimedTrace, FlowCondition, ProbDist
 from sha_learning.domain.obstable import ObsTable, Row, State
 from sha_learning.domain.sigfeatures import SampledSignal, Timestamp
 from sha_learning.domain.sulfeatures import SystemUnderLearning
+from sha_learning.learning_setup.fastddtw import fast_ddtw, plot_aligned_signals
 from sha_learning.learning_setup.logger import Logger
 from sha_learning.learning_setup.trace_gen import TraceGenerator
 
@@ -23,6 +24,7 @@ CS = config['SUL CONFIGURATION']['CASE_STUDY']
 NOISE = float(config['LSHA PARAMETERS']['DELTA'])
 P_VALUE = 0.0
 MI_QUERY = config['LSHA PARAMETERS']['MI_QUERY'] == 'True'
+PLOT_DDTW = config['LSHA PARAMETERS']['PLOT_DDTW'] == 'True'
 HT_QUERY = config['LSHA PARAMETERS']['HT_QUERY'] == 'True'
 HT_QUERY_TYPE = config['LSHA PARAMETERS']['HT_QUERY_TYPE']
 
@@ -81,35 +83,25 @@ class Teacher:
 
                 fits = []
                 for segment in segments:
-                    if len(segment) < 10:
+                    if len(segment) < 3:
                         continue
                     interval = [pt.timestamp for pt in segment]
                     # observed values and (approximate) derivative
                     real_behavior = [pt.value for pt in segment]
-                    real_der = self.derivative(interval, real_behavior)
                     min_distance = 10000
-                    min_der_distance = 10000
                     best_fit = None
 
                     # for each model from the given input set
                     for flow in self.flows[0]:
                         ideal_model = flow.f(interval, segment[0].value)
-                        distances = [abs(i - real_behavior[index]) for (index, i) in enumerate(ideal_model)]
-                        avg_distance = sum(distances) / len(distances)
+                        # applies DDTW
+                        res = fast_ddtw(real_behavior, ideal_model)
 
-                        ideal_der = self.derivative(interval, ideal_model)
-                        der_distances = [abs(i - real_der[index]) for (index, i) in enumerate(ideal_der)]
-                        avg_der_distance = sum(der_distances) / len(der_distances)
+                        if PLOT_DDTW:
+                            plot_aligned_signals(real_behavior, ideal_model, res[1])
 
-                        dist_is_closer = avg_distance < min_distance
-                        der_is_closer = avg_der_distance < min_der_distance
-                        der_same_sign = sum([v * ideal_der[i] for (i, v) in enumerate(real_der)]) / len(real_der) > 0
-
-                        # compares the observed behavior with the ideal one (values and derivatives)
-                        # TODO: think of something to avoid the check on the name
-                        if dist_is_closer and der_is_closer and der_same_sign:
-                            min_distance = avg_distance
-                            min_der_distance = avg_der_distance
+                        if res[0] < min_distance:
+                            min_distance = res[0]
                             best_fit = flow
                     else:
                         fits.append(best_fit)

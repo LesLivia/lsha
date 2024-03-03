@@ -9,7 +9,6 @@ from sha_learning.domain.lshafeatures import RealValuedVar, FlowCondition, Trace
 from sha_learning.domain.sigfeatures import Event, Timestamp
 from sha_learning.domain.sulfeatures import SystemUnderLearning
 from sha_learning.learning_setup.teacher import Teacher
-
 from sha_learning.pltr.hri_pltr import double_plot
 
 N_0 = (0.003, 0.0001, 100)
@@ -24,7 +23,7 @@ config = configparser.ConfigParser()
 config.sections()
 config.read('./resources/config/config.ini')
 config.sections()
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', '')[0])
 SAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 
 
@@ -98,20 +97,21 @@ args = {'name': 'hri', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d'
 hri_cs = SystemUnderLearning([fatigue], events, parse_data, label_event, get_ftg_param, is_chg_pt,
                              args=args)
 
-test = False
+test = True
 if test:
     # test event configuration
     print(hri_cs.symbols)
 
     # test trace processing
-    TRACE_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/{}/'.format(CS_VERSION)
+    CS_VERSION = config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', '')
+    TRACE_PATH = config['TRACE GENERATION']['SIM_LOGS_PATH'].format(os.environ['LSHA_RES_PATH'], CS_VERSION)
     hri_traces = [file for file in os.listdir(TRACE_PATH) if file.startswith('SIM')]
     hri_traces.sort()
     for trace in hri_traces:
-        hri_cs.process_data(TRACE_PATH + trace + '/')
+        hri_cs.process_data(TRACE_PATH + '/' + trace + '/')
         print(hri_cs.traces[-1])
 
-    test_trace = Trace([events[6]])
+    test_trace = Trace([events[2]])
     plot_traces = [(i, t) for i, t in enumerate(hri_cs.traces) if t.startswith(test_trace)]
 
     # test segment identification
@@ -129,5 +129,6 @@ if test:
     print(hri_cs.vars[0].model2distr[1])
     print(teacher.ht_query(test_trace, id_flow, save=True))
 
-    # double_plot(teacher.signals[0][0], teacher.signals[0][1], teacher.signals[0][3],
-    #            teacher.sul.timed_traces[0], trace, events)
+    for tup in plot_traces:
+        double_plot(teacher.signals[tup[0]][0], teacher.signals[tup[0]][1], teacher.signals[tup[0]][3],
+                    teacher.sul.timed_traces[tup[0]], str(tup[1]), events)

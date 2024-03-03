@@ -1,4 +1,5 @@
 import configparser
+import os
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -12,7 +13,7 @@ config.sections()
 config.read('./resources/config/config.ini')
 config.sections()
 
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', '')[0])
 SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH']
 
 
@@ -112,6 +113,6 @@ def double_plot(signal1: SampledSignal, signal2: SampledSignal, signal3: Sampled
     # axs[0].legend(fontsize=20)
     # axs[1].legend(fontsize=20)
 
-    fig.savefig(SAVE_PATH + '{}.pdf'.format(title))
+    fig.savefig((SAVE_PATH + '{}.pdf').format(os.environ['LSHA_RES_PATH'], title))
 
     del fig, axs
