@@ -43,7 +43,7 @@ def parse_ts(ts):
 # FIXME should be generic
 ACT_TO_SENSORS = {"Entrada Material Sucio": 'S1', "Cargado en carro  L+D": 'S2',
                   "Carga L+D iniciada": 'S3', "Carga L+D liberada": 'S4',
-                  "Montaje": 'S5', "Producción  montada": 'S6',
+                  "Montaje": 'S5', "Producción  montada": 'S6', "Comisionado": 'S10',
                   "Composición de cargas": 'S7', "Carga de esterilizador liberada": 'S8',
                   "Carga de esterilizadorliberada": 'S9', 'Pass Sensor S1': 'S1', 'Pass Sensor S2': 'S2',
                   'Pass Sensor S3': 'S3', 'Pass Sensor S4': 'S4', 'Pass Sensor S106': 'S106',

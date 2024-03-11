@@ -56,7 +56,7 @@ if CS == 'AUTO_TWIN':
                           "Carga L+D iniciada": 'S3', "Carga L+D liberada": 'S4',
                           "Montaje": 'S5', "Producción  montada": 'S6',
                           "Composición de cargas": 'S7', "Carga de esterilizador liberada": 'S8',
-                          "Carga de esterilizadorliberada": 'S9'}
+                          "Carga de esterilizadorliberada": 'S9', "Comisionado": 'S10'}
     elif 'Read Lock Status' in [e.act for e in unique_events]:
         act_to_sensors = {'Pass Sensor S1': 'S1', 'Pass Sensor S2': 'S2', 'Pass Sensor S3': 'S3',
                           'Pass Sensor S4': 'S4',
