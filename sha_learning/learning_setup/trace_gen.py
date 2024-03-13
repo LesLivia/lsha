@@ -162,7 +162,7 @@ class TraceGenerator:
         if len(self.labels_hierarchy) == 0:
             self.labels_hierarchy = querier.get_entity_labels_hierarchy()
 
-        if 'START_T' in config['AUTO-TWIN CONFIGURATION'] and 'END_T' in config['AUTO-TWIN CONFIGURATION']:
+        if self.start_ts is not None and self.end_ts is not None:
             START_T = int(self.start_ts)
             END_T = int(self.end_ts)
         else:
