@@ -146,7 +146,7 @@ def parse_value(path, i):
 def parse_data(path):
     sensor_id: SampledSignal = SampledSignal([], label='s_id')
     sensor_id.points.append(SignalPoint(Timestamp(0, 0, 0, 0, 0, 0), 0))
-    DELTA_T = 100
+    DELTA_T = 100000
     if POV == 'plant':
         state_signal: SampledSignal = SampledSignal([], label='state_vec')
         state_signal.points.append(SignalPoint(Timestamp(0, 0, 0, 0, 0, 0), 0))
