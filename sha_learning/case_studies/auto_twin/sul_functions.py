@@ -74,7 +74,10 @@ ACT_TO_SENSORS = {"Entrada Material Sucio": 'S1', "Cargado en carro  L+D": 'S2',
                   'Pass Sensor CS4202': 'S4202', 'Pass Sensor CS4301': 'S4301',
                   'Pass Sensor CS4401': 'S4401', 'Pass Sensor CS106': 'S106', 'Pass Sensor CS011': 'S11',
                   'Pass Sensor CS012': 'S12', 'Pass Sensor CS013': 'S13', 'Pass Sensor CS014': 'S14',
-                  'Pass Sensor CS015': 'S15', 'Pass Sensor CS016': 'S16', 'Pass Sensor CS4101': 'S4101'}
+                  'Pass Sensor CS015': 'S15', 'Pass Sensor CS016': 'S16', 'Pass Sensor CS4101': 'S4101',
+                  'Pass Sensor CS4203': 'S4203', 'Pass Sensor CS4204': 'S4204', 'Pass Sensor VS001': 'S501',
+                  'Pass Sensor VS002': 'S502', 'Pass Sensor VS003': 'S503',
+                  'Read power': 'S601', 'Read temperature': 'S602'}
 
 
 def update_state_vector(path, state_vector: List[int], sensor_to_station: Dict[str, Tuple[int, str]]):

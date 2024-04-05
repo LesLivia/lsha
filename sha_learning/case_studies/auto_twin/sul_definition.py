@@ -78,7 +78,10 @@ if CS == 'AUTO_TWIN':
                           'Pass Sensor CS4202': 'S4202', 'Pass Sensor CS4301': 'S4301',
                           'Pass Sensor CS4401': 'S4401', 'Pass Sensor CS106': 'S106', 'Pass Sensor CS011': 'S11',
                           'Pass Sensor CS012': 'S12', 'Pass Sensor CS013': 'S13', 'Pass Sensor CS014': 'S14',
-                          'Pass Sensor CS015': 'S15', 'Pass Sensor CS016': 'S16', 'Pass Sensor CS4101': 'S4101'}
+                          'Pass Sensor CS015': 'S15', 'Pass Sensor CS016': 'S16', 'Pass Sensor CS4101': 'S4101',
+                          'Pass Sensor CS4203': 'S4203', 'Pass Sensor CS4204': 'S4204', 'Pass Sensor VS001': 'S501',
+                          'Pass Sensor VS002': 'S502', 'Pass Sensor VS003': 'S503',
+                          'Read power': 'S601', 'Read temperature': 'S602'}
     else:
         act_to_sensors = {'Pass Sensor LOAD_1': 'S11', 'Pass Sensor PROCESS_1': 'S12', 'Pass Sensor UNLOAD_1': 'S13',
                           'Pass Sensor LOAD_2': 'S21', 'Pass Sensor PROCESS_2': 'S22', 'Pass Sensor UNLOAD_2': 'S23',

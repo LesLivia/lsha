@@ -176,7 +176,6 @@ class TraceGenerator:
 
         evt_seqs = []
         if self.pov.lower() == 'plant':
-            events = querier.get_events_by_timestamp(START_T, END_T)
             pov = self.pov.lower()
             entity_tree = querier.get_entity_tree("Oven", EntityForest([]))
             events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
@@ -193,10 +192,12 @@ class TraceGenerator:
                     pov = self.pov.lower()
                     if pov == 'item':
                         entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
-                        events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
+                        events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T,
+                                                                                 pov)
                     else:
                         entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]))
-                        events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T, pov)
+                        events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T,
+                                                                                 pov)
                     if len(events) > 0:
                         evt_seqs.append(events)
                     self.processed_entities[entity] = entity_tree[0]
