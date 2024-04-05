@@ -183,7 +183,8 @@ class TraceGenerator:
                 evt_seqs.append(events)
         else:
             if self.pov.lower() == 'item':
-                entities = querier.get_items(labels_hierarchy=self.labels_hierarchy, limit=n, random=True)
+                entities = querier.get_items(labels_hierarchy=self.labels_hierarchy, limit=n, random=True,
+                                             start_t=START_T, end_t=END_T)
             else:
                 entities = querier.get_resources(labels_hierarchy=self.labels_hierarchy, limit=n, random=True)
 
