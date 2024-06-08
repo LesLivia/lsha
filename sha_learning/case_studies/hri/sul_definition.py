@@ -39,8 +39,10 @@ def busy_model(interval: List[Timestamp], F_0: float):
 
 idle_fc = FlowCondition(0, idle_model)
 busy_fc = FlowCondition(1, busy_model)
+use_pysindy = config["PYSINDY"]["FLAG_ENABLE"]
 
 models: List[FlowCondition] = [idle_fc, busy_fc]
+
 
 events = []
 if SAMPLE_STRATEGY == 'UPPAAL':
@@ -123,6 +125,9 @@ if test:
     id_flow = teacher.mi_query(test_trace)
     print(id_flow)
 
+    if(use_pysindy == 'True'):
+        models.append(id_flow)
+        model_to_distr[id_flow.f_id] = []
     # test hypothesis testing query
     metrics = [get_ftg_param(s, id_flow) for s in segments]
     print(metrics)

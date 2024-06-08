@@ -1,9 +1,11 @@
 import configparser
+import inspect
 import os
 from typing import List, Dict
 
 import numpy as np
 import scipy.stats as stats
+import pysindy as ps
 from tqdm import tqdm
 
 from sha_learning.domain.lshafeatures import TimedTrace, FlowCondition, ProbDistribution, Trace
@@ -71,6 +73,9 @@ class Teacher:
     # If not enough data are available to draw a conclusion, returns None
     #############################################
     def mi_query(self, word: Trace):
+        if len(self.flows[0]) > 10: # Inserire un modo per capire che ho troppe flow condition oppure valore di threashold
+            config['PYSINDY']['FLAG_ENABLE'] = False
+        use_pysindy = config['PYSINDY']['FLAG_ENABLE']
         if not MI_QUERY or word == '':
             return self.flows[0][self.sul.default_m]
         else:
@@ -86,39 +91,90 @@ class Teacher:
                     if len(segment) < 3:
                         continue
                     interval = [pt.timestamp for pt in segment]
-                    # observed values and (approximate) derivative
                     real_behavior = [pt.value for pt in segment]
-                    min_distance = 10000
-                    best_fit = None
+                    
+                    if use_pysindy == 'True':
+                        interval_sec = [t.to_secs() for t in interval]
+                        #x_train = np.array(real_behavior).reshape(-1, 1)
+                        #t_train = np.array(interval)
+                        x_train = np.array(real_behavior, dtype=np.float64).reshape(-1, 1)
+                        t_train = np.array(interval_sec, dtype=np.float64)
 
-                    # for each model from the given input set
-                    for flow in self.flows[0]:
-                        ideal_model = flow.f(interval, segment[0].value)
-                        # applies DDTW
-                        res = fast_ddtw(real_behavior, ideal_model)
+                        stlsq_optimizer = ps.STLSQ(threshold=0.0001)
+                        model = ps.SINDy(optimizer=stlsq_optimizer)
+                        model.fit(x_train, t_train, quiet=True)
+                        model.print()
+                        degree = model.feature_library.degree
+                        features_names = model.feature_names
 
-                        if PLOT_DDTW:
-                            plot_aligned_signals(real_behavior, ideal_model, res[1])
+                        #def sindy_model_no_control(interval, initial_value, coefficients):
+                        def sindy_model_no_control(interval: List[Timestamp], F_0: float):
+                            values = [F_0]
+                            coefficients = model.coefficients()
+                            interval_secs = [t.to_secs() for t in interval]
+                            for t in interval_secs[1:]:
+                                new_value = sum(coeff * values[-1]**i for i, coeff in enumerate(coefficients[0]))
+                                values.append(new_value)
+                            return np.array(values)
 
-                        if res[0] < min_distance:
-                            min_distance = res[0]
-                            best_fit = flow
+                        def sindy_model_with_control(interval, initial_value, control_values, coefficients, degree, feature_names):
+                            values = [initial_value]
+                            #num_features = coefficients.shape[0]
+                            interval_secs = [t.to_secs() for t in interval]
+                            feature_combinations = []
+                            feature_dict = {feature: (values[-1] if feature == feature_names[0] else u[0][j-1]) for j,feature in enumerate(feature_names)}
+                            for d in range(1, degree + 1):
+                                for combo in combinations_with_replacement(features, d):
+                                    feature_combinations.append(combo)
+
+                            for i, (t, u) in enumerate(zip(interval_sec[1:], control_values[1:])):
+                                new_value = coefficients[0, 0]                            
+                                for j, combo in enumerate(feature_combinations, start=1):
+                                    term_value = 1
+                                    for feature in combo:
+                                        term_value *= feature_dict[feature]
+                                    new_value += coefficients[0, j] * term_value # Prendi primo set di coeff perché gli altri si riferiscono a control variables
+                                values.append(new_value)
+                                feature_dict = {feature: (values[-1] if feature == feature_names[0] else u[i+1][j-1]) for j,feature in enumerate(feature_names)} # i+1 perché la enumerate in control_values[1:] partirà da zero, altrimenti metti i
+                            return np.array(values)
+                            
+                        best_fit = FlowCondition(len(self.flows[0]) + 1, sindy_model_no_control)
                     else:
+                        min_distance = 10000
+                        best_fit = None
+
+                        for flow in self.flows[0]:
+                            ideal_model = flow.f(interval, segment[0].value)
+                            res = fast_ddtw(real_behavior, ideal_model)
+
+                            if PLOT_DDTW:
+                                plot_aligned_signals(real_behavior, ideal_model, res[1])
+
+                            if res[0] < min_distance:
+                                min_distance = res[0]
+                                best_fit = flow
+                            else:
+                                fits.append(best_fit)
+
+                    if use_pysindy != 'True':
                         fits.append(best_fit)
 
-                unique_fits = set(fits)
-                freq = -1
-                best_fit = None
-                for f in unique_fits:
-                    matches = sum([x == f for x in fits]) / len(fits)
-                    if matches > freq:
-                        freq = matches
-                        best_fit = f
-                if freq > 0.75:
-                    return best_fit
+                if use_pysindy != 'True':
+                    unique_fits = set(fits)
+                    freq = -1
+                    best_fit = None
+                    for f in unique_fits:
+                        matches = sum([x == f for x in fits]) / len(fits)
+                        if matches > freq:
+                            freq = matches
+                            best_fit = f
+                    if freq > 0.75:
+                        return best_fit
+                    else:
+                        LOGGER.info("!! INCONSISTENT PHYSICAL BEHAVIOR !!")
+                        return None
                 else:
-                    LOGGER.info("!! INCONSISTENT PHYSICAL BEHAVIOR !!")
-                    return None
+                    return best_fit
             else:
                 return None
 

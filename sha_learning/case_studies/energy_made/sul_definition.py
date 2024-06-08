@@ -33,7 +33,7 @@ on_fc: FlowCondition = FlowCondition(0, pwr_model)
 off_distr = NormalDistribution(0, 0.0, 0.0)
 
 model2distr = {0: []}
-power = RealValuedVar([on_fc], [], model2distr, label='P')
+power = RealValuedVar([on_fc], [], model2distr, label='P') # creane un'altra per la speed
 
 # define events as different velocities ranges and stop, load and unload
 events: List[Event] = []
@@ -56,7 +56,7 @@ DEFAULT_DISTR = 0
 
 args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 energy_made_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
-
+# inserisci qui sopra [speed]
 test = False
 if test:
     TEST_PATH = 'C:/Users/gusof/OneDrive/Desktop/Tesi/lsha-master/resources/traces/MADE/first_type_3/'
