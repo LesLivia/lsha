@@ -1,5 +1,6 @@
 import configparser
 import inspect
+from itertools import combinations_with_replacement, zip_longest
 import os
 from typing import List, Dict
 
@@ -76,10 +77,15 @@ class Teacher:
         if len(self.flows[0]) > 10: # Inserire un modo per capire che ho troppe flow condition oppure valore di threashold
             config['PYSINDY']['FLAG_ENABLE'] = False
         use_pysindy = config['PYSINDY']['FLAG_ENABLE']
+        withControl = len(self.sul.vars) > 1 # Così dovrebbe andare bene, ovvero se ho più variabili vars del sul
         if not MI_QUERY or word == '':
             return self.flows[0][self.sul.default_m]
         else:
-            segments = self.sul.get_segments(word)
+            if withControl:
+                segments, segments_control = self.sul.get_segments(word, control=True)
+            else:
+                segments = self.sul.get_segments(word)
+                segments_control = []
             if len(segments) > 0:
                 if len(self.flows[0]) == 1:
                     return self.flows[0][0]
@@ -87,29 +93,40 @@ class Teacher:
                     return self.flows[0][2]
 
                 fits = []
-                for segment in segments:
+                for segment, control in zip_longest(segments, segments_control, fillvalue=None):
+                    #if control is not None:
                     if len(segment) < 3:
                         continue
                     interval = [pt.timestamp for pt in segment]
                     real_behavior = [pt.value for pt in segment]
-                    
+                    if withControl:
+                        control_behavior = [pt.value for pt in control]
+                    else:
+                        control_behavior =[]
                     if use_pysindy == 'True':
+                       
                         interval_sec = [t.to_secs() for t in interval]
-                        #x_train = np.array(real_behavior).reshape(-1, 1)
-                        #t_train = np.array(interval)
-                        x_train = np.array(real_behavior, dtype=np.float64).reshape(-1, 1)
-                        t_train = np.array(interval_sec, dtype=np.float64)
+                        if(withControl): # comunque va trovato un modo per adattare gli iperparametri di pysindy, grid search sulla threshold
+                            # alternativamente si fa questo: model_simple = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2), differentiation_method=SINDyDerivative(kind="trend_filtered"), optimizer=ps.SR3(threshold=0.0001, thresholder="l1", normalize_columns=True), feature_names = ['P', 'S'], discrete_time=True)
+                            # e si sceglie tramite model.score()
+                            x_train = np.array(real_behavior, dtype=np.float64).reshape(-1, 1)
+                            t_train = np.array(interval_sec, dtype=np.float64)
+                            u_train = np.array(control_behavior, dtype=np.float64).reshape(-1, 1)
+                            stlsq_optimizer = ps.STLSQ(threshold=0.0001)
+                            model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2), differentiation_method=ps.SINDyDerivative(kind="trend_filtered"), optimizer=ps.SR3(threshold=0.0001, thresholder="l1", normalize_columns=True), feature_names = ['P', 'S'], discrete_time=True)
+                            model.fit(x_train, t_train, u=u_train, quiet=True)
+                            model.print()
+                        else:
+                            x_train = np.array(real_behavior, dtype=np.float64).reshape(-1, 1)
+                            t_train = np.array(interval_sec, dtype=np.float64)
 
-                        stlsq_optimizer = ps.STLSQ(threshold=0.0001)
-                        model = ps.SINDy(optimizer=stlsq_optimizer)
-                        model.fit(x_train, t_train, quiet=True)
-                        model.print()
-                        degree = model.feature_library.degree
-                        features_names = model.feature_names
-
-                        #def sindy_model_no_control(interval, initial_value, coefficients):
-                        def sindy_model_no_control(interval: List[Timestamp], F_0: float):
-                            values = [F_0]
+                            stlsq_optimizer = ps.STLSQ(threshold=0.0001)
+                            model = ps.SINDy(optimizer=stlsq_optimizer)
+                            model.fit(x_train, t_train, quiet=True)
+                            model.print()
+                            
+                        def sindy_model_no_control(interval: List[Timestamp], init_val: float):
+                            values = [init_val]
                             coefficients = model.coefficients()
                             interval_secs = [t.to_secs() for t in interval]
                             for t in interval_secs[1:]:
@@ -117,17 +134,21 @@ class Teacher:
                                 values.append(new_value)
                             return np.array(values)
 
-                        def sindy_model_with_control(interval, initial_value, control_values, coefficients, degree, feature_names):
-                            values = [initial_value]
+                        def sindy_model_with_control(interval: List[Timestamp], init_val: float):
+                            values = [init_val]
                             #num_features = coefficients.shape[0]
+                            control_values = control_behavior
+                            degree = model.feature_library.degree
+                            feature_names = model.feature_names
+                            coefficients = model.coefficients()
                             interval_secs = [t.to_secs() for t in interval]
                             feature_combinations = []
                             feature_dict = {feature: (values[-1] if feature == feature_names[0] else u[0][j-1]) for j,feature in enumerate(feature_names)}
                             for d in range(1, degree + 1):
-                                for combo in combinations_with_replacement(features, d):
+                                for combo in combinations_with_replacement(feature_names, d):
                                     feature_combinations.append(combo)
 
-                            for i, (t, u) in enumerate(zip(interval_sec[1:], control_values[1:])):
+                            for i, (t, u) in enumerate(zip(interval_secs[1:], control_values[1:])):
                                 new_value = coefficients[0, 0]                            
                                 for j, combo in enumerate(feature_combinations, start=1):
                                     term_value = 1
@@ -137,8 +158,10 @@ class Teacher:
                                 values.append(new_value)
                                 feature_dict = {feature: (values[-1] if feature == feature_names[0] else u[i+1][j-1]) for j,feature in enumerate(feature_names)} # i+1 perché la enumerate in control_values[1:] partirà da zero, altrimenti metti i
                             return np.array(values)
-                            
-                        best_fit = FlowCondition(len(self.flows[0]) + 1, sindy_model_no_control)
+                        if withControl: 
+                            best_fit = FlowCondition(len(self.flows[0]) + 1, sindy_model_with_control)
+                        else:
+                            best_fit = FlowCondition(len(self.flows[0]) + 1, sindy_model_no_control)
                     else:
                         min_distance = 10000
                         best_fit = None

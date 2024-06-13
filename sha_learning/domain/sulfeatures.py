@@ -70,16 +70,21 @@ class SystemUnderLearning:
     def get_ht_params(self, segment: List[SignalPoint], flow: FlowCondition):
         return self.param_f(segment, flow)
 
-    def get_segments(self, word: Trace):
+    def get_segments(self, word: Trace, control=False):
         traces: List[int] = [i for i, t in enumerate(self.traces) if t.startswith(word)]
         if len(traces) == 0:
             return []
 
         segments = []
+        segments_control = []
         # for all traces, get signal segment from last(word) to the following event
         for trace in traces:
-            main_sig_index = [i for i, s in enumerate(self.signals[0]) if s.label == self.vars[0].label][0] # inserire parametro ipzionale per prendere la speed
+            main_sig_index = [i for i, s in enumerate(self.signals[0]) if s.label == self.vars[0].label][0]
             main_sig = self.signals[trace][main_sig_index]
+            
+            if control:
+                main_sig_index_control = [i for i, s in enumerate(self.signals[0]) if s.label == self.vars[1].label][0] 
+                main_sig_control = self.signals[trace][main_sig_index_control]
 
             if word != '' and str(word) != 'ε':
                 start_timestamp = self.timed_traces[trace].t[max(len(word) - 1, 0)].to_secs()
@@ -90,11 +95,19 @@ class SystemUnderLearning:
                 end_timestamp = self.timed_traces[trace].t[len(word)].to_secs()
             else:
                 end_timestamp = main_sig.points[-1].timestamp.to_secs()
+                if control:
+                    end_timestamp_control = main_sig_control.points[-1].timestamp.to_secs()
 
             segment = [pt for pt in main_sig.points if start_timestamp <= pt.timestamp.to_secs() < end_timestamp]
             segments.append(segment)
+            if control:
+                segment_control = [pt for pt in main_sig_control.points if start_timestamp <= pt.timestamp.to_secs() < end_timestamp_control]
+                segments_control.append(segment_control)
         else:
-            return segments
+            if control:
+                return segments, segments_control
+            else:
+                return segments
 
     #
     # VISUALIZATION METHODS

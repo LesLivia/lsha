@@ -33,7 +33,8 @@ on_fc: FlowCondition = FlowCondition(0, pwr_model)
 off_distr = NormalDistribution(0, 0.0, 0.0)
 
 model2distr = {0: []}
-power = RealValuedVar([on_fc], [], model2distr, label='P') # creane un'altra per la speed
+power = RealValuedVar([on_fc], [], model2distr, label='P')
+speed = RealValuedVar([on_fc], [], model2distr, label='S')
 
 # define events as different velocities ranges and stop, load and unload
 events: List[Event] = []
@@ -55,8 +56,9 @@ DEFAULT_M = 0
 DEFAULT_DISTR = 0
 
 args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
-energy_made_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
-# inserisci qui sopra [speed]
+energy_made_cs = SystemUnderLearning([power, speed], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
+#energy_made_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
+
 test = False
 if test:
     TEST_PATH = 'C:/Users/gusof/OneDrive/Desktop/Tesi/lsha-master/resources/traces/MADE/first_type_3/'
@@ -66,12 +68,12 @@ if test:
         # testing data to signals conversion
         new_signals: List[SampledSignal] = parse_data(TEST_PATH + file)
         # testing chg pts identification
-        chg_pts = energy_made.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
+        chg_pts = energy_made_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
         # testing event labeling
         id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
         # testing signal to trace conversion
-        energy_made.process_data(TEST_PATH + file)
-        trace = energy_made.timed_traces[-1]
+        energy_made_cs.process_data(TEST_PATH + file)
+        trace = energy_made_cs.timed_traces[-1]
         print(Trace(tt=trace))
         power_pts = new_signals[0].points
         speed_pts = new_signals[1].points
@@ -83,21 +85,21 @@ if test:
                     v3=[pt.value for pt in pressure_pts])
 
     # test segment identification
-    test_trace = Trace(energy_made.traces[0][:1])
-    segments = energy_made.get_segments(test_trace)
+    test_trace = Trace(energy_made_cs.traces[0][:1])
+    segments = energy_made_cs.get_segments(test_trace)
 
     # test model identification
-    TEACHER = Teacher(energy_made)
+    TEACHER = Teacher(energy_made_cs)
     identified_model: FlowCondition = TEACHER.mi_query(test_trace)
     print(identified_model)
 
     # test distr identification
     for i, trace in enumerate(TEACHER.timed_traces):
         for j, event in enumerate(trace.e):
-            test_trace = Trace(energy_made.traces[i][:j + 1])
+            test_trace = Trace(energy_made_cs.traces[i][:j + 1])
             identified_distr = TEACHER.ht_query(test_trace, identified_model, save=True)
 
-            segments = energy_made.get_segments(test_trace)
+            segments = energy_made_cs.get_segments(test_trace)
             avg_metrics = sum([TEACHER.sul.get_ht_params(segment, identified_model)
                                for segment in segments]) / len(segments)
 
