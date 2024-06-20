@@ -4,11 +4,13 @@ from itertools import combinations_with_replacement, zip_longest
 import os
 from typing import List, Dict
 
+from matplotlib import pyplot as plt
 import numpy as np
 import scipy.stats as stats
 import pysindy as ps
 from tqdm import tqdm
 
+from matplotlib.backends.backend_pdf import PdfPages
 from sha_learning.domain.lshafeatures import TimedTrace, FlowCondition, ProbDistribution, Trace
 from sha_learning.domain.obstable import ObsTable, Row, State
 from sha_learning.domain.sigfeatures import SampledSignal, Timestamp
@@ -74,10 +76,12 @@ class Teacher:
     # If not enough data are available to draw a conclusion, returns None
     #############################################
     def mi_query(self, word: Trace):
-        if len(self.flows[0]) > 10: # Inserire un modo per capire che ho troppe flow condition oppure valore di threashold
+        for w in word:
+            print(w.symbol)
+        if len(self.flows[0]) > 10: # Inserire un modo per capire che ho troppe flow condition oppure valore di threhhold
             config['PYSINDY']['FLAG_ENABLE'] = False
         use_pysindy = config['PYSINDY']['FLAG_ENABLE']
-        withControl = len(self.sul.vars) > 1 # Così dovrebbe andare bene, ovvero se ho più variabili vars del sul
+        withControl = len(self.sul.vars) > 1
         if not MI_QUERY or word == '':
             return self.flows[0][self.sul.default_m]
         else:
@@ -87,14 +91,13 @@ class Teacher:
                 segments = self.sul.get_segments(word)
                 segments_control = []
             if len(segments) > 0:
-                if len(self.flows[0]) == 1:
-                    return self.flows[0][0]
+                #if len(self.flows[0]) == 1: messo perché per made si ha una sola flow quindi non si fa fit?
+                    #return self.flows[0][0]
                 if CS == 'THERMO' and word[-1].symbol == 'h_0':
                     return self.flows[0][2]
 
                 fits = []
-                for segment, control in zip_longest(segments, segments_control, fillvalue=None):
-                    #if control is not None:
+                for i, (segment, control) in enumerate(zip_longest(segments, segments_control, fillvalue=None)):
                     if len(segment) < 3:
                         continue
                     interval = [pt.timestamp for pt in segment]
@@ -112,8 +115,9 @@ class Teacher:
                             x_train = np.array(real_behavior, dtype=np.float64).reshape(-1, 1)
                             t_train = np.array(interval_sec, dtype=np.float64)
                             u_train = np.array(control_behavior, dtype=np.float64).reshape(-1, 1)
-                            stlsq_optimizer = ps.STLSQ(threshold=0.0001)
-                            model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2), differentiation_method=ps.SINDyDerivative(kind="trend_filtered"), optimizer=ps.SR3(threshold=0.0001, thresholder="l1", normalize_columns=True), feature_names = ['P', 'S'], discrete_time=True)
+                            u_train = np.array([u/1000 for u in u_train])
+                            #model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2), differentiation_method=ps.SINDyDerivative(kind="trend_filtered"), optimizer=ps.SR3(threshold=0.0001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=True)
+                            model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2),optimizer=ps.SR3(threshold=0.0001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=True)
                             model.fit(x_train, t_train, u=u_train, quiet=True)
                             model.print()
                         else:
@@ -159,6 +163,7 @@ class Teacher:
                                 feature_dict = {feature: (values[-1] if feature == feature_names[0] else u[i+1][j-1]) for j,feature in enumerate(feature_names)} # i+1 perché la enumerate in control_values[1:] partirà da zero, altrimenti metti i
                             return np.array(values)
                         if withControl: 
+
                             best_fit = FlowCondition(len(self.flows[0]) + 1, sindy_model_with_control)
                         else:
                             best_fit = FlowCondition(len(self.flows[0]) + 1, sindy_model_no_control)
@@ -181,7 +186,6 @@ class Teacher:
 
                     if use_pysindy != 'True':
                         fits.append(best_fit)
-
                 if use_pysindy != 'True':
                     unique_fits = set(fits)
                     freq = -1

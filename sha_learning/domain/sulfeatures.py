@@ -93,6 +93,7 @@ class SystemUnderLearning:
 
             if len(word) < len(self.timed_traces[trace]):
                 end_timestamp = self.timed_traces[trace].t[len(word)].to_secs()
+                end_timestamp_control = end_timestamp
             else:
                 end_timestamp = main_sig.points[-1].timestamp.to_secs()
                 if control:

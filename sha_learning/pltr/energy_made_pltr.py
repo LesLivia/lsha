@@ -192,6 +192,7 @@ def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered
     # axs[2].legend(fontsize=20)
 
     plt.tight_layout(pad=10.0)
+
     fig.savefig(SAVE_PATH + '{}.pdf'.format(title))
 
     del fig, axs

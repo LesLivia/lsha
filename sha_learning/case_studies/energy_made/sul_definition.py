@@ -1,9 +1,12 @@
 import configparser
+from itertools import zip_longest
+from matplotlib.backends.backend_pdf import PdfPages
 import os
 from typing import List
 
-from sha_learning.case_studies.energy_made.sul_functions import label_event, parse_data, get_power_param, \
-    is_chg_pt
+from matplotlib import pyplot as plt
+
+from sha_learning.case_studies.energy_made.sul_functions import label_event, parse_data, get_power_param, is_chg_pt
 from sha_learning.domain.lshafeatures import Event, NormalDistribution, Trace
 from sha_learning.domain.sigfeatures import Timestamp, SampledSignal
 from sha_learning.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
@@ -32,9 +35,9 @@ on_fc: FlowCondition = FlowCondition(0, pwr_model)
 # define distributions
 off_distr = NormalDistribution(0, 0.0, 0.0)
 
-model2distr = {0: []}
+model2distr = {0: [], 1: [], 2: []}
 power = RealValuedVar([on_fc], [], model2distr, label='P')
-speed = RealValuedVar([on_fc], [], model2distr, label='S')
+speed = RealValuedVar([on_fc], [], model2distr, label='w')
 
 # define events as different velocities ranges and stop, load and unload
 events: List[Event] = []
@@ -59,9 +62,9 @@ args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default
 energy_made_cs = SystemUnderLearning([power, speed], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 #energy_made_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 
-test = False
+test = True
 if test:
-    TEST_PATH = 'C:/Users/gusof/OneDrive/Desktop/Tesi/lsha-master/resources/traces/MADE/first_type_3/'
+    TEST_PATH = '/home/simo/WebFarm/lsha/resources/traces/MADE/'
     traces_files = os.listdir(TEST_PATH)
 
     for file in traces_files:
@@ -83,15 +86,41 @@ if test:
                     trace, title=file, filtered=True,
                     timestamps3=[pt.timestamp for pt in pressure_pts],
                     v3=[pt.value for pt in pressure_pts])
-
+    
     # test segment identification
-    test_trace = Trace(energy_made_cs.traces[0][:1])
+    test_trace = Trace(energy_made_cs.traces[0][0:8])
+    pdf = PdfPages('test_trace_segments_plots.pdf')
+    segments, segments_control = energy_made_cs.get_segments(test_trace, control=True)
+    
+    for i, (segment, control) in enumerate(zip_longest(segments, segments_control, fillvalue=None)):
+        plt.figure()
+
+        times = [pt.timestamp.to_secs() for pt in segment]
+        values = [pt.value for pt in segment]
+
+        plt.plot(times, values, label='Main Signal', color='blue')
+
+        #if control is not None:
+         #   control_times = [pt.timestamp.to_secs() for pt in control]
+          #  control_values = [pt.value for pt in control]
+           # plt.plot(control_times, control_values, label='Control Signal', color='red')
+        plt.title(f'Segment {i + 1}')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Value')
+        plt.legend()
+
+        pdf.savefig()
+        plt.close()
+    
+    pdf.close()
     segments = energy_made_cs.get_segments(test_trace)
 
     # test model identification
     TEACHER = Teacher(energy_made_cs)
     identified_model: FlowCondition = TEACHER.mi_query(test_trace)
     print(identified_model)
+
+    print(model2distr)
 
     # test distr identification
     for i, trace in enumerate(TEACHER.timed_traces):
