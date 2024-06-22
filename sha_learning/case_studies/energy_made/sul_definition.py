@@ -62,7 +62,7 @@ args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default
 energy_made_cs = SystemUnderLearning([power, speed], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 #energy_made_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 
-test = True
+test = False
 if test:
     TEST_PATH = '/home/simo/WebFarm/lsha/resources/traces/MADE/'
     traces_files = os.listdir(TEST_PATH)
@@ -119,7 +119,29 @@ if test:
     TEACHER = Teacher(energy_made_cs)
     identified_model: FlowCondition = TEACHER.mi_query(test_trace)
     print(identified_model)
+    pdf = PdfPages('test_trace_identified.pdf')
+    for i, (segment, control) in enumerate(zip_longest(segments, segments_control, fillvalue=None)):
+        plt.figure()
 
+        ts = [pt.timestamp for pt in segment]
+        tsecond = [pt.timestamp.to_secs() for pt in segment]
+        control_values = [s.value/1000 for s in segments_control[i]]
+        values = identified_model.f(ts, segment[i].value, control_values)
+        plt.plot(tsecond, values, label='Main Signal', color='blue')
+
+        #if control is not None:
+         #   control_times = [pt.timestamp.to_secs() for pt in control]
+          #  control_values = [pt.value for pt in control]
+           # plt.plot(control_times, control_values, label='Control Signal', color='red')
+        plt.title(f'Segment {i + 1}')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Value')
+        plt.legend()
+
+        pdf.savefig()
+        plt.close()
+    
+    pdf.close()
     print(model2distr)
 
     # test distr identification

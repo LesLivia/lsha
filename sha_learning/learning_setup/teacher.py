@@ -138,16 +138,16 @@ class Teacher:
                                 values.append(new_value)
                             return np.array(values)
 
-                        def sindy_model_with_control(interval: List[Timestamp], init_val: float):
+                        def sindy_model_with_control(interval: List[Timestamp], init_val: float, control_values: np.array):
                             values = [init_val]
                             #num_features = coefficients.shape[0]
-                            control_values = control_behavior
+                            #control_values = control_behavior
                             degree = model.feature_library.degree
                             feature_names = model.feature_names
                             coefficients = model.coefficients()
                             interval_secs = [t.to_secs() for t in interval]
                             feature_combinations = []
-                            feature_dict = {feature: (values[-1] if feature == feature_names[0] else u[0][j-1]) for j,feature in enumerate(feature_names)}
+                            feature_dict = {feature: (values[-1] if feature == feature_names[0] else control_values[j-1]) for j,feature in enumerate(feature_names)}
                             for d in range(1, degree + 1):
                                 for combo in combinations_with_replacement(feature_names, d):
                                     feature_combinations.append(combo)
@@ -160,7 +160,7 @@ class Teacher:
                                         term_value *= feature_dict[feature]
                                     new_value += coefficients[0, j] * term_value # Prendi primo set di coeff perché gli altri si riferiscono a control variables
                                 values.append(new_value)
-                                feature_dict = {feature: (values[-1] if feature == feature_names[0] else u[i+1][j-1]) for j,feature in enumerate(feature_names)} # i+1 perché la enumerate in control_values[1:] partirà da zero, altrimenti metti i
+                                feature_dict = {feature: (values[-1] if feature == feature_names[0] else control_values[i+1]) for j,feature in enumerate(feature_names)} # i+1 perché la enumerate in control_values[1:] partirà da zero, altrimenti metti i
                             return np.array(values)
                         if withControl: 
 

@@ -72,7 +72,9 @@ class SystemUnderLearning:
 
     def get_segments(self, word: Trace, control=False):
         traces: List[int] = [i for i, t in enumerate(self.traces) if t.startswith(word)]
-        if len(traces) == 0:
+        if len(traces) == 0 and control:
+            return [],[]
+        elif len(traces) == 0 and not(control):
             return []
 
         segments = []
