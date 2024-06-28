@@ -7,7 +7,7 @@ import numpy as np
 
 from sha_learning.domain.lshafeatures import TimedTrace
 
-SAVE_PATH = 'resources/learned_ha/'
+SAVE_PATH = 'resources/learned_sha/'
 
 config = configparser.ConfigParser()
 config.read('{}/config/config.ini'.format(os.environ['LSHA_RES_PATH']))

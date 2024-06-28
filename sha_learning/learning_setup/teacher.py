@@ -82,6 +82,7 @@ class Teacher:
             config['PYSINDY']['FLAG_ENABLE'] = False
         use_pysindy = config['PYSINDY']['FLAG_ENABLE']
         withControl = len(self.sul.vars) > 1
+        best_fit = None
         if use_pysindy == "True":
             counter_flow_condition = len(self.flows[0]) + 1
         if not MI_QUERY or word == '':
@@ -93,7 +94,7 @@ class Teacher:
                 segments = self.sul.get_segments(word)
                 segments_control = []
             if len(segments) > 0:
-                if len(self.flows[0]) == 1: # Perché per made si ha una sola flow quindi non si fa fit
+                if len(self.flows[0]) == 1 and use_pysindy != "True": # Perché per made si ha una sola flow quindi non si fa fit
                     return self.flows[0][0]
                 if CS == 'THERMO' and word[-1].symbol == 'h_0':
                     return self.flows[0][2]
@@ -117,10 +118,10 @@ class Teacher:
                             t_train = np.array(interval_sec)
                             u_train = np.array(control_behavior).reshape(-1, 1)
                             u_train = np.array([u/1000 for u in u_train])
-                            #model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2), differentiation_method=ps.SINDyDerivative(kind="trend_filtered"), optimizer=ps.SR3(threshold=0.0001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=True)
-                            model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2),optimizer=ps.SR3(threshold=0.00001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=True)
+                            model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2), differentiation_method=ps.SINDyDerivative(kind="trend_filtered"), optimizer=ps.SR3(threshold=0.0001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=True)
+                            #model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2),optimizer=ps.SR3(threshold=0.00001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=True)
                             model.fit(x_train, t_train, u=u_train, quiet=True)
-                            model.print()
+                            #model.print()
                         else:
                             x_train = np.array(real_behavior, dtype=np.float64).reshape(-1, 1)
                             t_train = np.array(interval_sec, dtype=np.float64)
@@ -128,12 +129,14 @@ class Teacher:
                             stlsq_optimizer = ps.STLSQ(threshold=0.0001)
                             model = ps.SINDy(optimizer=stlsq_optimizer)
                             model.fit(x_train, t_train, quiet=True)
-                            model.print()
+                            #model.print()
                         if withControl:
                             best_fit = FlowCondition(counter_flow_condition, create_sindy_model_with_control(model))
                         else:
                             best_fit = FlowCondition(counter_flow_condition, create_sindy_model_no_control(model))
-                        self.sul.vars[0].model2distr[counter_flow_condition] = []
+                        prob_distr = create_prob_distribution_from_sindy(data=x_train,d_id = counter_flow_condition)
+            
+                        self.sul.vars[0].model2distr[counter_flow_condition] = [self.sul.default_d]
                         counter_flow_condition += 1
                     else:
                         min_distance = 10000
@@ -505,3 +508,11 @@ def create_sindy_model_with_control(model):
             feature_dict = {feature: (values[-1] if feature == feature_names[0] else control_values[i+1]) for j, feature in enumerate(feature_names)}
         return np.array(values)
     return sindy_model_with_control
+
+def create_prob_distribution_from_sindy(data, d_id):
+    mean_val = np.mean(data)
+    std_dev_val = np.std(data)
+    params_dict = {'mean': mean_val, 'std_dev': std_dev_val}
+    return ProbDistribution(d_id=d_id, params=params_dict)
+
+
