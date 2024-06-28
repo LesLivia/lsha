@@ -60,8 +60,6 @@ DEFAULT_DISTR = 0
 
 args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 energy_made_cs = SystemUnderLearning([power, speed], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
-#energy_made_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
-
 test = False
 if test:
     TEST_PATH = '/home/simo/WebFarm/lsha/resources/traces/MADE/'
@@ -89,6 +87,7 @@ if test:
     
     # test segment identification
     test_trace = Trace(energy_made_cs.traces[0][0:8])
+    print(test_trace)
     pdf = PdfPages('test_trace_segments_plots.pdf')
     segments, segments_control = energy_made_cs.get_segments(test_trace, control=True)
     
@@ -118,6 +117,7 @@ if test:
     # test model identification
     TEACHER = Teacher(energy_made_cs)
     identified_model: FlowCondition = TEACHER.mi_query(test_trace)
+
     print(identified_model)
     pdf = PdfPages('test_trace_identified.pdf')
     for i, (segment, control) in enumerate(zip_longest(segments, segments_control, fillvalue=None)):
@@ -125,8 +125,9 @@ if test:
 
         ts = [pt.timestamp for pt in segment]
         tsecond = [pt.timestamp.to_secs() for pt in segment]
-        control_values = [s.value/1000 for s in segments_control[i]]
+        control_values = [s.value for s in segments_control[i]]
         values = identified_model.f(ts, segment[i].value, control_values)
+        
         plt.plot(tsecond, values, label='Main Signal', color='blue')
 
         #if control is not None:

@@ -99,7 +99,7 @@ args = {'name': 'hri', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d'
 hri_cs = SystemUnderLearning([fatigue], events, parse_data, label_event, get_ftg_param, is_chg_pt,
                              args=args)
 
-test = True
+test = False
 if test:
     # test event configuration
     print(hri_cs.symbols)
