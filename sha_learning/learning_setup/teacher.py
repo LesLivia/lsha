@@ -91,8 +91,8 @@ class Teacher:
                 segments = self.sul.get_segments(word)
                 segments_control = []
             if len(segments) > 0:
-                #if len(self.flows[0]) == 1: messo perché per made si ha una sola flow quindi non si fa fit?
-                    #return self.flows[0][0]
+                if len(self.flows[0]) == 1: # Perché per made si ha una sola flow quindi non si fa fit
+                    return self.flows[0][0]
                 if CS == 'THERMO' and word[-1].symbol == 'h_0':
                     return self.flows[0][2]
 
