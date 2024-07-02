@@ -22,7 +22,7 @@ config.sections()
 config.read('./resources/config/config.ini')
 config.sections()
 CASE_STUDY = config['SUL CONFIGURATION']['CASE_STUDY']
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', '')[0])
 
 
 def off_model(interval: List[Timestamp], T_0: float):

@@ -78,8 +78,8 @@ class Teacher:
     def mi_query(self, word: Trace):
         for w in word:
             print(w.symbol)
-        if len(self.flows[0]) > 10: # Inserire un modo per capire che ho troppe flow condition oppure valore di threhhold
-            config['PYSINDY']['FLAG_ENABLE'] = False
+        if len(self.flows[0]) > 10: # Valore di threhhold per troppe flow condition
+            config['PYSINDY']['FLAG_ENABLE'] = "False"
         use_pysindy = config['PYSINDY']['FLAG_ENABLE']
         withControl = len(self.sul.vars) > 1
         best_fit = None
@@ -137,6 +137,7 @@ class Teacher:
                         prob_distr = create_prob_distribution_from_sindy(data=x_train,d_id = counter_flow_condition)
             
                         self.sul.vars[0].model2distr[counter_flow_condition] = [self.sul.default_d]
+                        self.flows[0].append(best_fit)
                         counter_flow_condition += 1
                     else:
                         min_distance = 10000

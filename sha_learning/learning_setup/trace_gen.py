@@ -213,6 +213,7 @@ class TraceGenerator:
             sims = list(filter(lambda s: s.startswith('_') and s not in self.processed_traces, sims))
             sims.sort()
         else:
+            print(SIM_LOGS_PATH.format(config['SUL CONFIGURATION']['CS_VERSION']))
             sims = os.listdir(SIM_LOGS_PATH.format(config['SUL CONFIGURATION']['CS_VERSION']))
             sims = list(filter(lambda s: s.startswith('SIM'), sims))
         paths = []

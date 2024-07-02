@@ -11,7 +11,7 @@ config = configparser.ConfigParser()
 config.read('{}/config/config.ini'.format(os.environ['LSHA_RES_PATH']))
 config.sections()
 
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', '')[0])
 
 LOGGER = Logger('SUL DATA HANDLER')
 

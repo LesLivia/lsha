@@ -27,7 +27,7 @@ config.read('./resources/config/config.ini')
 config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
+CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', '')[0])
 RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
 
 SUL: SystemUnderLearning
@@ -46,7 +46,8 @@ elif CS == 'ENERGY':
     else:
         raise RuntimeError
 elif CS == 'AUTO_TWIN':
-    SUL = auto_twin_cs
+    print("auto twin")
+    #SUL = auto_twin_cs
     #events_labels_dict = act_to_sensors
 else:
     raise RuntimeError
