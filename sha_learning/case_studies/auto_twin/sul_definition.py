@@ -51,12 +51,19 @@ if CS == 'AUTO_TWIN':
     unique_events = reader.get_activities()
 
     # FIXME should be generic
-    if 'Entrada' in [e.act.split(' ')[0] for e in unique_events]:
-        act_to_sensors = {"Entrada Material Sucio": 'S1', "Cargado en carro  L+D": 'S2',
-                          "Carga L+D iniciada": 'S3', "Carga L+D liberada": 'S4',
-                          "Montaje": 'S5', "Producción  montada": 'S6',
-                          "Composición de cargas": 'S7', "Carga de esterilizador liberada": 'S8',
-                          "Carga de esterilizadorliberada": 'S9', "Comisionado": 'S10'}
+    if 'Dirty Material' in [e.act.split(' ')[0] for e in unique_events]:
+        act_to_sensors = {"Dirty Material Input": "S1",
+                          "Assembled production": "S2",
+                          "Composition of charges": "S3",
+                          "Sterilizer Load Released": "S4",
+                          "Commissioner": "S5",
+                          "Load L+D released": "S6",
+                          "Assembly": "S7",
+                          "Loaded on L+D trolley": "S8",
+                          "L+D Load Started": "S9",
+                          "Enter Cleaning": "S10",
+                          "Enter Storage": "S11",
+                          "Exit Storage": "S12"}
     elif 'Read Lock Status' in [e.act for e in unique_events]:
         act_to_sensors = {'Pass Sensor S1': 'S1', 'Pass Sensor S2': 'S2', 'Pass Sensor S3': 'S3',
                           'Pass Sensor S4': 'S4',
@@ -112,7 +119,7 @@ if CS == 'AUTO_TWIN':
 else:
     auto_twin_cs = SystemUnderLearning([], [], parse_data, label_event, get_rand_param, is_chg_pt, args=args)
 
-test = False
+test = True
 if test:
     driver = conn.get_driver()
     reader: Skg_Reader = Skg_Reader(driver)
