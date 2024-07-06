@@ -10,7 +10,7 @@ from sha_learning.domain.sigfeatures import Event, Timestamp
 from sha_learning.domain.sulfeatures import SystemUnderLearning
 from sha_learning.learning_setup.teacher import Teacher
 from sha_learning.pltr.hri_pltr import double_plot
-
+#export PYTHONPATH="/home/simo/WebFarm/lsha:/home/simo/WebFarm/lsha/submodules:/home/simo/WebFarm/lsha/submodules/skg_connector"
 N_0 = (0.003, 0.0001, 100)
 N_1 = (0.004, 0.0004, 100)
 

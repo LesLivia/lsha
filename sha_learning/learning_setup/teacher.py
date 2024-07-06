@@ -76,8 +76,6 @@ class Teacher:
     # If not enough data are available to draw a conclusion, returns None
     #############################################
     def mi_query(self, word: Trace):
-        for w in word:
-            print(w.symbol)
         if len(self.flows[0]) > 10: # Valore di threhhold per troppe flow condition
             config['PYSINDY']['FLAG_ENABLE'] = "False"
         use_pysindy = config['PYSINDY']['FLAG_ENABLE']
@@ -153,11 +151,8 @@ class Teacher:
                             if res[0] < min_distance:
                                 min_distance = res[0]
                                 best_fit = flow
-                            else:
-                                fits.append(best_fit)
-
-                    if use_pysindy != 'True':
-                        fits.append(best_fit)
+                        else:
+                            fits.append(best_fit)
                 if use_pysindy != 'True':
                     unique_fits = set(fits)
                     freq = -1
@@ -176,6 +171,7 @@ class Teacher:
                     return best_fit
             else:
                 return None
+
 
     #############################################
     # HYPOTHESIS TESTING QUERY:

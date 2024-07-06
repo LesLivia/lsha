@@ -30,13 +30,9 @@ class Learner:
             if not obs[i].state[j].observed():
                 identified_model: FlowCondition = self.TEACHER.mi_query(s_word + t_word)
                 identified_distr: ProbDistribution = self.TEACHER.ht_query(s_word + t_word, identified_model)
-                if identified_distr is not None:
-                    print("c")
                 if identified_model is None or identified_distr is None:
                     identified_model = None
                     identified_distr = None
-                else:
-                    print("Ec")
                 row.state[j] = State([(identified_model, identified_distr)])
                 if not State([(identified_model, identified_distr)]).observed() and j == 0:
                     break
