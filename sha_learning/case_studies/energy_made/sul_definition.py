@@ -1,10 +1,15 @@
 import configparser
-from itertools import zip_longest
+from itertools import combinations_with_replacement, zip_longest
 from matplotlib.backends.backend_pdf import PdfPages
 import os
 from typing import List
 
 from matplotlib import pyplot as plt
+import numpy as np
+
+import pysindy as ps
+from pysindy import SINDyDerivative
+
 
 from sha_learning.case_studies.energy_made.sul_functions import label_event, parse_data, get_power_param, is_chg_pt
 from sha_learning.domain.lshafeatures import Event, NormalDistribution, Trace
@@ -60,6 +65,119 @@ DEFAULT_DISTR = 0
 
 args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 energy_made_cs = SystemUnderLearning([power, speed], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
+
+''' PySindy Flow Conditions'''
+base_path="/home/simo/WebFarm/lsha/resources/traces/MADE/"
+data_paths = [base_path+"_03_mar_1.csv",
+                base_path+"_05_may_1.csv",
+                base_path+"_05_may_2.csv",
+                base_path+"_11_jan_2.csv",
+                base_path+"_12_apr_1.csv",
+                base_path+"_12_apr_2.csv",
+                base_path+"_12_jan_2.csv",
+                base_path+"_12_jan_3.csv",
+                base_path+"_12_jan_4.csv",
+                base_path+"_12_jan_5.csv",
+                base_path+"_13_feb_1.csv",
+                base_path+"_13_feb_2.csv",
+                base_path+"_15_feb_1.csv",
+                base_path+"_17_feb_2.csv",
+                base_path+"_17_feb_3.csv"
+                ]
+def extractTimestamps(points):
+  return [str(point.timestamp).split(' ', 1)[1] for point in points]
+
+def transform_times_to_seconds_cumulative(times):
+    # Converte i tempi nel formato 'HH:MM:SS' in secondi totali
+    times_seconds = [sum(int(x) * 60**i for i, x in enumerate(reversed(time.split(':')))) for time in times]
+    # Calcola il tempo cumulativo trascorso dal primo elemento
+    times_transformed = [time - times_seconds[0] for time in times_seconds]
+    return np.array(times_transformed)
+def generateData(data_path):
+  new_signals: List[SampledSignal] = parse_data(data_path)
+  chg_pts = energy_made_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
+  power_pts = new_signals[0].points
+  speed_pts = new_signals[1].points
+  pressure_pts = new_signals[2].points
+  power_values = [pt.value for pt in power_pts]
+  speed_values = [st.value for st in speed_pts]
+  id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
+  energy_made_cs.process_data(data_path)
+  trace = energy_made_cs.timed_traces[-1]
+
+  power_data = np.array([pt.value for pt in power_pts]).ravel()
+  speed_data = np.array([pt.value/1000 for pt in speed_pts]).ravel() 
+  t_power = transform_times_to_seconds_cumulative(np.array(extractTimestamps(power_pts)))
+  t_speed = transform_times_to_seconds_cumulative(np.array(extractTimestamps(speed_pts)))
+  return power_data, speed_data, t_power
+power_datas = []
+speed_datas = []
+ts = []
+
+for dp in data_paths:
+  pd, sd, t = generateData(dp)
+  power_datas.append(pd)
+  speed_datas.append(sd)
+  ts.append(t)
+print(power_datas[0].shape)
+train_speed = []
+train_power = []
+test_speed = []
+test_power = []
+
+for i in range(0,len(speed_datas)):
+  if i == 1 or i == 2 or i == 4 or i == 5 or i == 7:
+    test_speed.append(speed_datas[i])
+    test_power.append(power_datas[i])
+  else:
+    train_speed.append(speed_datas[i])
+    train_power.append(power_datas[i])
+combined_speed_data = []
+combined_power_data = []
+for st,pt in zip(train_speed, train_power):
+  combined_speed_data = np.concatenate((combined_speed_data, st), axis=0)
+  combined_power_data = np.concatenate((combined_power_data, pt), axis=0)
+combined_power_data = combined_power_data.reshape(-1,1)
+combined_speed_data = combined_speed_data.reshape(-1,1)
+print(combined_speed_data.shape)
+model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2), differentiation_method=SINDyDerivative(kind="trend_filtered"), optimizer=ps.SR3(threshold=0.0001, thresholder="l1", normalize_columns=True), feature_names = ['P', 'S'], discrete_time=True)
+
+
+model.fit(combined_power_data, u=combined_speed_data)
+
+model.print()
+
+def create_sindy_model_with_control(model):
+    def sindy_model_with_control(interval: List[Timestamp], init_val: float, control_values: np.array):
+        values = [init_val]
+        degree = model.feature_library.degree
+        feature_names = model.feature_names
+        coefficients = model.coefficients()
+        interval_secs = [t.to_secs() for t in interval]
+        feature_combinations = []
+        print(coefficients)
+        feature_dict = {feature: (values[-1] if feature == feature_names[0] else control_values[j-1]) for j, feature in enumerate(feature_names)}
+        for d in range(1, degree + 1):
+            for combo in combinations_with_replacement(feature_names, d):
+                feature_combinations.append(combo)
+        for i, (t, u) in enumerate(zip(interval_secs[1:], control_values[1:])):
+            new_value = coefficients[0, 0]
+            for j, combo in enumerate(feature_combinations, start=1):
+                term_value = 1
+                for feature in combo:
+                    term_value *= feature_dict[feature]
+                new_value += coefficients[0, j] * term_value
+            values.append(new_value)
+            feature_dict = {feature: (values[-1] if feature == feature_names[0] else control_values[i+1]) for j, feature in enumerate(feature_names)}
+        return np.array(values)
+    return sindy_model_with_control
+
+sindy_flow = FlowCondition(0, create_sindy_model_with_control(model))
+
+powersindy = RealValuedVar([sindy_flow], [], model2distr, label='P')
+speedsindy = RealValuedVar([sindy_flow], [], model2distr, label='w')
+energy_made_cs = SystemUnderLearning([powersindy, speedsindy], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
+'''END'''
 test = False
 if test:
     TEST_PATH = '/home/simo/WebFarm/lsha/resources/traces/MADE/'
@@ -125,7 +243,7 @@ if test:
 
         ts = [pt.timestamp for pt in segment]
         tsecond = [pt.timestamp.to_secs() for pt in segment]
-        control_values = [s.value for s in segments_control[i]]
+        control_values = [s.value/1000 for s in segments_control[i]]
         values = identified_model.f(ts, segment[i].value, control_values)
         
         plt.plot(tsecond, values, label='Main Signal', color='blue')

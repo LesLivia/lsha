@@ -70,8 +70,7 @@ class ObsTable:
 
         rows = self.get_upper_observations() + self.get_lower_observations()
         populated_rows = [i for i, row in enumerate(rows) if row.is_populated()]
-        if(len(populated_rows) > 0):
-            print("D")
+
         max_tabs = max(
             [len(str(word)) for i, word in enumerate(self.get_S() + self.get_low_S()) if i in populated_rows])
         HEADER = ' ' * max_tabs + '|'

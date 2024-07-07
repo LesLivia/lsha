@@ -29,6 +29,7 @@ class SystemUnderLearning:
         self.driver = args['args']['driver']
         self.default_m = args['args']['default_m']
         self.default_d = args['args']['default_d']
+        self.pysindy = False # va inserito il config per leggere se pysindy é enable
 
     def add_distribution(self, d: ProbDistribution, f: FlowCondition):
         self.vars[0].distr.append(d)
@@ -98,7 +99,7 @@ class SystemUnderLearning:
                 end_timestamp_control = end_timestamp
             else:
                 end_timestamp = main_sig.points[-1].timestamp.to_secs()
-                if control:
+                if control and self.pysindy:
                     end_timestamp_control = main_sig_control.points[-1].timestamp.to_secs()
 
             segment = [pt for pt in main_sig.points if start_timestamp <= pt.timestamp.to_secs() < end_timestamp]
