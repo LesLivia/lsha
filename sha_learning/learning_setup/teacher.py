@@ -279,12 +279,11 @@ class Teacher:
                     if matches > freq:
                         freq = matches
                         best_fit = f
-
                 if freq >= 0.5:
                     return best_fit
                 else:
-                    if word.events[0].symbol == "l":
-                        return self.flows[0][0]
+                    if CS == 'ENERGY' and RS == 'MADE' and word.events[0].symbol == "l":
+                        return self.flows[0][1]
                     LOGGER.info("!! INCONSISTENT PHYSICAL BEHAVIOR !!")
                     return None
             else:
