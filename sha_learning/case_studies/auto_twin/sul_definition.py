@@ -51,7 +51,7 @@ if CS == 'AUTO_TWIN':
     unique_events = reader.get_activities()
 
     # FIXME should be generic
-    if 'Dirty Material' in [e.act.split(' ')[0] for e in unique_events]:
+    if 'Dirty' in [e.act.split(' ')[0] for e in unique_events]:
         act_to_sensors = {"Dirty Material Input": "S1",
                           "Assembled production": "S2",
                           "Composition of charges": "S3",
