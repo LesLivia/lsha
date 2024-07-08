@@ -35,7 +35,7 @@ def pwr_model(interval: List[Timestamp], P_0):
 
 
 # define flow conditions
-on_fc: FlowCondition = FlowCondition(0, pwr_model)
+on_fc: FlowCondition = FlowCondition(1, pwr_model)
 
 # define distributions
 off_distr = NormalDistribution(0, 0.0, 0.0)
@@ -64,9 +64,9 @@ DEFAULT_M = 0
 DEFAULT_DISTR = 0
 
 args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
-energy_made_cs = SystemUnderLearning([power, speed], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
+support_cs = SystemUnderLearning([power, speed], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 
-''' PySindy Flow Conditions'''
+# PySindy Flow Conditions
 base_path="/home/simo/WebFarm/lsha/resources/traces/MADE/"
 data_paths = [base_path+"_03_mar_1.csv",
                 base_path+"_05_may_1.csv",
@@ -95,15 +95,15 @@ def transform_times_to_seconds_cumulative(times):
     return np.array(times_transformed)
 def generateData(data_path):
   new_signals: List[SampledSignal] = parse_data(data_path)
-  chg_pts = energy_made_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
+  chg_pts = support_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
   power_pts = new_signals[0].points
   speed_pts = new_signals[1].points
   pressure_pts = new_signals[2].points
   power_values = [pt.value for pt in power_pts]
   speed_values = [st.value for st in speed_pts]
   id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
-  energy_made_cs.process_data(data_path)
-  trace = energy_made_cs.timed_traces[-1]
+  support_cs.process_data(data_path)
+  trace = support_cs.timed_traces[-1]
 
   power_data = np.array([pt.value for pt in power_pts]).ravel()
   speed_data = np.array([pt.value/1000 for pt in speed_pts]).ravel() 
@@ -175,9 +175,9 @@ def create_sindy_model_with_control(model):
 sindy_flow = FlowCondition(0, create_sindy_model_with_control(model))
 
 powersindy = RealValuedVar([sindy_flow], [], model2distr, label='P')
-speedsindy = RealValuedVar([sindy_flow], [], model2distr, label='w')
+speedsindy = RealValuedVar([], [], model2distr, label='w')
 energy_made_cs = SystemUnderLearning([powersindy, speedsindy], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
-'''END'''
+#END
 test = False
 if test:
     TEST_PATH = '/home/simo/WebFarm/lsha/resources/traces/MADE/'

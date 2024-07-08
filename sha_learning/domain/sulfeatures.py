@@ -99,7 +99,7 @@ class SystemUnderLearning:
                 end_timestamp_control = end_timestamp
             else:
                 end_timestamp = main_sig.points[-1].timestamp.to_secs()
-                if control and self.pysindy:
+                if control:
                     end_timestamp_control = main_sig_control.points[-1].timestamp.to_secs()
 
             segment = [pt for pt in main_sig.points if start_timestamp <= pt.timestamp.to_secs() < end_timestamp]
