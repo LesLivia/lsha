@@ -7,12 +7,15 @@ from sha_learning.domain.lshafeatures import Event, FlowCondition
 from sha_learning.domain.sigfeatures import SampledSignal, Timestamp, SignalPoint
 from sha_learning.learning_setup.logger import Logger
 
-config = configparser.ConfigParser()        # open the configuration file
+config = configparser.ConfigParser()  # open the configuration file
 config.sections()
 config.read('./resources/config/config.ini')
 config.sections()
 
-CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))       # get constants from the config file
+try:
+    CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
+except ValueError:
+    CS_VERSION = None
 SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])
 MIN_SPEED = int(config['ENERGY CS']['MIN_SPEED'])
 MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
@@ -141,9 +144,9 @@ def parse_data(path: str):
 
             # parse a signal which represents the derivative of the speed vector
             if i > 0:
-                if round(speed.points[i-2].value) == round(speed.points[i-1].value):  # if constant
+                if round(speed.points[i - 2].value) == round(speed.points[i - 1].value):  # if constant
                     speed_d = 0
-                elif round(speed.points[i-2].value) < round(speed.points[i-1].value):  # if going up
+                elif round(speed.points[i - 2].value) < round(speed.points[i - 1].value):  # if going up
                     speed_d = 1
                 else:  # if going down
                     speed_d = -1

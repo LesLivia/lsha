@@ -7,7 +7,7 @@ import numpy as np
 
 from sha_learning.domain.lshafeatures import TimedTrace
 
-SAVE_PATH = 'resources/learned_ha/'
+SAVE_PATH = '/learned_sha/'
 
 config = configparser.ConfigParser()
 config.read('{}/config/config.ini'.format(os.environ['LSHA_RES_PATH']))
@@ -275,10 +275,11 @@ def distr_hist(values: Dict[int, List[float]], name: str):
             ax.hist(values[i][1])
         else:
             ax.hist(values[i][1], density=True, histtype='step')
-            with open(SAVE_PATH + '{}_{}.txt'.format(name, 'histogram_values'), 'a') as f:
+            with open(os.environ['RES_PATH'] + SAVE_PATH +
+                      '{}_{}.txt'.format(name, 'histogram_values'), 'a') as f:
                 f.write('D_{}:\n'.format(i))
                 lines = [str(x) + '\n' for x in values[i][1]]
                 print(lines)
                 f.writelines(lines)
-    fig.savefig(SAVE_PATH + '{}_{}.pdf'.format(name, 'histograms'))
+    fig.savefig(os.environ['RES_PATH'] + SAVE_PATH + '{}_{}.pdf'.format(name, 'histograms'))
     del fig

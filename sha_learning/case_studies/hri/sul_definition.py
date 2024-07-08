@@ -97,7 +97,7 @@ args = {'name': 'hri', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d'
 hri_cs = SystemUnderLearning([fatigue], events, parse_data, label_event, get_ftg_param, is_chg_pt,
                              args=args)
 
-test = True
+test = False
 if test:
     # test event configuration
     print(hri_cs.symbols)
@@ -111,7 +111,7 @@ if test:
         hri_cs.process_data(TRACE_PATH + '/' + trace + '/')
         print(hri_cs.traces[-1])
 
-    test_trace = Trace([events[2]])
+    test_trace = Trace([events[2], events[3]])
     plot_traces = [(i, t) for i, t in enumerate(hri_cs.traces) if t.startswith(test_trace)]
 
     # test segment identification

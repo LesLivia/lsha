@@ -117,9 +117,10 @@ if CS == 'AUTO_TWIN':
 
     conn.close_connection(driver)
 else:
+    act_to_sensors = dict()
     auto_twin_cs = SystemUnderLearning([], [], parse_data, label_event, get_rand_param, is_chg_pt, args=args)
 
-test = True
+test = False
 if test:
     driver = conn.get_driver()
     reader: Skg_Reader = Skg_Reader(driver)

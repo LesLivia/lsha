@@ -215,7 +215,8 @@ class TraceGenerator:
             sims = list(filter(lambda s: s.startswith('_') and s not in self.processed_traces, sims))
             sims.sort()
         else:
-            sims = os.listdir(SIM_LOGS_PATH.format(config['SUL CONFIGURATION']['CS_VERSION']))
+            sims = os.listdir(SIM_LOGS_PATH.format(os.environ['RES_PATH'],
+                                                   config['SUL CONFIGURATION']['CS_VERSION']))
             sims = list(filter(lambda s: s.startswith('SIM'), sims))
         paths = []
         for i in range(n + 1):
@@ -227,7 +228,8 @@ class TraceGenerator:
                 self.processed_traces.add(sims[rand_sel])
                 paths.append(SIM_LOGS_PATH.format(CS) + '/' + sims[rand_sel])
             else:
-                paths.append(SIM_LOGS_PATH.format(config['SUL CONFIGURATION']['CS_VERSION']) + sims[i] + '/')
+                paths.append(SIM_LOGS_PATH.format(os.environ['RES_PATH'],
+                                                  config['SUL CONFIGURATION']['CS_VERSION']) + '/' + sims[i] + '/')
         # self.ONCE = True
         return paths
 
