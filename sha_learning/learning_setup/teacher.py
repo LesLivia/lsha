@@ -200,15 +200,15 @@ class Teacher:
                 segments = self.sul.get_segments(word)
                 segments_control = []
             if len(segments) > 0:
-                #if len(self.flows[0]) == 1 and use_pysindy != "True": # Perché per made si ha una sola flow quindi non si fa fit
-                 #   return self.flows[0][0]
+                if len(self.flows[0]) == 1 and use_pysindy != "True": # Perché per made si ha una sola flow quindi non si fa fit
+                    return self.flows[0][0]
                 if CS == 'THERMO' and word[-1].symbol == 'h_0':
                     return self.flows[0][2]
 
                 fits = []
                 for i, (segment, control) in enumerate(zip_longest(segments, segments_control, fillvalue=None)):
                     if len(segment) < 3:
-                        continue
+                        continue # qui ho problema per traccia l in cui ritorno sempre perché lunghezz anon va bene e allora devo ritornare un modello di default, vedi in basso dove c'è inconsistent physical beahviour
                     interval = [pt.timestamp for pt in segment]
                     real_behavior = [pt.value for pt in segment]
                     if withControl:
@@ -261,15 +261,16 @@ class Teacher:
                         else:
                             ideal_model = flow.f(interval, segment[0].value)
                         res = fast_ddtw(real_behavior, ideal_model)
-
+                        j = 1
                         if PLOT_DDTW:
                             plot_aligned_signals(real_behavior, ideal_model, res[1])
-
+                            
                         if res[0] < min_distance:
                             min_distance = res[0]
                             best_fit = flow
                     else:
                         fits.append(best_fit)
+                        
                 unique_fits = set(fits)
                 freq = -1
                 best_fit = None
@@ -278,9 +279,12 @@ class Teacher:
                     if matches > freq:
                         freq = matches
                         best_fit = f
-                if freq > 0.75:
+
+                if freq >= 0.5:
                     return best_fit
                 else:
+                    if word.events[0].symbol == "l":
+                        return self.flows[0][0]
                     LOGGER.info("!! INCONSISTENT PHYSICAL BEHAVIOR !!")
                     return None
             else:
@@ -596,7 +600,7 @@ def create_sindy_model_no_control(model):
     return sindy_model_no_control
 
 def create_sindy_model_with_control(model):
-    def sindy_model_with_control(interval: List[Timestamp], init_val: float, control_values: np.array):
+    def sindy_model_with_control(interval: List[Timestamp], init_val: float, control_values: List[float]):
         values = [init_val]
         degree = model.feature_library.degree
         feature_names = model.feature_names

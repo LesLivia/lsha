@@ -35,7 +35,7 @@ def pwr_model(interval: List[Timestamp], P_0):
 
 
 # define flow conditions
-on_fc: FlowCondition = FlowCondition(1, pwr_model)
+on_fc: FlowCondition = FlowCondition(2, pwr_model)
 
 # define distributions
 off_distr = NormalDistribution(0, 0.0, 0.0)
@@ -43,7 +43,6 @@ off_distr = NormalDistribution(0, 0.0, 0.0)
 model2distr = {0: [], 1: [], 2: []}
 power = RealValuedVar([on_fc], [], model2distr, label='P')
 speed = RealValuedVar([on_fc], [], model2distr, label='w')
-
 # define events as different velocities ranges and stop, load and unload
 events: List[Event] = []
 for i in range(MIN_SPEED, MAX_SPEED, SPEED_RANGE):
@@ -67,23 +66,6 @@ args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default
 support_cs = SystemUnderLearning([power, speed], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 
 # PySindy Flow Conditions
-base_path="/home/simo/WebFarm/lsha/resources/traces/MADE/"
-data_paths = [base_path+"_03_mar_1.csv",
-                base_path+"_05_may_1.csv",
-                base_path+"_05_may_2.csv",
-                base_path+"_11_jan_2.csv",
-                base_path+"_12_apr_1.csv",
-                base_path+"_12_apr_2.csv",
-                base_path+"_12_jan_2.csv",
-                base_path+"_12_jan_3.csv",
-                base_path+"_12_jan_4.csv",
-                base_path+"_12_jan_5.csv",
-                base_path+"_13_feb_1.csv",
-                base_path+"_13_feb_2.csv",
-                base_path+"_15_feb_1.csv",
-                base_path+"_17_feb_2.csv",
-                base_path+"_17_feb_3.csv"
-                ]
 def extractTimestamps(points):
   return [str(point.timestamp).split(' ', 1)[1] for point in points]
 
@@ -110,52 +92,15 @@ def generateData(data_path):
   t_power = transform_times_to_seconds_cumulative(np.array(extractTimestamps(power_pts)))
   t_speed = transform_times_to_seconds_cumulative(np.array(extractTimestamps(speed_pts)))
   return power_data, speed_data, t_power
-power_datas = []
-speed_datas = []
-ts = []
-
-for dp in data_paths:
-  pd, sd, t = generateData(dp)
-  power_datas.append(pd)
-  speed_datas.append(sd)
-  ts.append(t)
-print(power_datas[0].shape)
-train_speed = []
-train_power = []
-test_speed = []
-test_power = []
-
-for i in range(0,len(speed_datas)):
-  if i == 1 or i == 2 or i == 4 or i == 5 or i == 7:
-    test_speed.append(speed_datas[i])
-    test_power.append(power_datas[i])
-  else:
-    train_speed.append(speed_datas[i])
-    train_power.append(power_datas[i])
-combined_speed_data = []
-combined_power_data = []
-for st,pt in zip(train_speed, train_power):
-  combined_speed_data = np.concatenate((combined_speed_data, st), axis=0)
-  combined_power_data = np.concatenate((combined_power_data, pt), axis=0)
-combined_power_data = combined_power_data.reshape(-1,1)
-combined_speed_data = combined_speed_data.reshape(-1,1)
-print(combined_speed_data.shape)
-model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2), differentiation_method=SINDyDerivative(kind="trend_filtered"), optimizer=ps.SR3(threshold=0.0001, thresholder="l1", normalize_columns=True), feature_names = ['P', 'S'], discrete_time=True)
-
-
-model.fit(combined_power_data, u=combined_speed_data)
-
-model.print()
 
 def create_sindy_model_with_control(model):
-    def sindy_model_with_control(interval: List[Timestamp], init_val: float, control_values: np.array):
+    def sindy_model_with_control(interval: List[Timestamp], init_val: float, control_values: List[float]):
         values = [init_val]
         degree = model.feature_library.degree
         feature_names = model.feature_names
         coefficients = model.coefficients()
         interval_secs = [t.to_secs() for t in interval]
         feature_combinations = []
-        print(coefficients)
         feature_dict = {feature: (values[-1] if feature == feature_names[0] else control_values[j-1]) for j, feature in enumerate(feature_names)}
         for d in range(1, degree + 1):
             for combo in combinations_with_replacement(feature_names, d):
@@ -169,14 +114,112 @@ def create_sindy_model_with_control(model):
                 new_value += coefficients[0, j] * term_value
             values.append(new_value)
             feature_dict = {feature: (values[-1] if feature == feature_names[0] else control_values[i+1]) for j, feature in enumerate(feature_names)}
-        return np.array(values)
+        return values
     return sindy_model_with_control
+base_path="/home/simo/WebFarm/lsha/resources/traces/MADE/"
+data_paths = [base_path+"_03_mar_1.csv",
+                base_path+"_05_may_1.csv",
+                base_path+"_05_may_2.csv",
+                base_path+"_11_jan_2.csv",
+                base_path+"_12_apr_1.csv",
+                base_path+"_12_apr_2.csv",
+                base_path+"_12_jan_2.csv",
+                base_path+"_12_jan_3.csv",
+                base_path+"_12_jan_4.csv",
+                base_path+"_12_jan_5.csv",
+                base_path+"_13_feb_1.csv",
+                base_path+"_13_feb_2.csv",
+                base_path+"_15_feb_1.csv",
+                base_path+"_17_feb_2.csv",
+                base_path+"_17_feb_3.csv"
+                ]
+# Trace First Geometry (fisrt part program)
+# lm_66i_0m_94i_0m_34i_0m_59i_0m_59i_0m_57i_0u (11_jan_1)
+# lm_66i_0m_66i_0m_66i_0m_94i_0m_34i_0m_59i_0m_57i_0u (12_jan_1)
+# lm_66i_0m_94i_0m_34i_0m_59i_0m_57i_0u (tutte le altre)
+# Trace First Geometry (second part program)
+# lm_41m_69i_0m_97i_0m_46i_0m_71i_0m_61i_0u (03_feb_2)
+# lm_69i_0m_69i_0m_97i_0m_46i_0m_71i_0m_61i_0u (17_feb_1)
+# lm_69i_0m_97i_0m_46i_0m_71i_0m_61i_0u (tutti gli altri csv)
+base_path_first_geometry="/home/simo/WebFarm/lsha/resources/traces/MADE/FirstGeometry/"
+data_paths_first_geometry = [
+                base_path_first_geometry+"11_jan_1.csv", # fisrt part program 
+                base_path_first_geometry+"11_jan_2.csv", # fisrt part program
+                base_path_first_geometry+"12_jan_1.csv", # fisrt part program
+                base_path_first_geometry+"12_jan_2.csv", # fisrt part program
+                base_path_first_geometry+"12_jan_3.csv", # fisrt part program
+                base_path_first_geometry+"12_jan_4.csv", # fisrt part program
+                base_path_first_geometry+"12_jan_5.csv", # fisrt part program
+                base_path_first_geometry+"13_feb_1.csv",
+                base_path_first_geometry+"03_feb_2.csv",
+                base_path_first_geometry+"03_mar_1.csv",
+                base_path_first_geometry+"13_feb_2.csv",
+                base_path_first_geometry+"15_feb_1.csv",
+                base_path_first_geometry+"17_feb_1.csv",
+                base_path_first_geometry+"17_feb_2.csv",
+                base_path_first_geometry+"17_feb_3.csv"
+                ]
+# Trace Second Geometry: lm_69i_0m_46i_0m_69i_0m_61i_0m_71i_0u
+base_path_second_geometry="/home/simo/WebFarm/lsha/resources/traces/MADE/SecondGeometry/"
+data_paths_second_geometry = [
+                base_path_second_geometry+"05_may_1.csv",
+                base_path_second_geometry+"05_may_2.csv",
+                base_path_second_geometry+"12_apr_1.csv",
+                base_path_second_geometry+"12_apr_2.csv"
+                ]
 
-sindy_flow = FlowCondition(0, create_sindy_model_with_control(model))
+def generateFlowCondition(counter, data_paths):
+    power_datas = []
+    speed_datas = []
+    ts = []
 
-powersindy = RealValuedVar([sindy_flow], [], model2distr, label='P')
-speedsindy = RealValuedVar([], [], model2distr, label='w')
+    for dp in data_paths:
+        pd, sd, t = generateData(dp)
+        power_datas.append(pd)
+        speed_datas.append(sd)
+        ts.append(t)
+        
+    train_speed = []
+    train_power = []
+    
+
+    for i in range(0,len(speed_datas)):
+        train_speed.append(speed_datas[i])
+        train_power.append(power_datas[i])
+    combined_speed_data = []
+    combined_power_data = []
+    for st,pt in zip(train_speed, train_power):
+        combined_speed_data = np.concatenate((combined_speed_data, st), axis=0)
+        combined_power_data = np.concatenate((combined_power_data, pt), axis=0)
+    
+    combined_power_data = combined_power_data.reshape(-1,1)
+    combined_speed_data = combined_speed_data.reshape(-1,1)
+        
+    model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2), differentiation_method=SINDyDerivative(kind="trend_filtered"), optimizer=ps.SR3(threshold=0.0001, thresholder="l1", normalize_columns=True), feature_names = ['P', 'S'], discrete_time=True)
+
+
+    model.fit(combined_power_data, u=combined_speed_data)
+
+    model.print()
+
+
+
+    sindy_flow = FlowCondition(counter, create_sindy_model_with_control(model))
+    return sindy_flow
+
+firstGeometryFlow = generateFlowCondition(0, data_paths_first_geometry)
+secondGeometryFlow = generateFlowCondition(1, data_paths_second_geometry)
+
+models: List[FlowCondition] = [firstGeometryFlow, secondGeometryFlow]
+model_to_distr = {}
+for m in models:
+    model_to_distr[m.f_id] = []
+
+powersindy = RealValuedVar(models, [], model_to_distr, label='P')
+speedsindy = RealValuedVar(models, [], model_to_distr, label='w')
+
 energy_made_cs = SystemUnderLearning([powersindy, speedsindy], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
+#energy_made_cs = SystemUnderLearning([power, speed], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 #END
 test = False
 if test:
