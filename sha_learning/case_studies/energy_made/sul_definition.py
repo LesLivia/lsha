@@ -221,9 +221,9 @@ speedsindy = RealValuedVar(models, [], model_to_distr, label='w')
 energy_made_cs = SystemUnderLearning([powersindy, speedsindy], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 #energy_made_cs = SystemUnderLearning([power, speed], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 #END
-test = False
+test = True
 if test:
-    TEST_PATH = '/home/simo/WebFarm/lsha/resources/traces/MADE/'
+    TEST_PATH = '/home/simo/WebFarm/lsha/resources/traces/MADE/All/'
     traces_files = os.listdir(TEST_PATH)
 
     for file in traces_files:
