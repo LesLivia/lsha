@@ -1,6 +1,7 @@
 import configparser
 import inspect
 from itertools import combinations_with_replacement, zip_longest
+import math
 import os
 from typing import List, Dict
 
@@ -184,7 +185,9 @@ class Teacher:
                 return None
     
     def mi_query(self, word: Trace):
-        if len(self.flows[0]) > 6: # Valore di threhhold per troppe flow condition
+        #if word.events[0].symbol != 'u_3': hannno tutti segment = 0 tranne u_3 infatti nelle traces del sul ci sono solo tracce che iniziano con u_3
+         #   print(word.events[0].symbol)
+        if len(self.flows[0]) > 6: # Valore di threshold per troppe flow condition
             config['PYSINDY']['FLAG_ENABLE'] = "False"
         use_pysindy = config['PYSINDY']['FLAG_ENABLE']
         withControl = len(self.sul.vars) > 1
@@ -200,6 +203,7 @@ class Teacher:
                 segments = self.sul.get_segments(word)
                 segments_control = []
             if len(segments) > 0:
+                print(word.events[0].symbol)
                 if len(self.flows[0]) == 1 and use_pysindy != "True": # Perché per made si ha una sola flow quindi non si fa fit
                     return self.flows[0][0]
                 if CS == 'THERMO' and word[-1].symbol == 'h_0':
@@ -242,7 +246,7 @@ class Teacher:
                         if not np.all(model.coefficients() < 0.0001) and check_model_uniqueness(self.models, model):
                             self.models.append(model)
                             #prob_distr = create_prob_distribution_from_sindy(data=x_train,d_id = counter_flow_condition)
-                            self.sul.vars[0].model2distr[counter_flow_condition] = [self.sul.default_d]
+                            self.sul.vars[0].model2distr[counter_flow_condition] = []
                             self.flows[0].append(sindy_fit)
                             
                             print(counter_flow_condition) #print di Test
@@ -253,8 +257,8 @@ class Teacher:
                     best_fit = None
 
                     for i,flow in enumerate(self.flows[0]):
-                        #if i == 0 or i == 1:
-                         #   continue
+                        if i == 0 or i == 1 and use_pysindy == "True":
+                            continue
                         if withControl:
                             control_signal = [c/1000 for c in control_behavior] 
                             ideal_model = flow.f(interval, segment[0].value, control_signal)
@@ -632,7 +636,8 @@ def create_prob_distribution_from_sindy(data, d_id):
 def check_equal_model(model1, model2):
     coeff1 = model1.coefficients()
     coeff2 = model2.coefficients()
-    return np.allclose(coeff1, coeff2)
+    return np.allclose(coeff1, coeff2, atol=0.001)
+       
 
 def check_model_uniqueness(models, new_model):
     for model in models:
