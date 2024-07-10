@@ -39,11 +39,31 @@ def busy_model(interval: List[Timestamp], F_0: float):
     interval = [ts.to_secs() for ts in interval]
     return [1 - (1 - F_0) * math.exp(-N_1[0] * (t - interval[0])) for t in interval]
 
-idle_fc = FlowCondition(0, idle_model)
-busy_fc = FlowCondition(1, busy_model)
-use_pysindy = config["PYSINDY"]["FLAG_ENABLE"]
+#idle_fc = FlowCondition(0, idle_model)
+#busy_fc = FlowCondition(1, busy_model)
 
-models: List[FlowCondition] = [idle_fc, busy_fc]
+def x_model(interval: List[Timestamp], F_0: float):
+    interval = [ts.to_secs() for ts in interval]
+    toRet = [F_0]
+    for i in interval:
+        x_new = toRet[-1]*(1-0.003)
+        toRet.append(x_new)
+    return toRet
+def y_model(interval: List[Timestamp], F_0: float):
+    interval = [ts.to_secs() for ts in interval]
+    toRet = [F_0]
+    for i in interval:
+        x_new =0.004+ toRet[-1]*(1-0.004)
+        toRet.append(x_new)
+    return toRet
+
+use_pysindy = config["PYSINDY"]["FLAG_ENABLE"]
+idle_fc = FlowCondition(0, x_model)
+busy_fc = FlowCondition(1, y_model)
+if use_pysindy == "True":
+    models: List[FlowCondition] = []
+else:
+    models: List[FlowCondition] = [idle_fc, busy_fc]
 
 
 events = []

@@ -78,111 +78,7 @@ class Teacher:
     # and returns the flow condition that best fits such segments
     # If not enough data are available to draw a conclusion, returns None
     #############################################
-    
-    def mi_query(self, word: Trace):
-        if len(self.flows[0]) > 3: # Valore di threshold per troppe flow condition
-            config['PYSINDY']['FLAG_ENABLE'] = "False"
-        if CS == 'ENERGY' and RS == 'MADE':
-            config['PYSINDY']['FLAG_ENABLE'] = "False"
-            
-        use_pysindy = config['PYSINDY']['FLAG_ENABLE']
-        withControl = len(self.sul.vars) > 1
-        sindy_fit = None
-        if use_pysindy == "True":
-            counter_flow_condition = len(self.flows[0]) + 1
-        if not MI_QUERY or word == '':
-            return self.flows[0][self.sul.default_m]
-        else:
-            if withControl:
-                segments, segments_control = self.sul.get_segments(word, control=True)
-            else:
-                segments = self.sul.get_segments(word)
-                segments_control = []
-            if len(segments) > 0:
-                if len(self.flows[0]) == 1 and use_pysindy != "True": # Perché per made si ha una sola flow quindi non si fa fit
-                    return self.flows[0][0]
-                if CS == 'THERMO' and word[-1].symbol == 'h_0':
-                    return self.flows[0][2]
 
-                fits = []
-                for i, (segment, control) in enumerate(zip_longest(segments, segments_control, fillvalue=None)):
-                    if len(segment) < 3:
-                        continue
-                    interval = [pt.timestamp for pt in segment]
-                    real_behavior = [pt.value for pt in segment]
-                    if withControl:
-                        control_behavior = [pt.value for pt in control]
-                    else:
-                        control_behavior =[]
-                    if use_pysindy == 'True':
-                        interval_sec = [t.to_secs() for t in interval]
-                        if(withControl): # comunque va trovato un modo per adattare gli iperparametri di pysindy, grid search sulla threshold
-                            # alternativamente si fa questo: model_simple = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2), differentiation_method=SINDyDerivative(kind="trend_filtered"), optimizer=ps.SR3(threshold=0.0001, thresholder="l1", normalize_columns=True), feature_names = ['P', 'S'], discrete_time=True)
-                            # e si sceglie tramite model.score()
-                            x_train = np.array(real_behavior).reshape(-1, 1)
-                            t_train = np.array(interval_sec)
-                            u_train = np.array(control_behavior).reshape(-1, 1)
-                            u_train = np.array([u/1000 for u in u_train])
-                            model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2), differentiation_method=ps.SINDyDerivative(kind="trend_filtered"), optimizer=ps.SR3(threshold=0.0001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=True)
-                            #model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2),optimizer=ps.SR3(threshold=0.00001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=True)
-                            model.fit(x_train, t_train, u=u_train, quiet=True)
-                            #model.print()
-                        else:
-                            x_train = np.array(real_behavior, dtype=np.float64).reshape(-1, 1)
-                            t_train = np.array(interval_sec, dtype=np.float64)
-
-                            stlsq_optimizer = ps.STLSQ(threshold=0.0001)
-                            model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=1), optimizer=stlsq_optimizer)
-                            model.fit(x_train, t_train, quiet=True)
-                            #model.print()
-                        if withControl:
-                            sindy_fit = FlowCondition(counter_flow_condition, create_sindy_model_with_control(model))
-                        else:
-                            sindy_fit = FlowCondition(counter_flow_condition, create_sindy_model_no_control(model))
-                        if not np.all(model.coefficients() == 0) and check_model_uniqueness(self.models, model):
-                            self.models.append(model)
-                            #prob_distr = create_prob_distribution_from_sindy(data=x_train,d_id = counter_flow_condition)
-                            self.sul.vars[0].model2distr[counter_flow_condition] = []
-                            self.flows[0].append(sindy_fit)
-                            
-                            print(counter_flow_condition) #print di Test
-                            model.print() #print di Test
-                            counter_flow_condition = len(self.flows[0]) + 1
-                    #else:
-                    min_distance = 10000
-                    best_fit = None
-                    i = 0
-                    for flow in self.flows[0]:
-                        #if i == 1 or i == 0:
-                            #i += 1
-                            #continue
-                        ideal_model = flow.f(interval, segment[0].value)
-                        res = fast_ddtw(real_behavior, ideal_model)
-
-                        if PLOT_DDTW:
-                            plot_aligned_signals(real_behavior, ideal_model, res[1])
-
-                        if res[0] < min_distance:
-                            min_distance = res[0]
-                            best_fit = flow
-                    #else:
-                            fits.append(best_fit)
-                        
-                unique_fits = set(fits)
-                freq = -1
-                best_fit = None
-                for f in unique_fits:
-                    matches = sum([x == f for x in fits]) / len(fits)
-                    if matches > freq:
-                        freq = matches
-                        best_fit = f
-                if freq > 0.5:
-                    return best_fit
-                else:
-                    LOGGER.info("!! INCONSISTENT PHYSICAL BEHAVIOR !!")
-                    return None
-            else:
-                return None
     
     def mi_query(self, word: Trace):
         #if word.events[0].symbol != 'u_3': hannno tutti segment = 0 tranne u_3 infatti nelle traces del sul ci sono solo tracce che iniziano con u_3
@@ -193,7 +89,7 @@ class Teacher:
         withControl = len(self.sul.vars) > 1
         sindy_fit = None
         if use_pysindy == "True":
-            counter_flow_condition = len(self.flows[0]) + 1
+            counter_flow_condition = len(self.flows[0])
         if not MI_QUERY or word == '':
             return self.flows[0][self.sul.default_m]
         else:
@@ -233,39 +129,35 @@ class Teacher:
                             model.fit(x_train, t_train, u=u_train, quiet=True)
                             #model.print()
                         else:
-                            x_train = np.array(real_behavior, dtype=np.float64).reshape(-1, 1)
-                            t_train = np.array(interval_sec, dtype=np.float64)
+                            x_train = np.array(real_behavior)
+                            t_train = np.array(interval_sec)
 
                             stlsq_optimizer = ps.STLSQ(threshold=0.0001)
-                            model = ps.SINDy(optimizer=stlsq_optimizer)
+                            model = ps.SINDy(optimizer=stlsq_optimizer, feature_library =ps.PolynomialLibrary(degree=1))
                             model.fit(x_train, t_train, quiet=True)
-                        if withControl:
-                            sindy_fit = FlowCondition(counter_flow_condition, create_sindy_model_with_control(model))
-                        else:
-                            sindy_fit = FlowCondition(counter_flow_condition, create_sindy_model_no_control(model))
-                        if not np.all(model.coefficients() < 0.0001) and check_model_uniqueness(self.models, model):
+                        #if not np.all(model.coefficients() <= 0) and check_model_uniqueness(self.models, model):
+                        if check_model_uniqueness(self.models, model):
+                            if withControl:
+                                sindy_fit = FlowCondition(counter_flow_condition, create_sindy_model_with_control(model))
+                            else:
+                                sindy_fit = FlowCondition(counter_flow_condition, create_sindy_model_no_control(model))
+                            
                             self.models.append(model)
                             #prob_distr = create_prob_distribution_from_sindy(data=x_train,d_id = counter_flow_condition)
                             self.sul.vars[0].model2distr[counter_flow_condition] = []
                             self.flows[0].append(sindy_fit)
-                            
-                            print(counter_flow_condition) #print di Test
-                            model.print() #print di Test
-                            counter_flow_condition = len(self.flows[0]) + 1
+                            counter_flow_condition = len(self.flows[0])
                         
                     min_distance = 10000
                     best_fit = None
 
                     for i,flow in enumerate(self.flows[0]):
-                        if i == 0 or i == 1 and use_pysindy == "True":
-                            continue
                         if withControl:
                             control_signal = [c/1000 for c in control_behavior] 
                             ideal_model = flow.f(interval, segment[0].value, control_signal)
                         else:
                             ideal_model = flow.f(interval, segment[0].value)
                         res = fast_ddtw(real_behavior, ideal_model)
-                        j = 1
                         if PLOT_DDTW:
                             plot_aligned_signals(real_behavior, ideal_model, res[1])
                             
@@ -597,7 +489,8 @@ def create_sindy_model_no_control(model):
         coefficients = model.coefficients()
         interval_secs = [t.to_secs() for t in interval]
         for t in interval_secs[1:]:
-            new_value = sum(coeff * values[-1]**i for i, coeff in enumerate(coefficients[0]))
+            #new_value = sum(coeff * values[-1]**i for i, coeff in enumerate(coefficients[0]))
+            new_value = values[-1] + sum(coeff * values[-1]**i for i, coeff in enumerate(coefficients[0]))
             values.append(new_value)
         return values
     return sindy_model_no_control
@@ -636,7 +529,7 @@ def create_prob_distribution_from_sindy(data, d_id):
 def check_equal_model(model1, model2):
     coeff1 = model1.coefficients()
     coeff2 = model2.coefficients()
-    return np.allclose(coeff1, coeff2, atol=0.001)
+    return np.allclose(coeff1, coeff2, atol=0.003)
        
 
 def check_model_uniqueness(models, new_model):
