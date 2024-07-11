@@ -39,27 +39,46 @@ def busy_model(interval: List[Timestamp], F_0: float):
     interval = [ts.to_secs() for ts in interval]
     return [1 - (1 - F_0) * math.exp(-N_1[0] * (t - interval[0])) for t in interval]
 
-#idle_fc = FlowCondition(0, idle_model)
-#busy_fc = FlowCondition(1, busy_model)
+idle_fc = FlowCondition(0, idle_model)
+busy_fc = FlowCondition(1, busy_model)
 
-def x_model(interval: List[Timestamp], F_0: float):
-    interval = [ts.to_secs() for ts in interval]
-    toRet = [F_0]
-    for i in interval:
-        x_new = toRet[-1]*(1-0.003)
-        toRet.append(x_new)
-    return toRet
-def y_model(interval: List[Timestamp], F_0: float):
-    interval = [ts.to_secs() for ts in interval]
-    toRet = [F_0]
-    for i in interval:
-        x_new =0.004+ toRet[-1]*(1-0.004)
-        toRet.append(x_new)
-    return toRet
+
+#PySindy
+interval = [Timestamp.from_secs(i) for i in range(101)]
+F_0 = 2
+x_train_idle = np.array(idle_model(interval, F_0))
+x_train_busy = np.array(busy_model(interval, F_0))
+
+stlsq_optimizer = ps.STLSQ(threshold=0.0001)
+model_idle = ps.SINDy(optimizer=stlsq_optimizer, feature_library =ps.PolynomialLibrary(degree=1))
+model_idle.fit(x_train_idle, quiet=True)
+model_idle.print()
+
+stlsq_optimizer = ps.STLSQ(threshold=0.0001)
+model_busy = ps.SINDy(optimizer=stlsq_optimizer, feature_library =ps.PolynomialLibrary(degree=1))
+model_busy.fit(x_train_busy, quiet=True)
+model_busy.print()
+def create_sindy_model_no_control(model):
+    def sindy_model_no_control(interval: List[Timestamp], init_val: float):
+        values = [init_val]
+        coefficients = model.coefficients()
+        interval_secs = [t.to_secs() for t in interval]
+        for t in interval_secs[1:]:
+            new_value = values[-1] + sum(coeff * values[-1]**i for i, coeff in enumerate(coefficients[0]))
+            values.append(new_value)
+        return values
+    return sindy_model_no_control
+
+busy_model_sindy = create_sindy_model_no_control(model_busy)
+idle_model_sindy = create_sindy_model_no_control(model_idle)
+#End
 
 use_pysindy = config["PYSINDY"]["FLAG_ENABLE"]
-idle_fc = FlowCondition(0, x_model)
-busy_fc = FlowCondition(1, y_model)
+
+
+
+idle_fc = FlowCondition(0, idle_model_sindy)
+busy_fc = FlowCondition(1, busy_model_sindy)
 if use_pysindy == "True":
     models: List[FlowCondition] = []
 else:
