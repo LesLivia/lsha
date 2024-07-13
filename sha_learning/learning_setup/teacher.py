@@ -135,8 +135,8 @@ class Teacher:
                             stlsq_optimizer = ps.STLSQ(threshold=0.0001)
                             model = ps.SINDy(optimizer=stlsq_optimizer, feature_library =ps.PolynomialLibrary(degree=1))
                             model.fit(x_train, t_train, quiet=True)
-                        #if not np.all(model.coefficients() <= 0) and check_model_uniqueness(self.models, model):
-                        if check_model_uniqueness(self.models, model):
+                        if  check_model_uniqueness(self.models, model):
+                        #if not np.all((model.coefficients() < 0) | (model.coefficients() >= 1e-5))and check_model_uniqueness(self.models, model):
                             if withControl:
                                 sindy_fit = FlowCondition(counter_flow_condition, create_sindy_model_with_control(model))
                             else:
@@ -529,10 +529,12 @@ def create_prob_distribution_from_sindy(data, d_id):
 def check_equal_model(model1, model2):
     coeff1 = model1.coefficients()
     coeff2 = model2.coefficients()
-    return np.allclose(coeff1, coeff2, atol=0.003)
+    return np.allclose(coeff1, coeff2, atol=0)
        
 
 def check_model_uniqueness(models, new_model):
+    if new_model.equations()[0] == "0.000":
+        return False
     for model in models:
         if check_equal_model(model, new_model):
             return False
