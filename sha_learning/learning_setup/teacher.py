@@ -1,5 +1,6 @@
 import configparser
 import inspect
+from io import BytesIO
 from itertools import combinations_with_replacement, zip_longest
 import math
 import os
@@ -99,8 +100,8 @@ class Teacher:
                 segments = self.sul.get_segments(word)
                 segments_control = []
             if len(segments) > 0:
-                print(word.events[0].symbol)
-                if len(self.flows[0]) == 1 and use_pysindy != "True": # Perché per made si ha una sola flow quindi non si fa fit
+                #plot_segments(segments, "/home/simo/Scrivania/Ciao")
+                if len(self.flows[0]) == 1 and use_pysindy != "True": # Perché per made si aveva una sola flow quindi non si fa fit
                     return self.flows[0][0]
                 if CS == 'THERMO' and word[-1].symbol == 'h_0':
                     return self.flows[0][2]
@@ -153,8 +154,10 @@ class Teacher:
 
                     for i,flow in enumerate(self.flows[0]):
                         if withControl:
-                            control_signal = [c/1000 for c in control_behavior] 
-                            ideal_model = flow.f(interval, segment[0].value, control_signal)
+                            #control_signal = [c/1000 for c in control_behavior] 
+                            ideal_model_unfiltered = flow.f(interval, segment[0].value, control_behavior)
+                            ideal_model_unfiltered = np.array(ideal_model_unfiltered)
+                            ideal_model = ideal_model_unfiltered[np.isfinite(ideal_model_unfiltered)].tolist()
                         else:
                             ideal_model = flow.f(interval, segment[0].value)
                         res = fast_ddtw(real_behavior, ideal_model)
@@ -176,6 +179,7 @@ class Teacher:
                         freq = matches
                         best_fit = f
                 if freq >= 0.5:
+                    print(best_fit.label)
                     return best_fit
                 else:
                     if CS == 'ENERGY' and RS == 'MADE' and word.events[0].symbol == "l":
@@ -539,3 +543,36 @@ def check_model_uniqueness(models, new_model):
         if check_equal_model(model, new_model):
             return False
     return True
+
+def plot_segments(segments, output_dir):
+    """
+    Plotta i segmenti estratti e salva i grafici in una directory.
+
+    Parameters:
+    segments (list): Lista di segmenti, dove ogni segmento è una lista di punti con attributi 'timestamp' e 'value'.
+    output_dir (str): Directory dove salvare i grafici.
+    """
+    # Assicurati che la directory esista
+    os.makedirs(output_dir, exist_ok=True)
+
+    for i, segment in enumerate(segments):
+        if len(segment) == 0:
+            continue
+        
+        # Estrai i timestamp e i valori dal segmento
+        timestamps = [pt.timestamp.to_secs() for pt in segment]
+        values = [pt.value for pt in segment]
+
+        # Crea un nuovo grafico per ogni segmento
+        plt.figure(figsize=(10, 5))
+        plt.plot(timestamps, values, marker='o', linestyle='-', color='b')
+        plt.title(f'Segmento {i+1}')
+        plt.xlabel('Timestamp (s)')
+        plt.ylabel('Value')
+        plt.grid(True)
+
+        # Salva il grafico nella directory specificata
+        output_path = os.path.join(output_dir, f'segment_{i+1}.png')
+        plt.savefig(output_path)
+        plt.close()
+        print(f'Salvato: {output_path}')

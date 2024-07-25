@@ -1,3 +1,4 @@
+from collections import defaultdict
 import configparser
 from itertools import combinations_with_replacement, zip_longest
 from matplotlib.backends.backend_pdf import PdfPages
@@ -35,7 +36,7 @@ def pwr_model(interval: List[Timestamp], P_0):
 
 
 # define flow conditions
-on_fc: FlowCondition = FlowCondition(2, pwr_model)
+on_fc: FlowCondition = FlowCondition(0, pwr_model)
 
 # define distributions
 off_distr = NormalDistribution(0, 0.0, 0.0)
@@ -75,27 +76,49 @@ def transform_times_to_seconds_cumulative(times):
     # Calcola il tempo cumulativo trascorso dal primo elemento
     times_transformed = [time - times_seconds[0] for time in times_seconds]
     return np.array(times_transformed)
-def generateData(data_path):
-  new_signals: List[SampledSignal] = parse_data(data_path)
-  chg_pts = support_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
-  power_pts = new_signals[0].points
-  speed_pts = new_signals[1].points
-  pressure_pts = new_signals[2].points
-  power_values = [pt.value for pt in power_pts]
-  speed_values = [st.value for st in speed_pts]
-  id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
-  support_cs.process_data(data_path)
-  trace = support_cs.timed_traces[-1]
 
-  power_data = np.array([pt.value for pt in power_pts]).ravel()
-  speed_data = np.array([pt.value/1000 for pt in speed_pts]).ravel() 
-  t_power = transform_times_to_seconds_cumulative(np.array(extractTimestamps(power_pts)))
-  t_speed = transform_times_to_seconds_cumulative(np.array(extractTimestamps(speed_pts)))
-  return power_data, speed_data, t_power
+def generateData(data_paths):
+    event_segments = []
+    speed_segments = []
+    power_segments = []
+    event_symbol = []
+    for data_path in data_paths:
+        new_signals: List[SampledSignal] = parse_data(data_path)
+        chg_pts = support_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
+        power_pts = new_signals[0].points
+        speed_pts = new_signals[1].points
+        pressure_pts = new_signals[2].points
+        id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
+        support_cs.process_data(data_path)
+        trace = support_cs.timed_traces[-1]
+
+        power_data = np.array([pt.value for pt in power_pts]).ravel()
+        speed_data = np.array([pt.value/1000 for pt in speed_pts]).ravel() 
+        t_power = transform_times_to_seconds_cumulative(np.array(extractTimestamps(power_pts)))
+        t_speed = transform_times_to_seconds_cumulative(np.array(extractTimestamps(speed_pts)))
+
+        for i in range(0, len(chg_pts) - 1):
+            cp_start = chg_pts[i]
+            cp_end = chg_pts[i + 1]
+            event = label_event(events, new_signals, cp_start.t)
+
+            event_start_timestamp = cp_start.t
+            event_end_timestamp = cp_end.t
+            speed_segment = np.array([pt.value/1000 for pt in speed_pts if event_start_timestamp <= pt.timestamp < event_end_timestamp]).ravel()
+            power_segment = np.array([pt.value for pt in power_pts if event_start_timestamp <= pt.timestamp < event_end_timestamp]).ravel()
+
+            speed_segment_timestamp = [pt for pt in speed_pts if event_start_timestamp <= pt.timestamp < event_end_timestamp]
+            power_segment_timestamp = [pt for pt in power_pts if event_start_timestamp <= pt.timestamp < event_end_timestamp]
+            event_segments.append((event.label, event.symbol, speed_segment_timestamp, power_segment_timestamp))
+            speed_segments.append(speed_segment)
+            power_segments.append(power_segment)
+            event_symbol.append(event.symbol)
+    return event_segments, event_symbol, power_segments, speed_segments
 
 def create_sindy_model_with_control(model):
     def sindy_model_with_control(interval: List[Timestamp], init_val: float, control_values: List[float]):
         values = [init_val]
+        control_values = [c/1000 for c in control_values]
         degree = model.feature_library.degree
         feature_names = model.feature_names
         coefficients = model.coefficients()
@@ -116,6 +139,8 @@ def create_sindy_model_with_control(model):
             feature_dict = {feature: (values[-1] if feature == feature_names[0] else control_values[i+1]) for j, feature in enumerate(feature_names)}
         return values
     return sindy_model_with_control
+
+
 base_path="/home/simo/WebFarm/lsha/resources/traces/MADE/"
 data_paths = [base_path+"_03_mar_1.csv",
                 base_path+"_05_may_1.csv",
@@ -168,49 +193,151 @@ data_paths_second_geometry = [
                 base_path_second_geometry+"12_apr_2.csv"
                 ]
 
-def generateFlowCondition(counter, data_paths):
-    power_datas = []
-    speed_datas = []
-    ts = []
 
-    for dp in data_paths:
-        pd, sd, t = generateData(dp)
-        power_datas.append(pd)
-        speed_datas.append(sd)
-        ts.append(t)
-        
-    train_speed = []
-    train_power = []
+def generateFlowConditions(data_paths):
+
+    event_segments, event_symbols, power_segments, speed_segments = generateData(data_paths)
+
+    flow_conditions: List[FlowCondition] = []
+    max_length = max(max(len(segment) for segment in speed_segments),
+                 max(len(segment) for segment in power_segments))
+    def pad_sequences(sequences, max_length):
+        padded_sequences = []
+        for sequence in sequences:
+            num_zeros = max_length - len(sequence)
+            padded_sequence = np.pad(sequence, (0, num_zeros), 'constant')
+            padded_sequences.append(padded_sequence)
+        return padded_sequences
+
+
+    speed_segments_padded = pad_sequences(speed_segments, max_length)
+    power_segments_padded = pad_sequences(power_segments, max_length)
+
+    speed_data = np.array(speed_segments_padded)
+    power_data = np.array(power_segments_padded)
+
+    from collections import Counter
+    counters = Counter(event_symbols)
+    listCounter = list(counters.items())
+    print(listCounter)
+    noRepetitions = list(set(event_symbols))
+    print(noRepetitions)
     
+    from collections import defaultdict
+    event_map = defaultdict(lambda: {'speed': [], 'power': []})
+    model_map = defaultdict()
 
-    for i in range(0,len(speed_datas)):
-        train_speed.append(speed_datas[i])
-        train_power.append(power_datas[i])
-    combined_speed_data = []
-    combined_power_data = []
-    for st,pt in zip(train_speed, train_power):
-        combined_speed_data = np.concatenate((combined_speed_data, st), axis=0)
-        combined_power_data = np.concatenate((combined_power_data, pt), axis=0)
     
-    combined_power_data = combined_power_data.reshape(-1,1)
-    combined_speed_data = combined_speed_data.reshape(-1,1)
+    for i, val in enumerate(event_symbols):
+        event_map[val]['speed'].append(speed_data[i])
+        event_map[val]['power'].append(power_data[i])
+    counterFlowConditions = 0
+    for symbol in event_map:
+        speed_data = event_map[symbol]['speed']
+        power_data = event_map[symbol]['power']
+        combined_speed_train_data = []
+        combined_power_train_data = []
+        for st,pt in zip(speed_data, power_data):
+            combined_speed_train_data = np.concatenate((combined_speed_train_data, st), axis=0)
+            combined_power_train_data = np.concatenate((combined_power_train_data, pt), axis=0)
+        combined_power_train_data = combined_power_train_data.reshape(-1,1)
+        combined_speed_train_data = combined_speed_train_data.reshape(-1,1)
+        model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2),optimizer=ps.SR3(threshold=0.0001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=True)
+        model.fit(combined_power_train_data,u=combined_speed_train_data)
+        model_map[symbol] = model
+        flow_conditions.append(FlowCondition(counterFlowConditions, create_sindy_model_with_control(model)))
+        counterFlowConditions+=1
+    counterFlowConditions = 0
+    for symbol, model in model_map.items():
+        print(f"Symbol {symbol}")
+        print(f"Flow Condition {counterFlowConditions}")
+        model.print()
+        print("-" * 180)
+        counterFlowConditions += 1
         
-    model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2), differentiation_method=SINDyDerivative(kind="trend_filtered"), optimizer=ps.SR3(threshold=0.0001, thresholder="l1", normalize_columns=True), feature_names = ['P', 'S'], discrete_time=True)
+    return flow_conditions
+
+firstMethod = True
+
+if firstMethod:
+    models: List[FlowCondition]  = generateFlowConditions(data_paths_first_geometry+data_paths_second_geometry)
+else:
+# Secondo metodo
+#train_cs = SystemUnderLearning([power, speed], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
+#TEST_PATH = '/home/simo/WebFarm/lsha/resources/traces/MADE/All/'
+    traces_files = data_paths_first_geometry + data_paths_second_geometry
+#traces_files = os.listdir(TEST_PATH)
+
+    event_map = defaultdict(lambda: {'speed': [], 'power': []})
+    for i,file in enumerate(traces_files):
+        new_signals: List[SampledSignal] = parse_data(file)
+        chg_pts = support_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
+        id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
+        support_cs.process_data(file)
+        word = support_cs.traces[i]
+        w_prev = []
+        s = ""
+        for w in word.events:
+            s = s + w.symbol
+            values = []
+            values_c = []
+            segments, segments_control = support_cs.get_segments(w_prev+[w], control=True)
+            w_prev = w_prev+[w]
+            if len(segments)>0:
+                for segment,segment_c in zip(segments, segments_control):
+                    #v = [x.value for x in segment] #sindy su questi
+                    #vc = [x.value for x in segment_c]
+                    #values.append(v)
+                    #values_c.append(vc)
+                    #event_map[w.symbol]['speed'].append(vc)
+                    #event_map[w.symbol]['power'].append(v)
+                    for x,xc in zip(segment, segment_c):
+                        event_map[w.symbol]['speed'].append(xc.value)
+                        event_map[w.symbol]['power'].append(x.value)
+
+    flow_conditions: List[FlowCondition] = []
+    print("\nItems processed")
+    counterFlowConditions = 0
+    model_map = defaultdict()
+    for key, val in event_map.items():
+        X = np.array(val["power"])
+        y = np.array(val["speed"])
+        model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2),optimizer=ps.SR3(threshold=0.0001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=True)
+        model.fit(X,u=y)
+        model_map[key] = model
+        flow_conditions.append(FlowCondition(counterFlowConditions, create_sindy_model_with_control(model)))
+        counterFlowConditions+=1
+
+    counterFlowConditions = 0
+    for symbol, model in model_map.items():
+        print(f"Symbol {symbol}")
+        print(f"Flow Condition {counterFlowConditions}")
+        model.print()
+        print("-" * 180)
+        counterFlowConditions += 1
+    
+    models = flow_conditions
+'''
+Items processed
+l
+m_66
+i_0
+m_94
+m_34
+m_59
+m_57
+u
+m_69
+m_97
+m_46
+m_71
+m_61
+m_41
+'''
 
 
-    model.fit(combined_power_data, u=combined_speed_data)
-
-    model.print()
 
 
-
-    sindy_flow = FlowCondition(counter, create_sindy_model_with_control(model))
-    return sindy_flow
-
-firstGeometryFlow = generateFlowCondition(0, data_paths_first_geometry)
-secondGeometryFlow = generateFlowCondition(1, data_paths_second_geometry)
-
-models: List[FlowCondition] = [firstGeometryFlow, secondGeometryFlow]
 model_to_distr = {}
 for m in models:
     model_to_distr[m.f_id] = []
@@ -220,6 +347,7 @@ speedsindy = RealValuedVar(models, [], model_to_distr, label='w')
 
 energy_made_cs = SystemUnderLearning([powersindy, speedsindy], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 #energy_made_cs = SystemUnderLearning([power, speed], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
+
 #END
 test = False
 if test:
@@ -286,7 +414,7 @@ if test:
 
         ts = [pt.timestamp for pt in segment]
         tsecond = [pt.timestamp.to_secs() for pt in segment]
-        control_values = [s.value/1000 for s in segments_control[i]]
+        control_values = [s.value for s in segments_control[i]]
         values = identified_model.f(ts, segment[i].value, control_values)
         
         plt.plot(tsecond, values, label='Main Signal', color='blue')
@@ -304,7 +432,7 @@ if test:
         plt.close()
     
     pdf.close()
-    print(model2distr)
+    
 
     # test distr identification
     for i, trace in enumerate(TEACHER.timed_traces):

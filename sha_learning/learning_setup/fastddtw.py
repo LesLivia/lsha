@@ -72,7 +72,7 @@ def fast_ddtw(signal_1, signal_2, K=10):
     else:
         K = 2 * abs(len_d_sig1 - len_d_sig2)
         window = generate_window(len_d_sig1, len_d_sig2, K)
-        print('input K is not a good choice... selected K = ', K, 'instead.')
+        #print('input K is not a good choice... selected K = ', K, 'instead.')
 
     D = defaultdict(lambda: (float('inf'),))
     D[0, 0] = (0, 0, 0)
