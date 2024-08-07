@@ -179,7 +179,7 @@ class Teacher:
                         freq = matches
                         best_fit = f
                 if freq >= 0.5:
-                    print(best_fit.label)
+                    #print(best_fit.label)
                     return best_fit
                 else:
                     if CS == 'ENERGY' and RS == 'MADE' and word.events[0].symbol == "l":

@@ -77,8 +77,11 @@ use_pysindy = config["PYSINDY"]["FLAG_ENABLE"]
 
 
 
-idle_fc = FlowCondition(0, idle_model_sindy)
-busy_fc = FlowCondition(1, busy_model_sindy)
+#idle_fc = FlowCondition(0, idle_model_sindy)
+#busy_fc = FlowCondition(1, busy_model_sindy)
+
+idle_fc = FlowCondition(0, idle_model)
+busy_fc = FlowCondition(1, busy_model)
 if use_pysindy == "True":
     models: List[FlowCondition] = []
 else:
