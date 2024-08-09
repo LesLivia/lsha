@@ -35,7 +35,7 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
 
 def parse_ts(ts):
     try:
-        return Timestamp(ts.year, ts.month, ts.day, ts.hour, ts.mins, ts.sec)
+        return Timestamp(ts.year, ts.month, ts.day, ts.hour, ts.mins, int(ts.sec))
     except AttributeError:
         try:
             return Timestamp(ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second)

@@ -141,13 +141,14 @@ if test:
         END_T = parse_date(config['AUTO-TWIN CONFIGURATION']['END_DATE'])
 
     if pov != 'plant':
-        TEST_N = 5
-        labels_hierarchy = reader.get_entity_labels_hierarchy()
+        TEST_N = 17
 
         if config['AUTO-TWIN CONFIGURATION']['POV'].lower() == 'item':
-            entities = reader.get_items(labels_hierarchy=labels_hierarchy, limit=TEST_N, random=True)
+            entities = reader.get_items(labels_hierarchy=reader.get_entity_labels_hierarchy(), limit=TEST_N,
+                                        random=True)
         else:
-            entities = reader.get_resources(labels_hierarchy=labels_hierarchy, limit=TEST_N, random=True)
+            entities = reader.get_resources(labels_hierarchy=reader.get_resource_labels_hierarchy(), limit=TEST_N,
+                                            random=True)
 
         for entity in entities[:TEST_N]:
             if pov == 'item':

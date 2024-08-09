@@ -186,7 +186,7 @@ class TraceGenerator:
                 entities = querier.get_items(labels_hierarchy=self.labels_hierarchy, limit=n, random=True,
                                              start_t=START_T, end_t=END_T)
             else:
-                entities = querier.get_resources(labels_hierarchy=self.labels_hierarchy, limit=n, random=True)
+                entities = querier.get_resources(labels_hierarchy=querier.get_resource_labels_hierarchy(), limit=n, random=True)
 
             for entity in entities[:n]:
                 if entity not in self.processed_entities:

@@ -1,5 +1,6 @@
 import configparser
 import os
+import sys
 import warnings
 from datetime import datetime
 
@@ -51,7 +52,7 @@ elif CS == 'AUTO_TWIN':
 else:
     raise RuntimeError
 
-TEACHER = Teacher(SUL)
+TEACHER = Teacher(SUL, pov=sys.argv[1], start_dt=sys.argv[2], end_dt=sys.argv[3])
 
 long_traces = [Trace(events=[e]) for e in SUL.events]
 obs_table = ObsTable([], [Trace(events=[])], long_traces)
