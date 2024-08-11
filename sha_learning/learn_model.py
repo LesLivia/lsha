@@ -1,4 +1,6 @@
 import configparser
+from contextlib import redirect_stdout
+import io
 import warnings
 from datetime import datetime
 
@@ -29,6 +31,7 @@ config.sections()
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
 CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', '')[0])
 RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
+USE_PYSINDY = config['PYSINDY']['FLAG_ENABLE']
 
 SUL: SystemUnderLearning
 events_labels_dict = None
@@ -79,6 +82,12 @@ report.save_data(TEACHER.symbols, TEACHER.distributions, LEARNER.obs_table,
                  len(TEACHER.signals), datetime.now() - startTime, SHA_NAME, events_labels_dict)
 print('----> EXPERIMENTAL RESULTS SAVED IN: {}{}.txt'.format(config['SUL CONFIGURATION']['REPORT_SAVE_PATH'], SHA_NAME))
 
-for i,m in enumerate(TEACHER.models):
-    print("Flow Condition "+ str(i))
-    m.print()
+if USE_PYSINDY == "True":
+    with open("/home/simo/WebFarm/lsha/resources/learned_sha/hri_pysindy/flow_conditions.txt", "w") as file:
+        for i,m in enumerate(TEACHER.models):
+            file.write(str(i)+'\n')
+            f = io.StringIO()
+            with redirect_stdout(f):
+                m.print()
+            out = f.getvalue()
+            file.write(out)

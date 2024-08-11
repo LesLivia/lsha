@@ -1,9 +1,10 @@
 from collections import defaultdict
 import configparser
 from itertools import combinations_with_replacement, zip_longest
+import json
 from matplotlib.backends.backend_pdf import PdfPages
 import os
-from typing import List
+from typing import List, Tuple
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -28,6 +29,7 @@ SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])  # get all the constant va
 MIN_SPEED = int(config['ENERGY CS']['MIN_SPEED'])
 MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
 
+TEST_PATH = config['TRACE GENERATION']['TEST_PATH']
 
 def pwr_model(interval: List[Timestamp], P_0):
     interval = [ts.to_secs() for ts in interval]
@@ -242,7 +244,7 @@ def generateFlowConditions(data_paths):
             combined_power_train_data = np.concatenate((combined_power_train_data, pt), axis=0)
         combined_power_train_data = combined_power_train_data.reshape(-1,1)
         combined_speed_train_data = combined_speed_train_data.reshape(-1,1)
-        model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2),optimizer=ps.SR3(threshold=0.0001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=True)
+        model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2),optimizer=ps.SR3(threshold=0.0001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=False)
         model.fit(combined_power_train_data,u=combined_speed_train_data)
         model_map[symbol] = model
         flow_conditions.append(FlowCondition(counterFlowConditions, create_sindy_model_with_control(model)))
@@ -254,10 +256,24 @@ def generateFlowConditions(data_paths):
         model.print()
         print("-" * 180)
         counterFlowConditions += 1
+    count = 0
+    with open("/home/simo/WebFarm/lsha/resources/learned_sha/made/flow_conditions.txt", "w") as file:
+        for symbol, model in model_map.items():
+            file.write(f"{count}\n")
+            import io
+            from contextlib import redirect_stdout
+
+            f = io.StringIO()
+            with redirect_stdout(f):
+                model.print()
+            out = f.getvalue()
+        
+            file.write(out)
+            count += 1
         
     return flow_conditions
 
-firstMethod = True
+firstMethod = False
 
 if firstMethod:
     models: List[FlowCondition]  = generateFlowConditions(data_paths_first_geometry+data_paths_second_geometry)
@@ -302,7 +318,7 @@ else:
     for key, val in event_map.items():
         X = np.array(val["power"])
         y = np.array(val["speed"])
-        model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2),optimizer=ps.SR3(threshold=0.0001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=True)
+        model = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2),optimizer=ps.SR3(threshold=0.0001, thresholder="l1"), feature_names = ['P', 'S'], discrete_time=False)
         model.fit(X,u=y)
         model_map[key] = model
         flow_conditions.append(FlowCondition(counterFlowConditions, create_sindy_model_with_control(model)))
@@ -315,6 +331,20 @@ else:
         model.print()
         print("-" * 180)
         counterFlowConditions += 1
+    count = 0
+    with open("/home/simo/WebFarm/lsha/resources/learned_sha/made/flow_conditions.txt", "w") as file:
+        for symbol, model in model_map.items():
+            file.write(f"{count}\n")
+            import io
+            from contextlib import redirect_stdout
+
+            f = io.StringIO()
+            with redirect_stdout(f):
+                model.print()
+            out = f.getvalue()
+        
+            file.write(out)
+            count += 1
     
     models = flow_conditions
 '''
@@ -347,6 +377,63 @@ speedsindy = RealValuedVar(models, [], model_to_distr, label='w')
 
 energy_made_cs = SystemUnderLearning([powersindy, speedsindy], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 #energy_made_cs = SystemUnderLearning([power, speed], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
+
+def get_timed_trace(input_file_name: str):
+    energy_made_cs.process_data(TEST_PATH.format(input_file_name))
+    tt = energy_made_cs.timed_traces[-1]
+    tt_tup: List[Tuple[str, str]] = []
+
+    # if len(tt) > 0 and tt.t[0].min > 0:
+    #    # FIXME: non mi convince.
+    #    tt.t = [Timestamp(tt.t[0].year, tt.t[0].month, tt.t[0].day, tt.t[0].hour, 0, 0)] + tt.t
+    #    tt.e = [Event('', '', 'i_0')] + tt.e
+
+    for i, event in enumerate(tt.e):
+        if event.symbol == 'i_0':
+            e_sym = 'STOP'
+        elif event.symbol == 'l':
+            e_sym = 'LOAD'
+        elif event.symbol == 'u':
+            e_sym = 'UNLOAD'
+        else:
+            e_sym = event.symbol.split('_')[1]
+        if i == 0:
+            diff_t = 0.0
+        else:
+            diff_t = ((tt.t[i].to_secs() - tt.t[0].to_secs()) - (tt.t[i - 1].to_secs() - tt.t[0].to_secs())) / 60
+
+        tt_tup.append((str(diff_t), e_sym))
+
+    return tt_tup
+
+
+file_names = [
+    "_03_mar_1",
+    "_05_may_1",
+    "_05_may_2",
+    "_11_jan_2",
+    "_12_apr_1",
+    "_12_apr_2",
+    "_12_jan_2",
+    "_12_jan_3",
+    "_12_jan_4",
+    "_12_jan_5",
+    "_13_feb_1",
+    "_13_feb_2",
+    "_15_feb_1",
+    "_17_feb_2",
+    "_17_feb_3"
+]
+
+
+def save_timed_trace(tt_tup, file_path):
+    with open(file_path, 'w') as file:
+        json.dump(tt_tup, file)
+
+for file_name in file_names:
+    tt = get_timed_trace(file_name)
+    save_timed_trace(tt, f"{file_name}_timed_trace.json")
+
 
 #END
 test = False

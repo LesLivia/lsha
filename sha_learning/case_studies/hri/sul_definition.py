@@ -1,4 +1,6 @@
 import configparser
+from contextlib import redirect_stdout
+import io
 import math
 import os
 from typing import List
@@ -74,14 +76,28 @@ idle_model_sindy = create_sindy_model_no_control(model_idle)
 #End
 
 use_pysindy = config["PYSINDY"]["FLAG_ENABLE"]
+if use_pysindy == "False":
+    with open("/home/simo/WebFarm/lsha/resources/learned_sha/hri_pysindy/flow_conditions.txt", "w") as file:
+        file.write(str(0)+'\n')
+        f = io.StringIO()
+        with redirect_stdout(f):
+            model_idle.print()
+        out = f.getvalue()
+        file.write(out)
+
+        file.write(str(1)+'\n')
+        f = io.StringIO()
+        with redirect_stdout(f):
+            model_busy.print()
+        out = f.getvalue()
+        file.write(out)
 
 
+idle_fc = FlowCondition(0, idle_model_sindy)
+busy_fc = FlowCondition(1, busy_model_sindy)
 
-#idle_fc = FlowCondition(0, idle_model_sindy)
-#busy_fc = FlowCondition(1, busy_model_sindy)
-
-idle_fc = FlowCondition(0, idle_model)
-busy_fc = FlowCondition(1, busy_model)
+#idle_fc = FlowCondition(0, idle_model)
+#busy_fc = FlowCondition(1, busy_model)
 if use_pysindy == "True":
     models: List[FlowCondition] = []
 else:
