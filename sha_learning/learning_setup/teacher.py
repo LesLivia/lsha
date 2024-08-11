@@ -109,7 +109,7 @@ class Teacher:
                 fits = []
                 for i, (segment, control) in enumerate(zip_longest(segments, segments_control, fillvalue=None)):
                     if len(segment) < 3:
-                        continue # qui ho problema per traccia l in cui ritorno sempre perché lunghezz anon va bene e allora devo ritornare un modello di default, vedi in basso dove c'è inconsistent physical beahviour
+                        continue 
                     interval = [pt.timestamp for pt in segment]
                     real_behavior = [pt.value for pt in segment]
                     if withControl:
@@ -118,9 +118,7 @@ class Teacher:
                         control_behavior =[]
                     if use_pysindy == 'True':
                         interval_sec = [t.to_secs() for t in interval]
-                        if(withControl): # comunque va trovato un modo per adattare gli iperparametri di pysindy, grid search sulla threshold
-                            # alternativamente si fa questo: model_simple = ps.SINDy(feature_library =ps.PolynomialLibrary(degree=2), differentiation_method=SINDyDerivative(kind="trend_filtered"), optimizer=ps.SR3(threshold=0.0001, thresholder="l1", normalize_columns=True), feature_names = ['P', 'S'], discrete_time=True)
-                            # e si sceglie tramite model.score()
+                        if(withControl):
                             x_train = np.array(real_behavior).reshape(-1, 1)
                             t_train = np.array(interval_sec)
                             u_train = np.array(control_behavior).reshape(-1, 1)
