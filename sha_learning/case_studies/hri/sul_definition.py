@@ -41,11 +41,12 @@ def busy_model(interval: List[Timestamp], F_0: float):
     interval = [ts.to_secs() for ts in interval]
     return [1 - (1 - F_0) * math.exp(-N_1[0] * (t - interval[0])) for t in interval]
 
-idle_fc = FlowCondition(0, idle_model)
+# Old model definitions based on prior knowledge
+idle_fc = FlowCondition(0, idle_model) 
 busy_fc = FlowCondition(1, busy_model)
 
 
-#PySindy
+#PySindy model definitions
 interval = [Timestamp.from_secs(i) for i in range(101)]
 F_0 = 2
 x_train_idle = np.array(idle_model(interval, F_0))
@@ -95,6 +96,7 @@ if use_pysindy == "False":
         file.write(out)
 
 
+# Here comment or uncomment if you want to use PySINDy
 idle_fc = FlowCondition(0, idle_model_sindy)
 busy_fc = FlowCondition(1, busy_model_sindy)
 
