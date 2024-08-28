@@ -54,11 +54,13 @@ x_train_busy = np.array(busy_model(interval, F_0))
 stlsq_optimizer = ps.STLSQ(threshold=0.0001)
 model_idle = ps.SINDy(optimizer=stlsq_optimizer, feature_library =ps.PolynomialLibrary(degree=1))
 model_idle.fit(x_train_idle, quiet=True)
+print("Flow Condition 0")
 model_idle.print()
 
 stlsq_optimizer = ps.STLSQ(threshold=0.0001)
 model_busy = ps.SINDy(optimizer=stlsq_optimizer, feature_library =ps.PolynomialLibrary(degree=1))
 model_busy.fit(x_train_busy, quiet=True)
+print("Flow Condition 1")
 model_busy.print()
 def create_sindy_model_no_control(model):
     def sindy_model_no_control(interval: List[Timestamp], init_val: float):
