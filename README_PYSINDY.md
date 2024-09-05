@@ -1,6 +1,7 @@
 # Guide to Using PySINDy for System Identification
 
 This guide explains how to use PySINDy for system identification in your case study.
+## Step-by-step Instructions
 
 1. **Configuring PySINDy in `config.ini`:**
    
