@@ -66,7 +66,7 @@ def learn_automaton(pov: str, start_dt: str = None, end_dt: str = None, start_ts
         distr_hist(TEACHER.hist, SHA_NAME)
 
     report.save_data(TEACHER.symbols, TEACHER.distributions, LEARNER.obs_table,
-                     len(TEACHER.signals), datetime.now() - startTime, SHA_NAME, events_labels_dict)
+                     len(TEACHER.signals), datetime.now() - startTime, SHA_NAME, events_labels_dict, save_path)
     print('----> EXPERIMENTAL RESULTS SAVED IN: {}{}.txt'.format(config['SUL CONFIGURATION']['REPORT_SAVE_PATH'],
                                                                  SHA_NAME))
 
