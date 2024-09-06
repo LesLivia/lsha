@@ -26,7 +26,8 @@ CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', ''))
 RESAMPLE_STRATEGY = 'SKG'
 
 
-def learn_automaton(pov: str, start_dt: str = None, end_dt: str = None, start_ts: int = None, end_ts: int = None):
+def learn_automaton(pov: str, start_dt: str = None, end_dt: str = None, start_ts: int = None, end_ts: int = None,
+                    save_path=None):
     SUL: SystemUnderLearning = auto_twin_cs
     SUL.reset_distributions()
     events_labels_dict = act_to_sensors
@@ -41,7 +42,11 @@ def learn_automaton(pov: str, start_dt: str = None, end_dt: str = None, start_ts
     LEARNED_SHA = LEARNER.run_lsha(filter_empty=True)
 
     # PLOT (AND SAVE) RESULT
-    SHA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH'].format(os.environ['RES_PATH'])
+    if save_path is None:
+        SHA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH'].format(
+            os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning')
+    else:
+        SHA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH'].format(save_path)
 
     SHA_NAME = '{}_{}_{}'.format(CS, RESAMPLE_STRATEGY, pov)
     if SHA_NAME in [file.split('-')[0] for file in os.listdir(SHA_SAVE_PATH)]:
