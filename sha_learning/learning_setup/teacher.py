@@ -17,7 +17,7 @@ from sha_learning.learning_setup.trace_gen import TraceGenerator
 LOGGER = Logger('TEACHER')
 
 config = configparser.ConfigParser()
-config.read('{}/config/config.ini'.format(os.environ['LSHA_RES_PATH']))
+config.read('{}/resources/config/config.ini'.format(os.getcwd()))
 config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']

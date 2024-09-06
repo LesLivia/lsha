@@ -62,14 +62,14 @@ LEARNER = Learner(TEACHER, obs_table)
 LEARNED_HA = LEARNER.run_lsha(filter_empty=True)
 
 # PLOT (AND SAVE) RESULT
-HA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH'].format(os.environ['RES_PATH'])
+HA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH'].format(os.getcwd())
 
 SHA_NAME = '{}_{}_{}'.format(CS, RESAMPLE_STRATEGY, config['SUL CONFIGURATION']['CS_VERSION'])
 graphviz_sha = ha_pltr.to_graphviz(LEARNED_HA, SHA_NAME, HA_SAVE_PATH, view=True)
 
 # saving sha source to .txt file
 sha_source = graphviz_sha.source
-with open(HA_SAVE_PATH.format(os.environ['RES_PATH']) + SHA_NAME + '_source.txt', 'w') as f:
+with open(HA_SAVE_PATH.format(os.getcwd()) + SHA_NAME + '_source.txt', 'w') as f:
     f.write(sha_source)
 
 if config['DEFAULT']['PLOT_DISTR'] == 'True' and config['LSHA PARAMETERS']['HT_QUERY_TYPE'] == 'S':

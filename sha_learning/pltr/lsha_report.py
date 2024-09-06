@@ -4,10 +4,10 @@ import os
 from sha_learning.learning_setup.learner import ObsTable
 
 config = configparser.ConfigParser()
-config.read('{}/config/config.ini'.format(os.environ['LSHA_RES_PATH']))
+config.read('{}/resources/config/config.ini'.format(os.getcwd()))
 config.sections()
 
-SAVE_PATH = config['SUL CONFIGURATION']['REPORT_SAVE_PATH'].format(os.environ['RES_PATH'])
+SAVE_PATH = config['SUL CONFIGURATION']['REPORT_SAVE_PATH'].format(os.getcwd())
 
 
 def save_data(symbols, distr, obstable: ObsTable, traces, time, sha_name, events_dict=None):

@@ -17,7 +17,7 @@ warnings.filterwarnings('ignore')
 startTime = datetime.now()
 
 config = configparser.ConfigParser()
-config.read('{}/config/config.ini'.format(os.environ['LSHA_RES_PATH']))
+config.read('{}/resources/config/config.ini'.format(os.getcwd()))
 config.sections()
 
 CS = 'AUTO_TWIN'

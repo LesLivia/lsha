@@ -13,7 +13,7 @@ from skg_main.skg_model.schema import Timestamp as skg_Timestamp
 from skg_main.skg_model.semantics import EntityForest, EntityTree
 
 config = configparser.ConfigParser()
-config.read('{}/config/config.ini'.format(os.environ['LSHA_RES_PATH']))
+config.read('{}/resources/config/config.ini'.format(os.getcwd()))
 config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']

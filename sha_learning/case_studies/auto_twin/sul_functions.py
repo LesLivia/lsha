@@ -8,7 +8,7 @@ from sha_learning.learning_setup.logger import Logger
 from skg_main.skg_mgrs.skg_reader import SCHEMA_NAME
 
 config = configparser.ConfigParser()
-config.read('{}/config/config.ini'.format(os.environ['LSHA_RES_PATH']))
+config.read('{}/resources/config/config.ini'.format(os.getcwd()))
 config.sections()
 
 try:

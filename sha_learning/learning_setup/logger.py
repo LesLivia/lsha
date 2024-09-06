@@ -1,9 +1,10 @@
 import configparser
+import os
 from enum import Enum
 
 config = configparser.ConfigParser()
 config.sections()
-config.read('./resources/config/config.ini')
+config.read('{}/resources/config/config.ini'.format(os.getcwd()))
 config.sections()
 
 
