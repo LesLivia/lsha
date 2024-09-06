@@ -1,5 +1,6 @@
 import configparser
 import math
+import os
 from typing import List
 
 from sha_learning.domain.lshafeatures import FlowCondition
@@ -8,7 +9,8 @@ from sha_learning.learning_setup.logger import Logger
 
 config = configparser.ConfigParser()
 config.sections()
-config.read('./resources/config/config.ini')
+config.read(
+    os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning/resources/config/config.ini')
 config.sections()
 
 try:
@@ -102,7 +104,7 @@ def get_thermo_param(segment: List[SignalPoint], flow: FlowCondition):
             else:
                 increments = [pt - val[i - 1] for i, pt in enumerate(val) if i > 0]
                 increments = [x for x in increments if x != 0]
-                increments = [-1/x for x in increments]
+                increments = [-1 / x for x in increments]
                 LOGGER.info('Estimating rate with heat off ({})'.format(flow.f_id))
                 est_rate = sum(increments) / len(increments) if len(increments) > 0 else None
         return est_rate

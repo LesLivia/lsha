@@ -10,7 +10,8 @@ from sha_learning.domain.lshafeatures import TimedTrace
 SAVE_PATH = '/learned_sha/'
 
 config = configparser.ConfigParser()
-config.read('{}/resources/config/config.ini'.format(os.getcwd()))
+config.read(
+    os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning/resources/config/config.ini')
 config.sections()
 
 SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])

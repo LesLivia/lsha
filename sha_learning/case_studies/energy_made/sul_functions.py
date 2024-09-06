@@ -1,7 +1,7 @@
 import configparser
 import csv
-from typing import List, Tuple, Dict
-import pandas as pd
+import os
+from typing import List, Tuple
 
 from sha_learning.domain.lshafeatures import Event, FlowCondition
 from sha_learning.domain.sigfeatures import SampledSignal, Timestamp, SignalPoint
@@ -9,7 +9,8 @@ from sha_learning.learning_setup.logger import Logger
 
 config = configparser.ConfigParser()  # open the configuration file
 config.sections()
-config.read('./resources/config/config.ini')
+config.read(
+    os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning/resources/config/config.ini')
 config.sections()
 
 try:

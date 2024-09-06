@@ -9,7 +9,8 @@ from sha_learning.learning_setup.logger import Logger
 from sha_learning.learning_setup.teacher import Teacher
 
 config = configparser.ConfigParser()
-config.read('{}/resources/config/config.ini'.format(os.getcwd()))
+config.read(
+    os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning/resources/config/config.ini')
 config.sections()
 
 LOGGER = Logger('LEARNER')

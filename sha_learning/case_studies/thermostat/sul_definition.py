@@ -19,7 +19,8 @@ DEFAULT_DISTR = 1
 
 config = configparser.ConfigParser()
 config.sections()
-config.read('./resources/config/config.ini')
+config.read(
+    os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning/resources/config/config.ini')
 config.sections()
 CASE_STUDY = config['SUL CONFIGURATION']['CASE_STUDY']
 

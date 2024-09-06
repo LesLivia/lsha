@@ -13,7 +13,8 @@ from skg_main.skg_model.schema import Timestamp as skg_Timestamp
 from skg_main.skg_model.semantics import EntityForest, EntityTree
 
 config = configparser.ConfigParser()
-config.read('{}/resources/config/config.ini'.format(os.getcwd()))
+config.read(
+    os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning/resources/config/config.ini')
 config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']

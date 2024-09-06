@@ -25,7 +25,8 @@ startTime = datetime.now()
 
 config = configparser.ConfigParser()
 config.sections()
-config.read('./resources/config/config.ini')
+config.read(
+    os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning/resources/config/config.ini')
 config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
@@ -62,7 +63,8 @@ LEARNER = Learner(TEACHER, obs_table)
 LEARNED_HA = LEARNER.run_lsha(filter_empty=True)
 
 # PLOT (AND SAVE) RESULT
-HA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH'].format(os.getcwd())
+HA_SAVE_PATH = config['SUL CONFIGURATION']['SHA_SAVE_PATH'].format(
+    os.path.abspath(__file__).split('sha_learning')[0] + 'sha_learning/')
 
 SHA_NAME = '{}_{}_{}'.format(CS, RESAMPLE_STRATEGY, config['SUL CONFIGURATION']['CS_VERSION'])
 graphviz_sha = ha_pltr.to_graphviz(LEARNED_HA, SHA_NAME, HA_SAVE_PATH, view=True)

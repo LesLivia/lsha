@@ -17,7 +17,8 @@ warnings.filterwarnings('ignore')
 startTime = datetime.now()
 
 config = configparser.ConfigParser()
-config.read('{}/resources/config/config.ini'.format(os.getcwd()))
+config.read(
+    os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning/resources/config/config.ini')
 config.sections()
 
 CS = 'AUTO_TWIN'

@@ -1,5 +1,6 @@
 import configparser
 import math
+import os
 from typing import List
 
 from sha_learning.domain.lshafeatures import FlowCondition
@@ -8,7 +9,8 @@ from sha_learning.learning_setup.logger import Logger
 
 config = configparser.ConfigParser()
 config.sections()
-config.read('./resources/config/config.ini')
+config.read(
+    os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning/resources/config/config.ini')
 config.sections()
 
 CS_VERSION = int(config['SUL CONFIGURATION']['CS_VERSION'].replace('\n', '')[0])

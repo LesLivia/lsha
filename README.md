@@ -33,7 +33,7 @@ Learned SHA for the **human-robot interaction** case study can be found [here](r
 Configuration File Setup
 -----------
 
-The [main L\*_sha script](sha_learning/learn_model.py) requires as input parameter the path to a configuration file, whose template can be found within the [`./resources/config/`](resources/config) folder.
+The [main L\*_sha script](sha_learning/learn_model.py) requires as input parameter the path to a configuration file, whose template can be found within the [`./resources/config/`](sha_learning/resources/config) folder.
 
 Make sure to set each property to match your environment, specifically: 
 - **N_min** is the minimum number of observations for each trace to stop perfoming the refinement query (i.e., a value greater than 10 is advised);
