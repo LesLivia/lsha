@@ -287,7 +287,7 @@ class Learner:
                     # If not, make closed
                     self.make_closed()
                     self.fill_table()
-                    LOGGER.msg('CLOSED OBSERVATION TABLE')
+                    LOGGER.info('CLOSED OBSERVATION TABLE')
                     self.obs_table.print(filter_empty)
 
                 # Check if obs. table is consistent
@@ -296,7 +296,7 @@ class Learner:
                     # If not, make consistent
                     self.make_consistent(discriminating_symbol)
                     self.fill_table()
-                    LOGGER.msg('CONSISTENT OBSERVATION TABLE')
+                    LOGGER.info('CONSISTENT OBSERVATION TABLE')
                     self.obs_table.print(filter_empty)
 
                 closedness_check = self.is_closed()
@@ -310,7 +310,7 @@ class Learner:
             counterexample = self.TEACHER.get_counterexample(self.obs_table)
 
         if debug_print:
-            LOGGER.msg('FINAL OBSERVATION TABLE')
+            LOGGER.info('FINAL OBSERVATION TABLE')
             self.obs_table.print(filter_empty)
         # Build Hypothesis Automaton
         LOGGER.info('BUILDING HYP. AUTOMATON...')

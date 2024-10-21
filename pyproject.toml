@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "lsha"
-version = "0.1.5"
+version = "0.1.6"
 description = "Automata Learning Algorithm for Stochastic Hybrid Automata"
 authors = ["livialestingi <livia.lestingi@polimi.it>"]
 readme = "README.md"
@@ -18,7 +18,7 @@ scipy = "^1.12.0"
 tqdm = "^4.66.2"
 pygad = "^3.3.1"
 pandas = "^2.2.1"
-skg-connector = "^0.1.6"
+skg-connector = "^0.1.13"
 
 [build-system]
 requires = ["poetry-core"]

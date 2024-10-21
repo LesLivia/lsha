@@ -16,6 +16,7 @@ from sha_learning.domain.lshafeatures import Trace
 from sha_learning.domain.obstable import ObsTable
 from sha_learning.domain.sulfeatures import SystemUnderLearning
 from sha_learning.learning_setup.learner import Learner
+from sha_learning.learning_setup.logger import Logger
 from sha_learning.learning_setup.teacher import Teacher
 from sha_learning.pltr.energy_pltr import distr_hist
 
@@ -31,6 +32,7 @@ config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
 RESAMPLE_STRATEGY = config['SUL CONFIGURATION']['RESAMPLE_STRATEGY']
+LOGGER = Logger('LSHA')
 
 SUL: SystemUnderLearning
 events_labels_dict = None
@@ -78,5 +80,6 @@ if config['DEFAULT']['PLOT_DISTR'] == 'True' and config['LSHA PARAMETERS']['HT_Q
     distr_hist(TEACHER.hist, SHA_NAME)
 
 report.save_data(TEACHER.symbols, TEACHER.distributions, LEARNER.obs_table,
-                 len(TEACHER.signals), datetime.now() - startTime, SHA_NAME, events_labels_dict)
-print('----> EXPERIMENTAL RESULTS SAVED IN: {}{}.txt'.format(config['SUL CONFIGURATION']['REPORT_SAVE_PATH'], SHA_NAME))
+                 len(TEACHER.signals), datetime.now() - startTime, SHA_NAME, events_labels_dict,
+                 os.getcwd())
+LOGGER.info('----> EXPERIMENTAL RESULTS SAVED IN: {}{}.txt'.format(config['SUL CONFIGURATION']['REPORT_SAVE_PATH'], SHA_NAME))

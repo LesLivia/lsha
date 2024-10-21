@@ -274,7 +274,7 @@ class Teacher:
     # to gain more knowledge about the system under learning
     #############################################
     def ref_query(self, table: ObsTable):
-        LOGGER.msg('Performing ref query...')
+        LOGGER.info('Performing ref query...')
 
         n_resample = int(config['LSHA PARAMETERS']['N_min'])
         S = table.get_S()
@@ -331,7 +331,7 @@ class Teacher:
     # -> t highlights non-consistency
     #############################################
     def get_counterexample(self, table: ObsTable):
-        LOGGER.msg('Looking for counterexample...')
+        LOGGER.info('Looking for counterexample...')
 
         if CS == 'THERMO' and len(self.timed_traces) >= 2000:
             return None
