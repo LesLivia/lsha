@@ -5,7 +5,7 @@ from datetime import datetime
 
 import sha_learning.pltr.lsha_report as report
 import sha_learning.pltr.sha_pltr as sha_pltr
-from sha_learning.case_studies.auto_twin.sul_definition import auto_twin_cs, act_to_sensors
+from sha_learning.case_studies.auto_twin.sul_definition import getSUL
 from sha_learning.domain.lshafeatures import Trace
 from sha_learning.domain.obstable import ObsTable
 from sha_learning.domain.sulfeatures import SystemUnderLearning
@@ -28,8 +28,9 @@ RESAMPLE_STRATEGY = 'SKG'
 LOGGER = Logger('LSHA')
 
 
-def learn_automaton(pov: str, start_dt: str = None, end_dt: str = None, start_ts: int = None, end_ts: int = None,
-                    save_path=None):
+def learn_automaton(pov: str, start_dt: str = None, end_dt: str = None,
+                    start_ts: int = None, end_ts: int = None, save_path=None):
+    auto_twin_cs, act_to_sensors = getSUL()
     SUL: SystemUnderLearning = auto_twin_cs
     SUL.reset_distributions()
     events_labels_dict = act_to_sensors

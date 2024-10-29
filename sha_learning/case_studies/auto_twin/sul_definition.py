@@ -3,15 +3,16 @@ import os
 from typing import List
 
 import skg_main.skg_mgrs.connector_mgr as conn
+from skg_main.skg_mgrs.skg_reader import Skg_Reader
+from skg_main.skg_model.schema import Timestamp as skg_Timestamp
+from skg_main.skg_model.semantics import EntityForest
+
 from sha_learning.case_studies.auto_twin.sul_functions import label_event, parse_data, get_rand_param, \
     is_chg_pt
 from sha_learning.domain.lshafeatures import Event, ProbDistribution
 from sha_learning.domain.sigfeatures import Timestamp as lsha_Timestamp
 from sha_learning.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from sha_learning.learning_setup.teacher import Teacher
-from skg_main.skg_mgrs.skg_reader import Skg_Reader
-from skg_main.skg_model.schema import Timestamp as skg_Timestamp
-from skg_main.skg_model.semantics import EntityForest
 
 config = configparser.ConfigParser()
 config.read(
@@ -26,26 +27,29 @@ DEFAULT_DISTR = 0
 
 args = {'name': 'auto_twin', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 
-if CS == 'AUTO_TWIN':
-
-    pov = config['AUTO-TWIN CONFIGURATION']['POV'].lower()
+pov = config['AUTO-TWIN CONFIGURATION']['POV'].lower()
 
 
-    def foo_model(interval: List[lsha_Timestamp]):
-        return interval
+def foo_model(interval: List[lsha_Timestamp]):
+    return interval
 
 
-    # define flow conditions
-    foo_fc: FlowCondition = FlowCondition(0, foo_model)
+# define flow conditions
+foo_fc: FlowCondition = FlowCondition(0, foo_model)
 
-    # define distributions
-    foo_distr = ProbDistribution(0, {'avg': 0.0})
+# define distributions
+foo_distr = ProbDistribution(0, {'avg': 0.0})
 
-    model2distr = {0: [], 1: []}
-    s_id = RealValuedVar([foo_fc], [], model2distr, label='s_id')
-    if pov == 'plant':
-        state_sig = RealValuedVar([foo_fc], [], model2distr, label='state_vec')
+model2distr = {0: [], 1: []}
+s_id = RealValuedVar([foo_fc], [], model2distr, label='s_id')
+if pov == 'plant':
+    state_sig = RealValuedVar([foo_fc], [], model2distr, label='state_vec')
 
+act_to_sensors = dict()
+auto_twin_cs = SystemUnderLearning([], [], parse_data, label_event, get_rand_param, is_chg_pt, args=args)
+
+
+def getSUL():
     # define events
     driver = conn.get_driver()
     reader: Skg_Reader = Skg_Reader(driver)
@@ -117,9 +121,8 @@ if CS == 'AUTO_TWIN':
     auto_twin_cs = SystemUnderLearning(vars, events, parse_data, label_event, get_rand_param, is_chg_pt, args=args)
 
     conn.close_connection(driver)
-else:
-    act_to_sensors = dict()
-    auto_twin_cs = SystemUnderLearning([], [], parse_data, label_event, get_rand_param, is_chg_pt, args=args)
+    return auto_twin_cs, act_to_sensors
+
 
 test = False
 if test:

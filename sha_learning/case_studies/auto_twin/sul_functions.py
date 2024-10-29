@@ -5,7 +5,6 @@ from typing import List, Dict, Tuple
 from sha_learning.domain.lshafeatures import Event, FlowCondition
 from sha_learning.domain.sigfeatures import SampledSignal, Timestamp, SignalPoint
 from sha_learning.learning_setup.logger import Logger
-from skg_main.skg_mgrs.skg_reader import SCHEMA_NAME
 
 config = configparser.ConfigParser()
 config.read(
@@ -127,11 +126,11 @@ def parse_value(path, i):
     if POV == 'plant':
         # determine resource state vector
         # TODO this should become system-agnostic
-        if SCHEMA_NAME == 'pizzaLineV1':
+        if os.environ['NEO4J_SCHEMA'] == 'pizzaLineV1':
             state_vector = [0, 0, 0, 0, 0]
             sensor_to_station = {'S1': (0, None), 'S2': (1, 'IN'), 'S3': (1, 'OUT'),
                                  'S7': (2, None), 'S4': (3, 'IN'), 'S5': (3, 'OUT'), 'S6': (4, None)}
-        elif SCHEMA_NAME == 'pizzaLineV2':
+        elif os.environ['NEO4J_SCHEMA'] == 'pizzaLineV2':
             state_vector = [0] * 10
             sensor_to_station = {'S1': (0, None), 'S2': (1, 'IN'), 'S3': (1, 'OUT'),
                                  'S16': (2, None), 'S4': (3, 'IN'), 'S5': (3, 'OUT'),
@@ -152,7 +151,6 @@ def parse_value(path, i):
 
         update_state_vector(path[:i + 1], state_vector, sensor_to_station)
         idle_busy_vector = [int(v > 0) for v in state_vector]
-        # print(path[i].activity, state_vector, vec_to_base_x(idle_busy_vector, 2))
 
         return s_id, vec_to_base_x(idle_busy_vector, 2)
     else:
