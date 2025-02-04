@@ -102,7 +102,10 @@ def getSUL():
                           'Pass Sensor PROCESS_4': 'S42', 'Pass Sensor LOAD_5': 'S51', 'Pass Sensor PROCESS_5': 'S52',
                           'Pass Sensor UNLOAD_5': 'S53', 'Pass Sensor UNLOAD_4': 'S43', 'Pass Sensor FAIL_5': 'S54',
                           'Pass Sensor BLOCK_1': 'S15', 'Pass Sensor BLOCK_5': 'S55', 'Pass Sensor BLOCK_3': 'S34',
-                          'Pass Sensor BLOCK_4': 'S44'}
+                          'Pass Sensor BLOCK_4': 'S44', 'Pass Sensor TRANSFER_1': 'S16',
+                          'Pass Sensor TRANSFER_2': 'S26',
+                          'Pass Sensor TRANSFER_3': 'S36', 'Pass Sensor TRANSFER_4': 'S46',
+                          'Pass Sensor TRANSFER_5': 'S56'}
 
     for e in unique_events:
         if e.act in act_to_sensors:
@@ -170,13 +173,14 @@ if test:
         if len(events) > 0:
             evt_seqs.append(events)
 
-    teacher = Teacher(auto_twin_cs)
+    sul, _ = getSUL()
+    teacher = Teacher(sul)
 
     for seq in evt_seqs:
-        auto_twin_cs.process_data(seq)
-        print(auto_twin_cs.traces[-1])
+        sul.process_data(seq)
+        print(sul.traces[-1])
         # auto_twin_cs.plot_trace(-1)
-        id_cluster = teacher.ht_query(auto_twin_cs.traces[-1], foo_fc)
+        id_cluster = teacher.ht_query(sul.traces[-1], foo_fc)
         print(id_cluster)
 
     conn.close_connection(driver)

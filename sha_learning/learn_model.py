@@ -6,7 +6,7 @@ from datetime import datetime
 
 import sha_learning.pltr.lsha_report as report
 import sha_learning.pltr.sha_pltr as ha_pltr
-from sha_learning.case_studies.auto_twin.sul_definition import auto_twin_cs, act_to_sensors
+from sha_learning.case_studies.auto_twin.sul_definition import getSUL
 from sha_learning.case_studies.energy.sul_definition import energy_cs
 from sha_learning.case_studies.energy_made.sul_definition import energy_made_cs
 from sha_learning.case_studies.energy_sim.sul_definition import energy_sim_cs
@@ -50,8 +50,7 @@ elif CS == 'ENERGY':
     else:
         raise RuntimeError
 elif CS == 'AUTO_TWIN':
-    SUL = auto_twin_cs
-    events_labels_dict = act_to_sensors
+    SUL, events_labels_dict = getSUL()
 else:
     raise RuntimeError
 
