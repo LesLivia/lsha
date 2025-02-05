@@ -230,7 +230,7 @@ class TraceGenerator:
                 paths.append(SIM_LOGS_PATH.format(CS) + '/' + sims[rand_sel])
             else:
                 paths.append(SIM_LOGS_PATH.format(os.environ['RES_PATH'],
-                                                  config['SUL CONFIGURATION']['CS_VERSION']) + '/' + sims[i] + '/')
+                                                  config['SUL CONFIGURATION']['CS_VERSION']) + '/' + sims[rand_sel] + '/')
         # self.ONCE = True
         return paths
 
