@@ -89,7 +89,7 @@ args = {'name': 'thermostat', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'def
 thermostat_cs = SystemUnderLearning([temperature], events, parse_data, label_event, get_thermo_param, is_chg_pt,
                                     args=args)
 
-test = False
+test = True
 if test:
     # test event configuration
     print(thermostat_cs.symbols)
