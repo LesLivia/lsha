@@ -78,7 +78,8 @@ class SystemUnderLearning:
         segments = []
         # for all traces, get signal segment from last(word) to the following event
         for trace in traces:
-            main_sig_index = [i for i, s in enumerate(self.signals[0]) if s.label == self.vars[0].label][0]
+            main_sig_index = [i for i, s in enumerate(self.signals[0]) if s.label == self.vars[0].label]
+            main_sig_index = main_sig_index[0]
             main_sig = self.signals[trace][main_sig_index]
 
             if word != '' and str(word) != 'ε':

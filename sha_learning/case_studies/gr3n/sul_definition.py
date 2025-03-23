@@ -1,12 +1,17 @@
 import configparser
 import os
 from typing import List, Set, Tuple
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import pandas as pd
+import datetime
 
-from sha_learning.case_studies.gr3n.sul_functions import label_event, parse_data, get_power_param, is_chg_pt
+from sha_learning.case_studies.gr3n.sul_functions import label_event, parse_data, get_absorption_param, is_chg_pt
+from sha_learning.case_studies.gr3n.sul_functions import plot_assorbimento_eventi, plot_coppia_eventi
 from sha_learning.domain.lshafeatures import Event, NormalDistribution, Trace
 from sha_learning.domain.sigfeatures import Timestamp, SampledSignal
 from sha_learning.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
-#from sha_learning.learning_setup.teacher import Teacher
+from sha_learning.learning_setup.teacher import Teacher
 
 config = configparser.ConfigParser()
 config.sections()
@@ -29,7 +34,7 @@ off_distr = NormalDistribution(0, 0.0, 0.0)
 model2distr = {0: []}
 
 
-assorbimento = RealValuedVar([on_fc], [], model2distr, label='A')
+assorbimento = RealValuedVar([on_fc], [], model2distr, label='a')
 
 # define events
 events: List[Event] = []
@@ -42,7 +47,7 @@ DEFAULT_DISTR = 0
 
 args = {'name': 'assorbimento', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 
-gr3n_cs = SystemUnderLearning([assorbimento], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
+gr3n_cs = SystemUnderLearning([assorbimento], events, parse_data, label_event, get_absorption_param, is_chg_pt, args=args)
 
 test = True
 if test:
@@ -63,7 +68,10 @@ if test:
         trace = gr3n_cs.timed_traces[-1]
         print('{}\t{}\t{}\t{}'.format(file, Trace(tt=trace),
                                       trace.t[-1].to_secs() - trace.t[0].to_secs(), len(trace)))
-    '''
+
+        plot_assorbimento_eventi(trace)
+        plot_coppia_eventi(trace)
+
     # test segment identification
     test_trace = Trace(gr3n_cs.traces[0][:1])
     segments = gr3n_cs.get_segments(test_trace)
@@ -78,7 +86,14 @@ if test:
         for j, event in enumerate(trace.e):
             test_trace = Trace(gr3n_cs.traces[i][:j])
             identified_distr = TEACHER.ht_query(test_trace, identified_model, save=True)
-
+            '''
+         Qui si genera errore perchè crea dei segmenti di dati (credo sulla base degli eventi riconosciuti)
+            e ad un certo punto crea un segmento nullo (come è possibile?) e va a calcolare una roba che
+            così non va bene.
+            Questo succede perchè si generano due timestamp attaccati uno all'altro (anzi, uno sembra quasi uscito 
+            dal nulla, perchè nella time_trace del sul non c'è... indici di array 260 e 261, o giù di li) e quindi 
+            non trova niente nel mezzo
+            '''
             segments = gr3n_cs.get_segments(test_trace)
             avg_metrics = sum([TEACHER.sul.get_ht_params(segment, identified_model)
                                for segment in segments]) / len(segments)
@@ -91,4 +106,4 @@ if test:
     for d in gr3n_cs.vars[0].distr:
         print(d.params)
     distr_hist(TEACHER.hist)
-    '''
+
