@@ -1,10 +1,6 @@
 import configparser
 import os
-from typing import List, Set, Tuple
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import pandas as pd
-import datetime
+from typing import List
 
 from sha_learning.case_studies.gr3n.sul_functions import label_event, parse_data, get_absorption_param, is_chg_pt
 from sha_learning.case_studies.gr3n.sul_functions import plot_assorbimento_eventi, plot_coppia_eventi
@@ -12,6 +8,7 @@ from sha_learning.domain.lshafeatures import Event, NormalDistribution, Trace
 from sha_learning.domain.sigfeatures import Timestamp, SampledSignal
 from sha_learning.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 from sha_learning.learning_setup.teacher import Teacher
+from sha_learning.pltr.gr3n_pltr import distr_hist
 
 config = configparser.ConfigParser()
 config.sections()
@@ -105,5 +102,5 @@ if test:
 
     for d in gr3n_cs.vars[0].distr:
         print(d.params)
-    distr_hist(TEACHER.hist)
+    distr_hist(TEACHER.hist, 'gr3n')
 
