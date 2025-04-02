@@ -238,6 +238,7 @@ class TraceGenerator:
             sims = list(filter(lambda s: s.startswith('_') and s not in self.processed_traces, sims))
             sims.sort()
         else:
+            # FIXME: this bit looks for the 'RES_PATH' variable, which is no longer there.
             sims = os.listdir(SIM_LOGS_PATH.format(os.environ['RES_PATH'],
                                                    config['SUL CONFIGURATION']['CS_VERSION']))
             sims = list(filter(lambda s: s.startswith('SIM'), sims))
