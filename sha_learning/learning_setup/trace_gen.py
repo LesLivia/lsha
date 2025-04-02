@@ -5,12 +5,13 @@ import subprocess
 from typing import List, Set, Dict
 
 import skg_main.skg_mgrs.connector_mgr as conn
-from sha_learning.domain.lshafeatures import Trace, Event
-from sha_learning.learning_setup.logger import Logger
 from skg_main.skg_mgrs.skg_reader import Skg_Reader
 from skg_main.skg_model.schema import Entity
 from skg_main.skg_model.schema import Timestamp as skg_Timestamp
 from skg_main.skg_model.semantics import EntityForest, EntityTree
+
+from sha_learning.domain.lshafeatures import Trace, Event
+from sha_learning.learning_setup.logger import Logger
 
 config = configparser.ConfigParser()
 config.read(
@@ -187,7 +188,9 @@ class TraceGenerator:
                 entities = querier.get_items(labels_hierarchy=self.labels_hierarchy, limit=n, random=True,
                                              start_t=START_T, end_t=END_T)
             else:
-                entities = querier.get_resources(labels_hierarchy=querier.get_resource_labels_hierarchy(), limit=n, random=True)
+                entities = querier.get_resources(
+                    labels_hierarchy=querier.get_resource_labels_hierarchy(), limit=n,
+                    random=True)
 
             for entity in entities[:n]:
                 if entity not in self.processed_entities:
@@ -196,12 +199,30 @@ class TraceGenerator:
                         entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]), reverse=True)
                         events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T,
                                                                                  pov)
+                        split_events = []
+                        # necessary to split into individual runs
+                        loop_start_indexes = [i for i, e in enumerate(events) if ' LOAD_1' in e.activity]
+                        if len(loop_start_indexes) > 0:
+                            for i, ix in enumerate(loop_start_indexes):
+                                if i == 0 and ix > 0:
+                                    split_events.append(events[:ix + 1])
+                                if i == len(loop_start_indexes) - 1:
+                                    split_events.append(events[ix:])
+                                else:
+                                    split_events.append(events[ix:loop_start_indexes[i + 1] + 1])
+                        else:
+                            split_events.append(events)
+
+                        if len(events) > 0:
+                            evt_seqs.extend(split_events)
+
                     else:
                         entity_tree = querier.get_entity_tree(entity.entity_id, EntityForest([]))
                         events = querier.get_events_by_entity_tree_and_timestamp(entity_tree[0], START_T, END_T,
                                                                                  pov)
-                    if len(events) > 0:
-                        evt_seqs.append(events)
+                        if len(events) > 0:
+                            evt_seqs.append(events)
+
                     self.processed_entities[entity] = entity_tree[0]
 
         conn.close_connection(driver)
