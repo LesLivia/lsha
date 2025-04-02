@@ -229,9 +229,10 @@ class TraceGenerator:
         return evt_seqs
 
     def get_traces_sim(self, n: int = 1):
-        # if self.ONCE:
-        #    return []
-
+        # Beware that machines running macOS have a hidden .DS_STORE file in all folder, which needs to be
+        # handled in some way. Therefore, if you modify this white-listing bit, keep in mind
+        # that the hidden file might be returned as a potential trace file,
+        # parse_f will attempt to parse it causing the program to end in failure.
         if CS.lower() == 'energy':
             sims = os.listdir(SIM_LOGS_PATH.format(CS))
             sims = list(filter(lambda s: s.startswith('_') and s not in self.processed_traces, sims))
@@ -250,9 +251,12 @@ class TraceGenerator:
                 self.processed_traces.add(sims[rand_sel])
                 paths.append(SIM_LOGS_PATH.format(CS) + '/' + sims[rand_sel])
             else:
+                # FIXME: this bit looks for the 'RES_PATH' variable, which is no longer there.
+                # This also goes with sims[i] rather than sims[rand_sel] because it comes from a time
+                # when all traces in SIM_LOGS_PATH were used for training rather than a random subset.
+                # If you change this, beware of the difference between sims[i] and sims[rand_sel].
                 paths.append(SIM_LOGS_PATH.format(os.environ['RES_PATH'],
                                                   config['SUL CONFIGURATION']['CS_VERSION']) + '/' + sims[i] + '/')
-        # self.ONCE = True
         return paths
 
     def get_traces_uppaal(self, n: int):

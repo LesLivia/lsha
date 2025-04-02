@@ -363,6 +363,11 @@ class Teacher:
                         diff_rows = [row for row in eq_rows if
                                      not self.eqr_query(new_row, row, strict=True)]
 
+                        # FIXME: len(eq_rows)==0 does not work when rows have misaligned /bot in the signature
+                        # thus missing actual counterexample.
+                        # len(diff_rows) > 0 only works if all rows share at least one cell (as in the energy
+                        # CS, where all traces start with 'l').
+                        # A more accurate condition (TBD) should be a combination of the two.
                         if len(diff_rows) > 0:
                             # found non-closedness
                             LOGGER.warn("!! MISSED NON-CLOSEDNESS !!")
