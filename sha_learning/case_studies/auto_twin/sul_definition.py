@@ -68,7 +68,8 @@ def getSUL():
                           "L+D Load Started": "S9",
                           "Enter Cleaning": "S10",
                           "Enter Storage": "S11",
-                          "Exit Storage": "S12"}
+                          "Exit Storage": "S12",
+                          "Initial Dirty Material Input": "S13"}
     elif 'Read Lock Status' in [e.act for e in unique_events]:
         act_to_sensors = {'Pass Sensor S1': 'S1', 'Pass Sensor S2': 'S2', 'Pass Sensor S3': 'S3',
                           'Pass Sensor S4': 'S4',
