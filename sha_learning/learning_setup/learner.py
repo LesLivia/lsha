@@ -305,7 +305,7 @@ class Learner:
             self.TEACHER.ref_query(self.obs_table)
             self.fill_table()
             if debug_print:
-                LOGGER.info('OBSERVATION TABLE')
+                LOGGER.warn('OBSERVATION TABLE')
                 self.obs_table.print(filter_empty)
             counterexample = self.TEACHER.get_counterexample(self.obs_table)
 

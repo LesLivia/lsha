@@ -103,7 +103,7 @@ class ObsTable:
         return result
 
     def print(self, filter_empty=False):
-        LOGGER.info(self.__str__(filter_empty))
+        LOGGER.warn(self.__str__(filter_empty))
 
     def get_loc_from_word(self, word: Trace, locations: List[Location], seq_to_loc: Dict[Trace, str], teacher):
         loc = None

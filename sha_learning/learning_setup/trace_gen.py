@@ -234,7 +234,7 @@ class TraceGenerator:
         # that the hidden file might be returned as a potential trace file,
         # parse_f will attempt to parse it causing the program to end in failure.
         if CS.lower() == 'energy':
-            sims = os.listdir(SIM_LOGS_PATH.format(CS))
+            sims = os.listdir(SIM_LOGS_PATH.format(os.getcwd() + '/sha_learning/resources/', CS))
             sims = list(filter(lambda s: s.startswith('_') and s not in self.processed_traces, sims))
             sims.sort()
         else:
@@ -250,7 +250,7 @@ class TraceGenerator:
             rand_sel = rand_sel % len(sims)
             if CS.lower() == 'energy':
                 self.processed_traces.add(sims[rand_sel])
-                paths.append(SIM_LOGS_PATH.format(CS) + '/' + sims[rand_sel])
+                paths.append(SIM_LOGS_PATH.format(os.getcwd() + '/sha_learning/resources/', CS) + '/' + sims[rand_sel])
             else:
                 # FIXME: this bit looks for the 'RES_PATH' variable, which is no longer there.
                 # This also goes with sims[i] rather than sims[rand_sel] because it comes from a time
