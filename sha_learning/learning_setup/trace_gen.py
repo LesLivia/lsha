@@ -215,10 +215,14 @@ class TraceGenerator:
             sims = os.listdir(SIM_LOGS_PATH.format(CS))
             sims = list(filter(lambda s: s.startswith('_') and s not in self.processed_traces, sims))
             sims.sort()
-        else:
+        elif CS.lower() == 'hri':
             sims = os.listdir(SIM_LOGS_PATH.format(os.environ['RES_PATH'],
                                                    config['SUL CONFIGURATION']['CS_VERSION']))
             sims = list(filter(lambda s: s.startswith('SIM'), sims))
+        else:
+            sims = os.listdir(SIM_LOGS_PATH)
+            # sims = list(filter(lambda s: s.startswith('SIM'), sims))
+
         paths = []
         for i in range(n + 1):
             if len(sims) == 0:
@@ -228,9 +232,11 @@ class TraceGenerator:
             if CS.lower() == 'energy':
                 self.processed_traces.add(sims[rand_sel])
                 paths.append(SIM_LOGS_PATH.format(CS) + '/' + sims[rand_sel])
-            else:
+            elif CS.lower() == 'hri':
                 paths.append(SIM_LOGS_PATH.format(os.environ['RES_PATH'],
                                                   config['SUL CONFIGURATION']['CS_VERSION']) + '/' + sims[i] + '/')
+            else:
+                paths.append(SIM_LOGS_PATH + sims[i])
         # self.ONCE = True
         return paths
 
