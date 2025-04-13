@@ -1,6 +1,7 @@
 import configparser
 import os
 from typing import List
+import matplotlib.pyplot as plt
 
 from sha_learning.case_studies.gr3n.sul_functions import label_event, parse_data, get_absorption_param, is_chg_pt
 from sha_learning.case_studies.gr3n.sul_functions import plot_assorbimento_eventi, plot_coppia_eventi
@@ -46,8 +47,10 @@ args = {'name': 'assorbimento', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'd
 
 gr3n_cs = SystemUnderLearning([assorbimento], events, parse_data, label_event, get_absorption_param, is_chg_pt, args=args)
 
-test = True
+test = False
 if test:
+    TEACHER = Teacher(gr3n_cs)
+
     TEST_PATH = config['GR3N']['CV_PATH']
     N = 10
     traces_files = os.listdir(TEST_PATH)
@@ -56,6 +59,11 @@ if test:
     for file in traces_files:
         # testing data to signals conversion
         new_signals: List[SampledSignal] = parse_data(TEST_PATH + file)
+        '''
+        sufficies to put here an if that states that if there are not enough data you skip,
+        but the problem still remains during the learning, in that case, I think I should search for 
+        the correct files that contains the kind of data that I want (coppia and assorbimento in this case)
+        '''
         # testing chg pts identification
         chg_pts = gr3n_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
         # testing event labeling
@@ -65,32 +73,32 @@ if test:
         trace = gr3n_cs.timed_traces[-1]
         print('{}\t{}\t{}\t{}'.format(file, Trace(tt=trace),
                                       trace.t[-1].to_secs() - trace.t[0].to_secs(), len(trace)))
+        #plot_coppia_eventi(TEST_PATH + file, file, trace)
+        for j, event in enumerate(trace.e):
+            test_trace = Trace(gr3n_cs.traces[-1][:j])
+            identified_model: FlowCondition = TEACHER.mi_query(test_trace)
+            print(identified_model)
+            identified_distr = TEACHER.ht_query(test_trace, identified_model, save=True)
+            segments = gr3n_cs.get_segments(test_trace)
+            avg_metrics = sum([TEACHER.sul.get_ht_params(segment, identified_model)
+                               for segment in segments]) / len(segments)
 
-        plot_assorbimento_eventi(trace)
-        plot_coppia_eventi(trace)
+            try:
+                print('{}:\t{:.3f}->{}'.format(test_trace.events[-1].symbol, avg_metrics, identified_distr.params))
+            except IndexError:
+                print('{}:\t{:.3f}->{}'.format(test_trace, avg_metrics, identified_distr.params))
 
     # test segment identification
     test_trace = Trace(gr3n_cs.traces[0][:1])
     segments = gr3n_cs.get_segments(test_trace)
 
     # test model identification
-    TEACHER = Teacher(gr3n_cs)
-    identified_model: FlowCondition = TEACHER.mi_query(test_trace)
-    print(identified_model)
 
     # test distr identification
     for i, trace in enumerate(TEACHER.timed_traces):
         for j, event in enumerate(trace.e):
             test_trace = Trace(gr3n_cs.traces[i][:j])
             identified_distr = TEACHER.ht_query(test_trace, identified_model, save=True)
-            '''
-         Qui si genera errore perchè crea dei segmenti di dati (credo sulla base degli eventi riconosciuti)
-            e ad un certo punto crea un segmento nullo (come è possibile?) e va a calcolare una roba che
-            così non va bene.
-            Questo succede perchè si generano due timestamp attaccati uno all'altro (anzi, uno sembra quasi uscito 
-            dal nulla, perchè nella time_trace del sul non c'è... indici di array 260 e 261, o giù di li) e quindi 
-            non trova niente nel mezzo
-            '''
             segments = gr3n_cs.get_segments(test_trace)
             avg_metrics = sum([TEACHER.sul.get_ht_params(segment, identified_model)
                                for segment in segments]) / len(segments)

@@ -65,7 +65,7 @@ def parse_data(path: str):
     assorbimento: SampledSignal = SampledSignal([], label='a')
     coppia: SampledSignal = SampledSignal([], label='cp')
 
-    dd_real = pd.read_csv('D:\\Uni\\Magistrale\\1 Anno\\1 semestre\\Software engineering 2\\Gr3n\\csv\\20250202_DecanterData_REAL.csv')
+    dd_real = pd.read_csv(path)
 
     dd_differenziale = dd_real[dd_real['DataObjectField'] == 'Differenziale']
     dd_differenziale.loc[:, 'time'] = pd.to_datetime(dd_differenziale['time'], format='%Y-%m-%d %H:%M:%S.%f')
@@ -79,23 +79,23 @@ def parse_data(path: str):
     dd_coppia.loc[:, 'time'] = pd.to_datetime(dd_coppia['time'], format='%Y-%m-%d %H:%M:%S.%f')
     dd_coppia.sort_values(by='time')
 
-    data_inizio_filtraggio = pd.to_datetime(DATA_INIZIO_FILTRO)
-    data_fine_filtraggio = pd.to_datetime(DATA_FINE_FILTRO)
+    #data_inizio_filtraggio = pd.to_datetime(DATA_INIZIO_FILTRO)
+    #data_fine_filtraggio = pd.to_datetime(DATA_FINE_FILTRO)
 
-    dd_differenziale_dettaglio = dd_differenziale[(dd_differenziale['time'] >= data_inizio_filtraggio) & (dd_differenziale['time'] <= data_fine_filtraggio)]
-    dd_assorbimento_dettaglio = dd_assorbimento[(dd_assorbimento['time'] >= data_inizio_filtraggio) & (dd_assorbimento['time'] <= data_fine_filtraggio)]
-    dd_coppia_dettaglio = dd_coppia[(dd_coppia['time'] >= data_inizio_filtraggio) & (dd_coppia['time'] <= data_fine_filtraggio)]
+    #dd_differenziale_dettaglio = dd_differenziale[(dd_differenziale['time'] >= data_inizio_filtraggio) & (dd_differenziale['time'] <= data_fine_filtraggio)]
+    #dd_assorbimento_dettaglio = dd_assorbimento[(dd_assorbimento['time'] >= data_inizio_filtraggio) & (dd_assorbimento['time'] <= data_fine_filtraggio)]
+    #dd_coppia_dettaglio = dd_coppia[(dd_coppia['time'] >= data_inizio_filtraggio) & (dd_coppia['time'] <= data_fine_filtraggio)]
 
-    differenziale.points.extend([SignalPoint(parse_ts(record['time']), record['Value']) for index, record in dd_differenziale_dettaglio.iterrows()])
-    assorbimento.points.extend([SignalPoint(parse_ts(record['time']), record['Value']) for index, record in dd_assorbimento_dettaglio.iterrows()])
-    coppia.points.extend([SignalPoint(parse_ts(record['time']), record['Value']) for index, record in dd_coppia_dettaglio.iterrows()])
+    differenziale.points.extend([SignalPoint(parse_ts(record['time']), record['Value']) for index, record in dd_differenziale.iterrows()])
+    assorbimento.points.extend([SignalPoint(parse_ts(record['time']), record['Value']) for index, record in dd_assorbimento.iterrows()])
+    coppia.points.extend([SignalPoint(parse_ts(record['time']), record['Value']) for index, record in dd_coppia.iterrows()])
 
     return [assorbimento, coppia, differenziale]
 
 
 def get_absorption_param(segment: List[SignalPoint], flow: FlowCondition):
     sum_abs = sum([pt.value for pt in segment])
-    avg_abs = sum_abs / len(segment)
+    avg_abs = sum_abs / (len(segment))
     return avg_abs
 
 
@@ -136,9 +136,8 @@ def plot_assorbimento_eventi(trace: TimedTrace):
 
     plt.show()
 
-def plot_coppia_eventi(trace: TimedTrace):
-    dd_real = pd.read_csv(
-        'D:\\Uni\\Magistrale\\1 Anno\\1 semestre\\Software engineering 2\\Gr3n\\csv\\20250202_DecanterData_REAL.csv')
+def plot_coppia_eventi(path: str, filename: str, trace: TimedTrace):
+    dd_real = pd.read_csv(path)
     dd_coppia = dd_real[dd_real['DataObjectField'] == 'Coppia']
     dd_coppia.loc[:, 'time'] = pd.to_datetime(dd_coppia['time'], format='%Y-%m-%d %H:%M:%S.%f')
     dd_coppia = dd_coppia.sort_values(by='time')
@@ -162,12 +161,9 @@ def plot_coppia_eventi(trace: TimedTrace):
 
     # Formattazione dell'asse delle date
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-    DATA_INIZIO_FILTRO = config['GR3N']['DATA_INIZIO_FILTRO']
-    DATA_FINE_FILTRO = config['GR3N']['DATA_FINE_FILTRO']
-    ax.set_xlim(pd.to_datetime(DATA_INIZIO_FILTRO), pd.to_datetime(DATA_FINE_FILTRO))
     plt.xticks(rotation=45)
 
-    plt.title('Coppia con Eventi')
+    plt.title(filename)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
 
