@@ -25,14 +25,25 @@ COPPIA_MIDPOINT = int(config['GR3N']['COPPIA_MIDPOINT'])
 LOGGER = Logger('SUL DATA HANDLER')
 DATA_INIZIO_FILTRO = config['GR3N']['DATA_INIZIO_FILTRO']
 DATA_FINE_FILTRO = config['GR3N']['DATA_FINE_FILTRO']
+COPPIA_RANGE = int(config['GR3N']['COPPIA_RANGE'])
+MIN_COPPIA = int(config['GR3N']['MIN_COPPIA'])
+MAX_COPPIA = int(config['GR3N']['MAX_COPPIA'])
+
 
 def is_chg_pt(curr, prev):
-    return  (curr[0] > COPPIA_MIDPOINT and prev[0] < COPPIA_MIDPOINT) or \
-            (curr[0] < COPPIA_MIDPOINT and prev[0] > COPPIA_MIDPOINT)
+    return  abs(curr[0] - prev[0]) > COPPIA_RANGE and (curr[0] < MAX_COPPIA or prev[0] < MAX_COPPIA) \
+                    and (curr[0] > MIN_COPPIA or prev[0] > MIN_COPPIA)
 
 def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp):
     coppia_sig = signals[1]
     coppia = {pt.timestamp: (i, pt.value) for i, pt in enumerate(coppia_sig.points)}
+
+    COPPIA_INTERVALS: List[Tuple[int, int]] = []
+    for i in range(MIN_COPPIA, MAX_COPPIA, COPPIA_RANGE):
+        if i < MAX_COPPIA - COPPIA_RANGE:
+            COPPIA_INTERVALS.append((i, i + COPPIA_RANGE))
+        else:
+            COPPIA_INTERVALS.append((i, None))
 
     curr_coppia_index, curr_coppia = coppia[t]
     if curr_coppia_index > 0:
@@ -45,10 +56,13 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
         prev_coppia = curr_coppia
 
     identified_event = None
-    if (curr_coppia > COPPIA_MIDPOINT and prev_coppia < COPPIA_MIDPOINT):
-        identified_event = events[0]
-    elif (curr_coppia < COPPIA_MIDPOINT and prev_coppia > COPPIA_MIDPOINT):
-        identified_event = events[1]
+    if curr_coppia < MIN_COPPIA and (prev_coppia is not None and prev_coppia >= MIN_COPPIA):
+        identified_event = events[-1]
+    elif prev_coppia is None or abs(curr_coppia - prev_coppia) >= COPPIA_RANGE:
+        for i, interval in enumerate(COPPIA_INTERVALS):
+            if (i < len(COPPIA_INTERVALS) - 1 and interval[0] <= curr_coppia < interval[1]) or \
+                    (i == len(COPPIA_INTERVALS) - 1 and curr_coppia >= interval[0]):
+                identified_event = events[i]
 
     if identified_event is None:
         LOGGER.error("No event was identified at time {}.".format(t))
