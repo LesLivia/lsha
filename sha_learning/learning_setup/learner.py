@@ -14,6 +14,7 @@ config.read(
 config.sections()
 
 LOGGER = Logger('LEARNER')
+EQ_CONDITION = config['LSHA PARAMETERS']['EQ_CONDITION'].lower()
 
 
 class Learner:
@@ -62,7 +63,8 @@ class Learner:
                 continue
             row_is_in_upper = False
             for s_i, s_word in enumerate(self.obs_table.get_S()):
-                if self.TEACHER.eqr_query(row, upp_obs[s_i]):
+                if (EQ_CONDITION == 's' and self.TEACHER.eqr_query(row, upp_obs[s_i], strict=True)) or (
+                        EQ_CONDITION == 'w' and self.TEACHER.eqr_query(row, upp_obs[s_i], strict=False)):
                     row_is_in_upper = True
                     break
             if not row_is_in_upper:
@@ -76,8 +78,13 @@ class Learner:
         pairs: List[Tuple[Trace, Trace]] = []
         # FIXME: each pair shows up twice, duplicates should be cleared
         for index, row in enumerate(upp_obs):
-            equal_rows = [i for (i, r) in enumerate(upp_obs) if
-                          index != i and self.TEACHER.eqr_query(row, r, strict=True)]
+            if EQ_CONDITION == 's':
+                equal_rows = [i for (i, r) in enumerate(upp_obs) if
+                              index != i and self.TEACHER.eqr_query(row, r, strict=True)]
+            else:
+                equal_rows = [i for (i, r) in enumerate(upp_obs) if
+                              index != i and self.TEACHER.eqr_query(row, r, strict=False)]
+
             S = self.obs_table.get_S()
             equal_pairs = [(S[index], S[equal_i]) for equal_i in equal_rows]
             pairs += equal_pairs
@@ -100,7 +107,11 @@ class Learner:
                         new_pair_2 = self.obs_table.get_low_S().index(pair[1] + Trace([e]))
                         new_row_2 = self.obs_table.get_lower_observations()[new_pair_2]
 
-                    rows_different = not self.TEACHER.eqr_query(new_row_1, new_row_2)
+                    if EQ_CONDITION == 's':
+                        rows_different = not self.TEACHER.eqr_query(new_row_1, new_row_2, strict=True)
+                    else:
+                        rows_different = not self.TEACHER.eqr_query(new_row_1, new_row_2, strict=False)
+
                     if new_row_1.is_populated() and new_row_2.is_populated() and rows_different:
                         for e_i, e_word in enumerate(self.obs_table.get_E()):
                             if new_row_1.state[e_i] != new_row_2.state[e_i] \
@@ -117,7 +128,11 @@ class Learner:
         for index, row in enumerate(low_obs):
             # if there is a populated row in lower portion that is not in the upper portion
             # the corresponding word is added to the S word set
-            row_present = any([self.TEACHER.eqr_query(row, row_2) for row_2 in upp_obs])
+            if EQ_CONDITION == 's':
+                row_present = any([self.TEACHER.eqr_query(row, row_2, strict=True) for row_2 in upp_obs])
+            else:
+                row_present = any([self.TEACHER.eqr_query(row, row_2, strict=False) for row_2 in upp_obs])
+
             if row.is_populated() and not row_present:
                 upp_obs.append(Row(row.state))
                 new_s_word: Trace = low_S[index]
@@ -315,8 +330,10 @@ class Learner:
         # Build Hypothesis Automaton
         LOGGER.info('BUILDING HYP. AUTOMATON...')
         hypsha, loc_dict = self.obs_table.to_sha(self.TEACHER)
-        try:
-            hypsha = self.sanity_check(hypsha, loc_dict)
-        except:
-            LOGGER.error("Error occurred while fixing the SHA.")
+
+        # try:
+        #    hypsha = self.sanity_check(hypsha, loc_dict)
+        # except:
+        #    LOGGER.error("Error occurred while fixing the SHA.")
+
         return hypsha

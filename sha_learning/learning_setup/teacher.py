@@ -28,6 +28,7 @@ MI_QUERY = config['LSHA PARAMETERS']['MI_QUERY'] == 'True'
 PLOT_DDTW = config['LSHA PARAMETERS']['PLOT_DDTW'] == 'True'
 HT_QUERY = config['LSHA PARAMETERS']['HT_QUERY'] == 'True'
 HT_QUERY_TYPE = config['LSHA PARAMETERS']['HT_QUERY_TYPE']
+EQ_CONDITION = config['LSHA PARAMETERS']['EQ_CONDITION'].lower()
 
 
 class Teacher:
@@ -330,14 +331,79 @@ class Teacher:
     # -> t highlights non-closedness
     # -> t highlights non-consistency
     #############################################
+    def not_closed(self, table, new_row):
+        if EQ_CONDITION == 's':
+            eq_rows = [row for row in table.get_upper_observations() if
+                       self.eqr_query(new_row, row, strict=True)]
+        else:
+            eq_rows = [row for row in table.get_upper_observations() if
+                       self.eqr_query(new_row, row, strict=False)]
+
+        not_ambiguous = len(set(eq_rows)) <= 1
+        diff_rows = [row for row in eq_rows if
+                     not self.eqr_query(new_row, row, strict=True)]
+
+        # FIXME: len(eq_rows)==0 does not work when rows have misaligned /bot in the signature
+        # thus missing actual counterexample.
+        # len(diff_rows) > 0 only works if all rows share at least one cell (as in the energy
+        # CS, where all traces start with 'l').
+        # A more accurate condition (TBD) should be a combination of the two.
+        return len(eq_rows) == 0, not_ambiguous
+
+    def not_consistent(self, table, S, low_S, new_row, prefix):
+        for s_i, s_word in enumerate(S):
+            old_row = table.get_upper_observations()[s_i] if s_i < len(S) else \
+                table.get_lower_observations()[s_i - len(S)]
+
+            # finds equal rows in S
+            if EQ_CONDITION == 's':
+                equal = self.eqr_query(old_row, new_row, strict=True)
+            else:
+                equal = self.eqr_query(old_row, new_row, strict=False)
+
+            if equal:
+                for event in self.sul.events:
+                    # if the hypothetical discriminating event is already in E
+                    discr_is_prefix = False
+                    for e in table.get_E():
+                        if str(e).startswith(event.symbol):
+                            continue
+                    # else checks all 1-step distant rows
+                    if s_word + Trace([event]) in S:
+                        old_row_a: Row = table.get_upper_observations()[
+                            S.index(s_word + Trace([event]))]
+                    elif s_word + Trace([event]) in low_S:
+                        old_row_a: Row = table.get_lower_observations()[
+                            low_S.index(s_word + Trace([event]))]
+                    else:
+                        continue
+                    row_1_filled = old_row_a.state[0].observed()
+                    row_2 = Row([])
+                    for e in table.get_E():
+                        id_model_2 = self.mi_query(prefix + Trace([event]) + e)
+                        id_distr_2 = self.ht_query(prefix + Trace([event]) + e, id_model_2,
+                                                   save=False)
+                        if id_model_2 is None or id_distr_2 is None:
+                            row_2.state.append(State([(None, None)]))
+                        else:
+                            row_2.state.append(State([(id_model_2, id_distr_2)]))
+                    row_2_filled = row_2.state[0].observed()
+                    if EQ_CONDITION == 's' and (row_1_filled and row_2_filled and not discr_is_prefix and
+                                                not self.eqr_query(row_2, old_row_a, strict=True)):
+                        return True, event, s_word
+                    elif EQ_CONDITION == 'w' and (row_1_filled and row_2_filled and not discr_is_prefix and
+                                                  not self.eqr_query(row_2, old_row_a, strict=False)):
+                        return True, event, s_word
+        return False, None, None
+
     def get_counterexample(self, table: ObsTable):
         LOGGER.info('Looking for counterexample...')
 
-        if CS == 'THERMO' and len(self.timed_traces) >= 2000:
-            return None
-
         S = table.get_S()
         low_S = table.get_low_S()
+
+        # if CS == 'ENERGY' and max([len(t) for t in low_S]) >= 7:
+        #    return None
 
         traces: List[Trace] = self.sul.traces
         not_counter: List[Trace] = []
@@ -358,64 +424,25 @@ class Teacher:
                             new_row.state.append(State([(None, None)]))
                     # if there are sufficient data to fill the new row
                     if new_row.is_populated():
-                        eq_rows = [row for row in table.get_upper_observations() if self.eqr_query(new_row, row)]
-                        not_ambiguous = len(set(eq_rows)) <= 1
-                        diff_rows = [row for row in eq_rows if
-                                     not self.eqr_query(new_row, row, strict=True)]
+                        not_closed, not_ambiguous = self.not_closed(table, new_row)
 
-                        # FIXME: len(eq_rows)==0 does not work when rows have misaligned /bot in the signature
-                        # thus missing actual counterexample.
-                        # len(diff_rows) > 0 only works if all rows share at least one cell (as in the energy
-                        # CS, where all traces start with 'l').
-                        # A more accurate condition (TBD) should be a combination of the two.
-                        if len(diff_rows) > 0:
+                        if not_closed:
                             # found non-closedness
                             LOGGER.warn("!! MISSED NON-CLOSEDNESS !!")
                             return prefix
+                        # checks non-consistency only for rows that are not ambiguous
                         elif not_ambiguous:
-                            # checks non-consistency only for rows that are not ambiguous
-                            for s_i, s_word in enumerate(S):
-                                old_row = table.get_upper_observations()[s_i] if s_i < len(S) else \
-                                    table.get_lower_observations()[s_i - len(S)]
-                                # finds weakly equal rows in S
-                                if self.eqr_query(old_row, new_row):
-                                    for event in self.sul.events:
-                                        # if the hypothetical discriminating event is already in E
-                                        discr_is_prefix = False
-                                        for e in table.get_E():
-                                            if str(e).startswith(event.symbol):
-                                                continue
-                                        # else checks all 1-step distant rows
-                                        if s_word + Trace([event]) in S:
-                                            old_row_a: Row = table.get_upper_observations()[
-                                                S.index(s_word + Trace([event]))]
-                                        elif s_word + Trace([event]) in low_S:
-                                            old_row_a: Row = table.get_lower_observations()[
-                                                low_S.index(s_word + Trace([event]))]
-                                        else:
-                                            continue
-                                        row_1_filled = old_row_a.state[0].observed()
-                                        row_2 = Row([])
-                                        for e in table.get_E():
-                                            id_model_2 = self.mi_query(prefix + Trace([event]) + e)
-                                            id_distr_2 = self.ht_query(prefix + Trace([event]) + e, id_model_2,
-                                                                       save=False)
-                                            if id_model_2 is None or id_distr_2 is None:
-                                                row_2.state.append(State([(None, None)]))
-                                            else:
-                                                row_2.state.append(State([(id_model_2, id_distr_2)]))
-                                        row_2_filled = row_2.state[0].observed()
-                                        if row_1_filled and row_2_filled and not discr_is_prefix and \
-                                                not self.eqr_query(row_2, old_row_a):
-                                            LOGGER.warn(
-                                                "!! MISSED NON-CONSISTENCY ({}, {}) !!".format(Trace([event]), s_word))
-                                            return prefix
-                                    else:
-                                        not_counter.append(prefix)
+                            not_consistent, event, s_word = self.not_consistent(table, S, low_S, new_row, prefix)
+                            if not_consistent:
+                                LOGGER.warn(
+                                    "!! MISSED NON-CONSISTENCY ({}, {}) !!".format(Trace([event]), s_word))
+                                return prefix
+                            else:
+                                not_counter.append(prefix)
                         else:
                             not_counter.append(prefix)
         else:
-            if CS in ['ENERGY', 'AUTO_TWIN'] and len(not_counter) > 0:
+            if CS in ['AUTO_TWIN'] and len(not_counter) > 0:
                 new_events = set([e.symbol for x in not_counter for e in x.events]) - \
                              set([e.symbol for t in S for e in t.events])
                 if len(new_events) > 0:  # or not_counter[-1] not in S:

@@ -1,3 +1,5 @@
+import configparser
+import os
 from typing import List, Dict
 
 from sha_learning.domain.lshafeatures import Trace, State, EMPTY_STRING
@@ -5,6 +7,13 @@ from sha_learning.domain.shafeatures import StochasticHybridAutomaton, Location,
 from sha_learning.learning_setup.logger import Logger
 
 LOGGER = Logger('Obs.Table Handler')
+
+config = configparser.ConfigParser()
+config.read(
+    os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning/resources/config/config.ini')
+config.sections()
+
+EQ_CONDITION = config['LSHA PARAMETERS']['EQ_CONDITION'].lower()
 
 
 class Row:
@@ -106,10 +115,11 @@ class ObsTable:
         LOGGER.warn(self.__str__(filter_empty))
 
     def get_loc_from_word(self, word: Trace, locations: List[Location], seq_to_loc: Dict[Trace, str], teacher):
-        loc = None
+        candidate_dest_locs = []
 
         if word in seq_to_loc.keys():
             loc = [l for l in locations if l.name == seq_to_loc[word]][0]
+            candidate_dest_locs.append(loc)
         else:
             if word in self.get_S():
                 curr_row = self.get_upper_observations()[self.get_S().index(word)]
@@ -127,12 +137,19 @@ class ObsTable:
                 curr_row = Row([needed_state] + [State([(None, None)])] * (len(self.get_E()) - 1))
 
             if not curr_row.is_populated():
-                return loc
+                return []
 
             for i, row in enumerate(self.get_upper_observations()):
-                if self.get_S()[i] in seq_to_loc.keys() and teacher.eqr_query(curr_row, row, strict=True):
-                    loc = [l for l in locations if l.name == seq_to_loc[self.get_S()[i]]][0]
-        return loc
+                if EQ_CONDITION == 's':
+                    if self.get_S()[i] in seq_to_loc.keys() and teacher.eqr_query(curr_row, row, strict=True):
+                        loc = [l for l in locations if l.name == seq_to_loc[self.get_S()[i]]][0]
+                        candidate_dest_locs.append(loc)
+                else:
+                    if self.get_S()[i] in seq_to_loc.keys() and teacher.eqr_query(curr_row, row, strict=False):
+                        loc = [l for l in locations if l.name == seq_to_loc[self.get_S()[i]]][0]
+                        candidate_dest_locs.append(loc)
+
+        return candidate_dest_locs
 
     def add_init_edges(self, locations: List[Location], edges: List[Edge], seq_to_loc: Dict[Trace, str], teacher):
         init_loc = Location('__init__', None)
@@ -142,9 +159,10 @@ class ObsTable:
         one_word_lower = [word for word in self.get_low_S() if len(word) == 1]
 
         for word in one_word_upper + one_word_lower:
-            dest_loc = self.get_loc_from_word(word, locations, seq_to_loc, teacher)
-            if dest_loc is not None:
-                edges.append(Edge(init_loc, dest_loc, sync=str(word)))
+            dest_locs = self.get_loc_from_word(word, locations, seq_to_loc, teacher)
+            for dest_loc in dest_locs:
+                if dest_loc is not None:
+                    edges.append(Edge(init_loc, dest_loc, sync=str(word)))
 
         return locations, edges
 
@@ -160,9 +178,14 @@ class ObsTable:
             row_already_present = False
             for seq in unique_sequences:
                 row_2 = upp_obs[self.get_S().index(seq)]
-                if teacher.eqr_query(row, row_2, strict=True):
-                    row_already_present = True
-                    break
+                if EQ_CONDITION == 's':
+                    if teacher.eqr_query(row, row_2, strict=True):
+                        row_already_present = True
+                        break
+                else:
+                    if teacher.eqr_query(row, row_2, strict=False):
+                        row_already_present = True
+                        break
             if not row_already_present:
                 unique_sequences.append(self.get_S()[i])
         # Create a new location for each unique sequence
@@ -184,13 +207,14 @@ class ObsTable:
                     if len(entry_word) == 0:
                         continue
 
-                    start_loc = self.get_loc_from_word(entry_word, locations, unique_sequences_dict, teacher)
-                    dest_loc = self.get_loc_from_word(word, locations, unique_sequences_dict, teacher)
+                    start_loc = self.get_loc_from_word(entry_word, locations, unique_sequences_dict, teacher)[0]
+                    dest_locs = self.get_loc_from_word(word, locations, unique_sequences_dict, teacher)
 
                     labels = str(Trace(word[-1:]))
-                    new_edge = Edge(start_loc, dest_loc, sync=labels)
-                    if start_loc is not None and dest_loc is not None and new_edge not in edges:
-                        edges.append(new_edge)
+                    for dest_loc in dest_locs:
+                        new_edge = Edge(start_loc, dest_loc, sync=labels)
+                        if start_loc is not None and dest_loc is not None and new_edge not in edges:
+                            edges.append(new_edge)
 
         # start building edges list for lower part of the table
         for s_i, s_word in enumerate(self.get_low_S()):
@@ -201,16 +225,17 @@ class ObsTable:
                     if len(entry_word) == 0:
                         continue
 
-                    start_loc = self.get_loc_from_word(entry_word, locations, unique_sequences_dict, teacher)
-                    dest_loc = self.get_loc_from_word(word, locations, unique_sequences_dict, teacher)
+                    start_loc = self.get_loc_from_word(entry_word, locations, unique_sequences_dict, teacher)[0]
+                    dest_locs = self.get_loc_from_word(word, locations, unique_sequences_dict, teacher)
 
                     if word != '':
                         labels = str(word.sub_prefix(entry_word))
                     else:
                         labels = EMPTY_STRING
-                    new_edge = Edge(start_loc, dest_loc, sync=labels)
-                    if start_loc is not None and dest_loc is not None and new_edge not in edges:
-                        edges.append(new_edge)
+                    for dest_loc in dest_locs:
+                        new_edge = Edge(start_loc, dest_loc, sync=labels)
+                        if start_loc is not None and dest_loc is not None and new_edge not in edges:
+                            edges.append(new_edge)
 
         locations, edges = self.add_init_edges(locations, edges, unique_sequences_dict, teacher)
 
