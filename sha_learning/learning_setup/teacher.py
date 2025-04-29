@@ -402,6 +402,7 @@ class Teacher:
         S = table.get_S()
         low_S = table.get_low_S()
 
+        # FIXME: Uncomment just for debugging purposes (i.e., to terminate the learning with a smaller table)
         # if CS == 'ENERGY' and max([len(t) for t in low_S]) >= 7:
         #    return None
 
@@ -424,14 +425,16 @@ class Teacher:
                             new_row.state.append(State([(None, None)]))
                     # if there are sufficient data to fill the new row
                     if new_row.is_populated():
-                        not_closed, not_ambiguous = self.not_closed(table, new_row)
 
+                        not_closed, not_ambiguous = self.not_closed(table, new_row)
                         if not_closed:
                             # found non-closedness
                             LOGGER.warn("!! MISSED NON-CLOSEDNESS !!")
                             return prefix
+
                         # checks non-consistency only for rows that are not ambiguous
                         elif not_ambiguous:
+
                             not_consistent, event, s_word = self.not_consistent(table, S, low_S, new_row, prefix)
                             if not_consistent:
                                 LOGGER.warn(
@@ -439,10 +442,16 @@ class Teacher:
                                 return prefix
                             else:
                                 not_counter.append(prefix)
+
                         else:
                             not_counter.append(prefix)
         else:
-            if CS in ['AUTO_TWIN'] and len(not_counter) > 0:
+            # TODO: workaround to treat as a counterexample traces with events
+            # that are missing from the current obs. table (which is NOT the case in L*).
+            # If we want to treat as a counterexample traces that are not captured by the obs. table
+            # (again, difforming from L*) including all potential combinations,
+            # a more sophisticated procedure than this must be developed.
+            if CS in ['ENERGY', 'AUTO_TWIN'] and len(not_counter) > 0:
                 new_events = set([e.symbol for x in not_counter for e in x.events]) - \
                              set([e.symbol for t in S for e in t.events])
                 if len(new_events) > 0:  # or not_counter[-1] not in S:

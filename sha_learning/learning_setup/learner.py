@@ -1,6 +1,6 @@
 import configparser
 import os
-from typing import List, Tuple, Dict, Set
+from typing import List, Tuple, Dict
 
 from sha_learning.domain.lshafeatures import State, FlowCondition, ProbDistribution
 from sha_learning.domain.obstable import ObsTable, Row, Trace
@@ -192,18 +192,6 @@ class Learner:
         self.obs_table.set_upper_observations(upp_obs)
         self.obs_table.set_lower_observations(low_obs)
 
-    @staticmethod
-    def get_nondetermistic_edge(sha: StochasticHybridAutomaton, loc: Location):
-        outgoing_edges = [e for e in sha.edges if e.start == loc]
-        seen_events: Set[str] = set()
-        for edge in outgoing_edges:
-            if edge.sync in seen_events:
-                LOGGER.warn('NON-DETERMINISM DETECTED! Location: {}, Event: {}'.format(loc.name, edge.sync))
-                return edge.sync
-            else:
-                seen_events.add(edge.sync)
-        return None
-
     def merge_loc(self, sha: StochasticHybridAutomaton, loc: Location,
                   event: str, loc_dic: Dict[Trace, str]):
         competing_locs = [edge.dest for edge in sha.edges if edge.start == loc and edge.sync == event]
@@ -249,26 +237,6 @@ class Learner:
                 LOGGER.warn('Location already removed.')
 
         return sha, True
-
-    def sanity_check(self, sha: StochasticHybridAutomaton, loc_dic: Dict[Trace, str]):
-        to_check: Set[Location] = set(sha.locations)
-
-        while len(to_check) > 0:
-            for loc in sha.locations:
-                non_det_event = Learner.get_nondetermistic_edge(sha, loc)
-                if non_det_event is not None:
-                    sha, merged = self.merge_loc(sha, loc, non_det_event, loc_dic)
-                    if merged:
-                        to_check = set(sha.locations)
-                        break
-                    else:
-                        LOGGER.warn('MERGING LOCATIONS UNSUCCESSFUL.')
-                        to_check = set()
-                        break
-                else:
-                    to_check.remove(loc)
-
-        return sha
 
     def run_lsha(self, debug_print=True, filter_empty=False):
         # Fill Observation Table with Answers to Queries (from TEACHER)
@@ -327,13 +295,9 @@ class Learner:
         if debug_print:
             LOGGER.info('FINAL OBSERVATION TABLE')
             self.obs_table.print(filter_empty)
+
         # Build Hypothesis Automaton
         LOGGER.info('BUILDING HYP. AUTOMATON...')
-        hypsha, loc_dict = self.obs_table.to_sha(self.TEACHER)
-
-        # try:
-        #    hypsha = self.sanity_check(hypsha, loc_dict)
-        # except:
-        #    LOGGER.error("Error occurred while fixing the SHA.")
+        hypsha = self.obs_table.to_sha(self.TEACHER)
 
         return hypsha

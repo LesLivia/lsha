@@ -238,5 +238,8 @@ class ObsTable:
                             edges.append(new_edge)
 
         locations, edges = self.add_init_edges(locations, edges, unique_sequences_dict, teacher)
+        learned_sha = StochasticHybridAutomaton(locations, edges)
 
-        return StochasticHybridAutomaton(locations, edges), unique_sequences_dict
+        learned_sha.sanity_check(unique_sequences_dict)
+
+        return learned_sha
