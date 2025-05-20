@@ -54,10 +54,10 @@ for i in range(MIN_COPPIA, MAX_COPPIA, COPPIA_RANGE):
 
 for i in range(MIN_DIF, MAX_DIF, DIF_RANGE):
     if i < MAX_DIF - DIF_RANGE:
-        new_guard = '{}<=cp<{}'.format(i, i + DIF_RANGE)
+        new_guard = '{}<=df<{}'.format(i, i + DIF_RANGE)
     else:
-        new_guard = '{}<=cp'.format(i)
-    events.append(Event(new_guard, 'start', 'cp_{}'.format(len(events))))
+        new_guard = '{}<=df'.format(i)
+    events.append(Event(new_guard, 'start', 'df_{}'.format(len(events))))
 
 events.append(Event('', 'stop', 's'))
 

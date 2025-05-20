@@ -89,6 +89,14 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
                     (i == len(COPPIA_INTERVALS) - 1 and curr_coppia >= interval[0]):
                 identified_event = events[i]
 
+    if curr_dif < MIN_DIF and (prev_dif is not None and prev_dif >= MIN_DIF):
+        identified_event = events[-1]
+    elif prev_dif is None or abs(curr_dif - prev_dif) >= DIF_RANGE:
+        for i, interval in enumerate(DIF_INTERVALS):
+            if (i < len(DIF_INTERVALS) - 1 and interval[0] <= curr_dif < interval[1]) or \
+                    (i == len(DIF_INTERVALS) - 1 and curr_dif >= interval[0]):
+                identified_event = events[i + len(COPPIA_INTERVALS)]
+
     if identified_event is None:
         LOGGER.error("No event was identified at time {}.".format(t))
 
@@ -100,7 +108,7 @@ def parse_ts(ts: datetime):
 
 
 def parse_data(path: str):
-    differenziale: SampledSignal = SampledSignal([], label='d')
+    differenziale: SampledSignal = SampledSignal([], label='df')
     assorbimento: SampledSignal = SampledSignal([], label='a')
     coppia: SampledSignal = SampledSignal([], label='cp')
 
