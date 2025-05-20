@@ -29,14 +29,22 @@ COPPIA_RANGE = int(config['GR3N']['COPPIA_RANGE'])
 MIN_COPPIA = int(config['GR3N']['MIN_COPPIA'])
 MAX_COPPIA = int(config['GR3N']['MAX_COPPIA'])
 
+DIF_RANGE = int(config['GR3N']['DIF_RANGE'])
+MIN_DIF = int(config['GR3N']['MIN_DIF'])
+MAX_DIF = int(config['GR3N']['MAX_DIF'])
+
 
 def is_chg_pt(curr, prev):
-    return  abs(curr[0] - prev[0]) > COPPIA_RANGE and (curr[0] < MAX_COPPIA or prev[0] < MAX_COPPIA) \
-                    and (curr[0] > MIN_COPPIA or prev[0] > MIN_COPPIA)
+    return  (abs(curr[0] - prev[0]) > COPPIA_RANGE and (curr[0] < MAX_COPPIA or prev[0] < MAX_COPPIA) \
+                    and (curr[0] > MIN_COPPIA or prev[0] > MIN_COPPIA)) or \
+            (abs(curr[0] - prev[0]) > DIF_RANGE and (curr[0] < MAX_DIF or prev[0] < MAX_DIF) \
+                    and (curr[0] > MIN_DIF or prev[0] > MIN_DIF))
 
 def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp):
     coppia_sig = signals[1]
+    dif_sig = signals[2]
     coppia = {pt.timestamp: (i, pt.value) for i, pt in enumerate(coppia_sig.points)}
+    diff = {pt.timestamp: (i, pt.value) for i, pt in enumerate(dif_sig.points)}
 
     COPPIA_INTERVALS: List[Tuple[int, int]] = []
     for i in range(MIN_COPPIA, MAX_COPPIA, COPPIA_RANGE):
@@ -44,6 +52,13 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
             COPPIA_INTERVALS.append((i, i + COPPIA_RANGE))
         else:
             COPPIA_INTERVALS.append((i, None))
+
+    DIF_INTERVALS: List[Tuple[int, int]] = []
+    for i in range(MIN_DIF, MAX_DIF, DIF_RANGE):
+        if i < MAX_DIF - DIF_RANGE:
+            DIF_INTERVALS.append((i, i + DIF_RANGE))
+        else:
+            DIF_INTERVALS.append((i, None))
 
     curr_coppia_index, curr_coppia = coppia[t]
     if curr_coppia_index > 0:
@@ -54,6 +69,16 @@ def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp)
             prev_coppia = None
     else:
         prev_coppia = curr_coppia
+
+    curr_dif_index, curr_dif = diff[t]
+    if curr_dif_index > 0:
+        try:
+            prev_index = [tup[0] for tup in diff.values() if tup[0] < curr_dif_index][-1]
+            prev_dif = dif_sig.points[prev_index].value
+        except IndexError:
+            prev_dif = None
+    else:
+        prev_dif = curr_dif
 
     identified_event = None
     if curr_coppia < MIN_COPPIA and (prev_coppia is not None and prev_coppia >= MIN_COPPIA):

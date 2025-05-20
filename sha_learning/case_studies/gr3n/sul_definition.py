@@ -17,6 +17,15 @@ config.read(
     os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning/resources/config/config.ini')
 config.sections()
 
+COPPIA_RANGE = int(config['GR3N']['COPPIA_RANGE'])
+MIN_COPPIA = int(config['GR3N']['MIN_COPPIA'])
+MAX_COPPIA = int(config['GR3N']['MAX_COPPIA'])
+
+DIF_RANGE = int(config['GR3N']['DIF_RANGE'])
+MIN_DIF = int(config['GR3N']['MIN_DIF'])
+MAX_DIF = int(config['GR3N']['MAX_DIF'])
+
+
 def modello_assorbimento(interval: List[Timestamp], P_0):
     interval = [ts.to_secs() for ts in interval]
     AVG_PW = 1.0
@@ -36,10 +45,23 @@ assorbimento = RealValuedVar([on_fc], [], model2distr, label='a')
 
 # define events
 events: List[Event] = []
-events.append(Event('', 'cp high', 'cp1'))
-events.append(Event('', 'cp low', 'cp2'))
+for i in range(MIN_COPPIA, MAX_COPPIA, COPPIA_RANGE):
+    if i < MAX_COPPIA - COPPIA_RANGE:
+        new_guard = '{}<=cp<{}'.format(i, i + COPPIA_RANGE)
+    else:
+        new_guard = '{}<=cp'.format(i)
+    events.append(Event(new_guard, 'start', 'cp_{}'.format(len(events))))
 
-DRIVER_SIG = ['cp']
+for i in range(MIN_DIF, MAX_DIF, DIF_RANGE):
+    if i < MAX_DIF - DIF_RANGE:
+        new_guard = '{}<=cp<{}'.format(i, i + DIF_RANGE)
+    else:
+        new_guard = '{}<=cp'.format(i)
+    events.append(Event(new_guard, 'start', 'cp_{}'.format(len(events))))
+
+events.append(Event('', 'stop', 's'))
+
+DRIVER_SIG = ['cp', 'df']
 DEFAULT_M = 0
 DEFAULT_DISTR = 0
 
