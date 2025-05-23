@@ -17,9 +17,23 @@ config.read(
     os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning/resources/config/config.ini')
 config.sections()
 
-COPPIA_RANGE = int(config['GR3N']['COPPIA_RANGE'])
-MIN_COPPIA = int(config['GR3N']['MIN_COPPIA'])
-MAX_COPPIA = int(config['GR3N']['MAX_COPPIA'])
+PUMP_SPEED_RANGE = int(config['GR3N']['PUMP_SPEED_RANGE'])
+MIN_PUMP_SPEED = int(config['GR3N']['MIN_PUMP_SPEED'])
+MAX_PUMP_SPEED = int(config['GR3N']['MAX_PUMP_SPEED'])
+
+'''
+TALIM_RANGE = int(config['GR3N']['TALIM_RANGE'])
+MIN_TALIM = int(config['GR3N']['MIN_TALIM'])
+MAX_TALIM = int(config['GR3N']['MAX_TALIM'])
+'''
+
+TRIDU_RANGE = int(config['GR3N']['TRIDU_RANGE'])
+MIN_TRIDU = int(config['GR3N']['MIN_TRIDU'])
+MAX_TRIDU = int(config['GR3N']['MAX_TRIDU'])
+
+TMPRT_RANGE = int(config['GR3N']['TMPRT_RANGE'])
+MIN_TMPRT = int(config['GR3N']['MIN_TMPRT'])
+MAX_TMPRT = int(config['GR3N']['MAX_TMPRT'])
 
 
 def modello_assorbimento(interval: List[Timestamp], P_0):
@@ -37,32 +51,46 @@ off_distr = NormalDistribution(0, 0.0, 0.0)
 model2distr = {0: []}
 
 
-assorbimento = RealValuedVar([on_fc], [], model2distr, label='a')
+Talim = RealValuedVar([on_fc], [], model2distr, label='Tal')
 
 # define events
 events: List[Event] = []
-for i in range(MIN_COPPIA, MAX_COPPIA, COPPIA_RANGE):
-    if i < MAX_COPPIA - COPPIA_RANGE:
-        new_guard = '{}<=cp<{}'.format(i, i + COPPIA_RANGE)
+for i in range(MIN_PUMP_SPEED, MAX_PUMP_SPEED, PUMP_SPEED_RANGE):
+    if i < MAX_PUMP_SPEED - PUMP_SPEED_RANGE:
+        new_guard = '{}<=sp<{}'.format(i, i + PUMP_SPEED_RANGE)
     else:
-        new_guard = '{}<=cp'.format(i)
-    events.append(Event(new_guard, 'start', 'cp_{}'.format(len(events))))
+        new_guard = '{}<=sp'.format(i)
+    events.append(Event(new_guard, 'start', 'sp_{}'.format(len(events))))
+
+for i in range(MIN_TRIDU, MAX_TRIDU, TRIDU_RANGE):
+    if i < MAX_TRIDU - TRIDU_RANGE:
+        new_guard = '{}<=Tr<{}'.format(i, i + TRIDU_RANGE)
+    else:
+        new_guard = '{}<=Tr'.format(i)
+    events.append(Event(new_guard, 'start', 'Tr_{}'.format(len(events))))
+
+for i in range(MIN_TMPRT, MAX_TMPRT, TMPRT_RANGE):
+    if i < MAX_TMPRT - TMPRT_RANGE:
+        new_guard = '{}<=tmp<{}'.format(i, i + TMPRT_RANGE)
+    else:
+        new_guard = '{}<=tmp'.format(i)
+    events.append(Event(new_guard, 'start', 'tmp_{}'.format(len(events))))
 
 events.append(Event('', 'stop', 's'))
 
-DRIVER_SIG = ['cp']
+DRIVER_SIG = ['sp', 'Tr', 'tmp']
 DEFAULT_M = 0
 DEFAULT_DISTR = 0
 
-args = {'name': 'assorbimento', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
+args = {'name': 'TAlimCuscinetti', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 
-gr3n_cs = SystemUnderLearning([assorbimento], events, parse_data, label_event, get_absorption_param, is_chg_pt, args=args)
+gr3n_cs = SystemUnderLearning([Talim], events, parse_data, label_event, get_absorption_param, is_chg_pt, args=args)
 
-test = False
+test = True
 if test:
     TEACHER = Teacher(gr3n_cs)
 
-    TEST_PATH = config['GR3N']['CV_PATH']
+    TEST_PATH = str(config['GR3N']['CV_PATH'])
     N = 10
     traces_files = os.listdir(TEST_PATH)
     traces_files = [file for file in traces_files]
