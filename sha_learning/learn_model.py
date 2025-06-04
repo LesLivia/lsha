@@ -10,6 +10,7 @@ from sha_learning.case_studies.auto_twin.sul_definition import getSUL
 from sha_learning.case_studies.energy.sul_definition import energy_cs
 from sha_learning.case_studies.energy_made.sul_definition import energy_made_cs
 from sha_learning.case_studies.energy_sim.sul_definition import energy_sim_cs
+from sha_learning.case_studies.gr3n.sul_definition import gr3n_cs
 from sha_learning.case_studies.hri.sul_definition import hri_cs
 from sha_learning.case_studies.thermostat.sul_definition import thermostat_cs
 from sha_learning.domain.lshafeatures import Trace
@@ -51,6 +52,8 @@ elif CS == 'ENERGY':
         raise RuntimeError
 elif CS == 'AUTO_TWIN':
     SUL, events_labels_dict = getSUL()
+elif CS == 'GR3N':
+    SUL = gr3n_cs
 else:
     raise RuntimeError
 
@@ -81,4 +84,5 @@ if config['DEFAULT']['PLOT_DISTR'] == 'True' and config['LSHA PARAMETERS']['HT_Q
 report.save_data(TEACHER.symbols, TEACHER.distributions, LEARNER.obs_table,
                  len(TEACHER.signals), datetime.now() - startTime, SHA_NAME, events_labels_dict,
                  os.getcwd())
-LOGGER.info('----> EXPERIMENTAL RESULTS SAVED IN: {}{}.txt'.format(config['SUL CONFIGURATION']['REPORT_SAVE_PATH'], SHA_NAME))
+LOGGER.info(
+    '----> EXPERIMENTAL RESULTS SAVED IN: {}{}.txt'.format(config['SUL CONFIGURATION']['REPORT_SAVE_PATH'], SHA_NAME))
