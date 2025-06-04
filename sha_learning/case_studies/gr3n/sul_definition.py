@@ -1,10 +1,8 @@
 import configparser
 import os
 from typing import List
-import matplotlib.pyplot as plt
 
 from sha_learning.case_studies.gr3n.sul_functions import label_event, parse_data, get_absorption_param, is_chg_pt
-from sha_learning.case_studies.gr3n.sul_functions import plot_assorbimento_eventi, plot_coppia_eventi
 from sha_learning.domain.lshafeatures import Event, NormalDistribution, Trace
 from sha_learning.domain.sigfeatures import Timestamp, SampledSignal
 from sha_learning.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
@@ -27,10 +25,6 @@ MIN_TALIM = int(config['GR3N']['MIN_TALIM'])
 MAX_TALIM = int(config['GR3N']['MAX_TALIM'])
 '''
 
-TRIDU_RANGE = int(config['GR3N']['TRIDU_RANGE'])
-MIN_TRIDU = int(config['GR3N']['MIN_TRIDU'])
-MAX_TRIDU = int(config['GR3N']['MAX_TRIDU'])
-
 TMPRT_RANGE = int(config['GR3N']['TMPRT_RANGE'])
 MIN_TMPRT = int(config['GR3N']['MIN_TMPRT'])
 MAX_TMPRT = int(config['GR3N']['MAX_TMPRT'])
@@ -51,7 +45,7 @@ off_distr = NormalDistribution(0, 0.0, 0.0)
 model2distr = {0: []}
 
 
-Talim = RealValuedVar([on_fc], [], model2distr, label='Tal')
+Talim = RealValuedVar([on_fc], [], model2distr, label='Ta')
 
 # define events
 events: List[Event] = []
@@ -62,13 +56,6 @@ for i in range(MIN_PUMP_SPEED, MAX_PUMP_SPEED, PUMP_SPEED_RANGE):
         new_guard = '{}<=sp'.format(i)
     events.append(Event(new_guard, 'start', 'sp_{}'.format(len(events))))
 
-for i in range(MIN_TRIDU, MAX_TRIDU, TRIDU_RANGE):
-    if i < MAX_TRIDU - TRIDU_RANGE:
-        new_guard = '{}<=Tr<{}'.format(i, i + TRIDU_RANGE)
-    else:
-        new_guard = '{}<=Tr'.format(i)
-    events.append(Event(new_guard, 'start', 'Tr_{}'.format(len(events))))
-
 for i in range(MIN_TMPRT, MAX_TMPRT, TMPRT_RANGE):
     if i < MAX_TMPRT - TMPRT_RANGE:
         new_guard = '{}<=tmp<{}'.format(i, i + TMPRT_RANGE)
@@ -78,7 +65,7 @@ for i in range(MIN_TMPRT, MAX_TMPRT, TMPRT_RANGE):
 
 events.append(Event('', 'stop', 's'))
 
-DRIVER_SIG = ['sp', 'Tr', 'tmp']
+DRIVER_SIG = ['sp', 'tmp']
 DEFAULT_M = 0
 DEFAULT_DISTR = 0
 
@@ -86,11 +73,11 @@ args = {'name': 'TAlimCuscinetti', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M,
 
 gr3n_cs = SystemUnderLearning([Talim], events, parse_data, label_event, get_absorption_param, is_chg_pt, args=args)
 
-test = True
+test = False
 if test:
     TEACHER = Teacher(gr3n_cs)
 
-    TEST_PATH = str(config['GR3N']['CV_PATH'])
+    TEST_PATH = config['TRACE GENERATION']['SIM_LOGS_PATH']
     N = 10
     traces_files = os.listdir(TEST_PATH)
     traces_files = [file for file in traces_files]
@@ -105,6 +92,13 @@ if test:
         '''
         # testing chg pts identification
         chg_pts = gr3n_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
+
+
+        if len(chg_pts) == 0:
+            print(f"file without events {file}\n")
+            continue
+
+
         # testing event labeling
         id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
         # testing signal to trace conversion
