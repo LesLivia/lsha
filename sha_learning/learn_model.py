@@ -19,6 +19,7 @@ from sha_learning.learning_setup.learner import Learner
 from sha_learning.learning_setup.logger import Logger
 from sha_learning.learning_setup.teacher import Teacher
 from sha_learning.pltr.energy_pltr import distr_hist
+from sha_learning.case_studies.gr3n.sul_definition import gr3n_cs
 
 # LEARNING PROCEDURE SETUP
 warnings.filterwarnings('ignore')
@@ -51,6 +52,8 @@ elif CS == 'ENERGY':
         raise RuntimeError
 elif CS == 'AUTO_TWIN':
     SUL, events_labels_dict = getSUL()
+elif CS == 'GR3N':
+    SUL = gr3n_cs
 else:
     raise RuntimeError
 

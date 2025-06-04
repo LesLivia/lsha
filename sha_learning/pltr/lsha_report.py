@@ -11,7 +11,7 @@ config.sections()
 
 def save_data(symbols, distr, obstable: ObsTable, traces, time, sha_name, events_dict=None, path=None):
     SAVE_PATH = config['SUL CONFIGURATION']['REPORT_SAVE_PATH'].format(path)
-    f = open(SAVE_PATH + sha_name + '.txt', 'w')
+    f = open(SAVE_PATH + sha_name + '.txt', 'w', encoding='utf-8')
     content = ''
     # Report file structure:
     # [EVENT LABELS DICTIONARY]

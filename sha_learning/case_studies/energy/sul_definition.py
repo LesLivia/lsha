@@ -19,7 +19,6 @@ SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])
 MIN_SPEED = int(config['ENERGY CS']['MIN_SPEED'])
 MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
 
-
 def pwr_model(interval: List[Timestamp], P_0):
     interval = [ts.to_secs() for ts in interval]
     AVG_PW = 1.0
@@ -33,6 +32,7 @@ on_fc: FlowCondition = FlowCondition(0, pwr_model)
 off_distr = NormalDistribution(0, 0.0, 0.0)
 
 model2distr = {0: []}
+
 power = RealValuedVar([on_fc], [], model2distr, label='P')
 
 # define events
