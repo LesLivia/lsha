@@ -1,10 +1,8 @@
 import configparser
 import pandas as pd
 import os
-from typing import List, Tuple, Dict
+from typing import List
 from datetime import datetime
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 
 from sha_learning.domain.lshafeatures import Event, FlowCondition, TimedTrace
 from sha_learning.domain.sigfeatures import SampledSignal, Timestamp, SignalPoint
@@ -25,12 +23,6 @@ LOGGER = Logger('SUL DATA HANDLER')
 PUMP_SPEED_RANGE = int(config['GR3N']['PUMP_SPEED_RANGE'])
 MIN_PUMP_SPEED = int(config['GR3N']['MIN_PUMP_SPEED'])
 MAX_PUMP_SPEED = int(config['GR3N']['MAX_PUMP_SPEED'])
-
-'''
-TALIM_RANGE = int(config['GR3N']['TALIM_RANGE'])
-MIN_TALIM = int(config['GR3N']['MIN_TALIM'])
-MAX_TALIM = int(config['GR3N']['MAX_TALIM'])
-'''
 
 TMPRT_RANGE = int(config['GR3N']['TMPRT_RANGE'])
 MIN_TMPRT = int(config['GR3N']['MIN_TMPRT'])
@@ -125,13 +117,6 @@ def parse_data(path: str):
     dd_tmprt = dd_real[dd_real['DataObjectField'] == 'Value']
     dd_tmprt.loc[:, 'TimeStamp'] = pd.to_datetime(dd_tmprt['TimeStamp'], format='%Y-%m-%d %H:%M:%S.%f')
     dd_tmprt.sort_values(by='TimeStamp')
-
-    #data_inizio_filtraggio = pd.to_datetime(DATA_INIZIO_FILTRO)
-    #data_fine_filtraggio = pd.to_datetime(DATA_FINE_FILTRO)
-
-    #dd_differenziale_dettaglio = dd_differenziale[(dd_differenziale['time'] >= data_inizio_filtraggio) & (dd_differenziale['time'] <= data_fine_filtraggio)]
-    #dd_assorbimento_dettaglio = dd_assorbimento[(dd_assorbimento['time'] >= data_inizio_filtraggio) & (dd_assorbimento['time'] <= data_fine_filtraggio)]
-    #dd_coppia_dettaglio = dd_coppia[(dd_coppia['time'] >= data_inizio_filtraggio) & (dd_coppia['time'] <= data_fine_filtraggio)]
 
     pump_speed.points.extend([SignalPoint(parse_ts(record['TimeStamp']), record['Value']) for index, record in dd_pump_speed.iterrows()])
     Talim.points.extend([SignalPoint(parse_ts(record['TimeStamp']), record['Value']) for index, record in dd_Talim.iterrows()])

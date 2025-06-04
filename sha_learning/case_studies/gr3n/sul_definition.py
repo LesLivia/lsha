@@ -19,12 +19,6 @@ PUMP_SPEED_RANGE = int(config['GR3N']['PUMP_SPEED_RANGE'])
 MIN_PUMP_SPEED = int(config['GR3N']['MIN_PUMP_SPEED'])
 MAX_PUMP_SPEED = int(config['GR3N']['MAX_PUMP_SPEED'])
 
-'''
-TALIM_RANGE = int(config['GR3N']['TALIM_RANGE'])
-MIN_TALIM = int(config['GR3N']['MIN_TALIM'])
-MAX_TALIM = int(config['GR3N']['MAX_TALIM'])
-'''
-
 TMPRT_RANGE = int(config['GR3N']['TMPRT_RANGE'])
 MIN_TMPRT = int(config['GR3N']['MIN_TMPRT'])
 MAX_TMPRT = int(config['GR3N']['MAX_TMPRT'])
@@ -73,7 +67,7 @@ args = {'name': 'TAlimCuscinetti', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M,
 
 gr3n_cs = SystemUnderLearning([Talim], events, parse_data, label_event, get_absorption_param, is_chg_pt, args=args)
 
-test = False
+test = True
 if test:
     TEACHER = Teacher(gr3n_cs)
 
@@ -85,20 +79,8 @@ if test:
     for file in traces_files:
         # testing data to signals conversion
         new_signals: List[SampledSignal] = parse_data(TEST_PATH + file)
-        '''
-        sufficies to put here an if that states that if there are not enough data you skip,
-        but the problem still remains during the learning, in that case, I think I should search for 
-        the correct files that contains the kind of data that I want (coppia and assorbimento in this case)
-        '''
         # testing chg pts identification
         chg_pts = gr3n_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
-
-
-        if len(chg_pts) == 0:
-            print(f"file without events {file}\n")
-            continue
-
-
         # testing event labeling
         id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
         # testing signal to trace conversion
@@ -106,7 +88,7 @@ if test:
         trace = gr3n_cs.timed_traces[-1]
         print('{}\t{}\t{}\t{}'.format(file, Trace(tt=trace),
                                       trace.t[-1].to_secs() - trace.t[0].to_secs(), len(trace)))
-        #plot_coppia_eventi(TEST_PATH + file, file, trace)
+
         for j, event in enumerate(trace.e):
             test_trace = Trace(gr3n_cs.traces[-1][:j])
             identified_model: FlowCondition = TEACHER.mi_query(test_trace)

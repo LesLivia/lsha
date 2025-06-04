@@ -19,10 +19,6 @@ SPEED_RANGE = int(config['ENERGY CS']['SPEED_RANGE'])
 MIN_SPEED = int(config['ENERGY CS']['MIN_SPEED'])
 MAX_SPEED = int(config['ENERGY CS']['MAX_SPEED'])
 
-
-'''
-Build a time series of elements all 1 (power model)
-'''
 def pwr_model(interval: List[Timestamp], P_0):
     interval = [ts.to_secs() for ts in interval]
     AVG_PW = 1.0
@@ -30,9 +26,6 @@ def pwr_model(interval: List[Timestamp], P_0):
 
 
 # define flow conditions
-'''
-This should be the diff equation of one state, in this case it's simply a constant function = 1
-'''
 on_fc: FlowCondition = FlowCondition(0, pwr_model)
 
 # define distributions
@@ -40,19 +33,9 @@ off_distr = NormalDistribution(0, 0.0, 0.0)
 
 model2distr = {0: []}
 
-'''
-A sort of prototype for a state, it has been passed just one flow condition, the dictionary model2dist
-is only one element length, and the label P standing for Power probably
-
-Actually, power could be the physical quantity modeled by the differential equation (here just a constant = 1)
-'''
 power = RealValuedVar([on_fc], [], model2distr, label='P')
 
 # define events
-'''
-Events are what makes the automaton change from one state to another, the final label is written on the edge of the automaton
-the intermediate string is the state to wich the edge points: start, stop, load, unload
-'''
 events: List[Event] = []
 for i in range(MIN_SPEED, MAX_SPEED, SPEED_RANGE):
     if i < MAX_SPEED - SPEED_RANGE:
@@ -72,14 +55,6 @@ DEFAULT_M = 0
 DEFAULT_DISTR = 0
 
 args = {'name': 'energy', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
-'''
-for now I think that:
-- [power] is a list of physical quantities of interest, in this case just the power consumption
-- events are a list of events, where the guard is encoded in a specific format ({}<=w<{} for example)
-- all the other functions/parameters make the automaton work: they make the clock tick, check for some kind of event, then
-encode this event in the Event object format and trigger it, that result in the shift of the automaton
-Something like this, now I'm tired I'll have dinner
-'''
 energy_cs = SystemUnderLearning([power], events, parse_data, label_event, get_power_param, is_chg_pt, args=args)
 
 test = False
