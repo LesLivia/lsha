@@ -1,10 +1,8 @@
 import configparser
 import os
 from typing import List
-import matplotlib.pyplot as plt
 
 from sha_learning.case_studies.gr3n.sul_functions import label_event, parse_data, get_absorption_param, is_chg_pt
-from sha_learning.case_studies.gr3n.sul_functions import plot_assorbimento_eventi, plot_coppia_eventi
 from sha_learning.domain.lshafeatures import Event, NormalDistribution, Trace
 from sha_learning.domain.sigfeatures import Timestamp, SampledSignal
 from sha_learning.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
@@ -17,13 +15,19 @@ config.read(
     os.path.dirname(os.path.abspath(__file__)).split('sha_learning')[0] + 'sha_learning/resources/config/config.ini')
 config.sections()
 
-COPPIA_RANGE = int(config['GR3N']['COPPIA_RANGE'])
-MIN_COPPIA = int(config['GR3N']['MIN_COPPIA'])
-MAX_COPPIA = int(config['GR3N']['MAX_COPPIA'])
+PUMP_SPEED_RANGE = int(config['GR3N']['PUMP_SPEED_RANGE'])
+MIN_PUMP_SPEED = int(config['GR3N']['MIN_PUMP_SPEED'])
+MAX_PUMP_SPEED = int(config['GR3N']['MAX_PUMP_SPEED'])
 
-DIF_RANGE = int(config['GR3N']['DIF_RANGE'])
-MIN_DIF = int(config['GR3N']['MIN_DIF'])
-MAX_DIF = int(config['GR3N']['MAX_DIF'])
+'''
+TALIM_RANGE = int(config['GR3N']['TALIM_RANGE'])
+MIN_TALIM = int(config['GR3N']['MIN_TALIM'])
+MAX_TALIM = int(config['GR3N']['MAX_TALIM'])
+'''
+
+TMPRT_RANGE = int(config['GR3N']['TMPRT_RANGE'])
+MIN_TMPRT = int(config['GR3N']['MIN_TMPRT'])
+MAX_TMPRT = int(config['GR3N']['MAX_TMPRT'])
 
 
 def modello_assorbimento(interval: List[Timestamp], P_0):
@@ -41,39 +45,39 @@ off_distr = NormalDistribution(0, 0.0, 0.0)
 model2distr = {0: []}
 
 
-assorbimento = RealValuedVar([on_fc], [], model2distr, label='a')
+Talim = RealValuedVar([on_fc], [], model2distr, label='Ta')
 
 # define events
 events: List[Event] = []
-for i in range(MIN_COPPIA, MAX_COPPIA, COPPIA_RANGE):
-    if i < MAX_COPPIA - COPPIA_RANGE:
-        new_guard = '{}<=cp<{}'.format(i, i + COPPIA_RANGE)
+for i in range(MIN_PUMP_SPEED, MAX_PUMP_SPEED, PUMP_SPEED_RANGE):
+    if i < MAX_PUMP_SPEED - PUMP_SPEED_RANGE:
+        new_guard = '{}<=sp<{}'.format(i, i + PUMP_SPEED_RANGE)
     else:
-        new_guard = '{}<=cp'.format(i)
-    events.append(Event(new_guard, 'start', 'cp_{}'.format(len(events))))
+        new_guard = '{}<=sp'.format(i)
+    events.append(Event(new_guard, 'start', 'sp_{}'.format(len(events))))
 
-for i in range(MIN_DIF, MAX_DIF, DIF_RANGE):
-    if i < MAX_DIF - DIF_RANGE:
-        new_guard = '{}<=df<{}'.format(i, i + DIF_RANGE)
+for i in range(MIN_TMPRT, MAX_TMPRT, TMPRT_RANGE):
+    if i < MAX_TMPRT - TMPRT_RANGE:
+        new_guard = '{}<=tmp<{}'.format(i, i + TMPRT_RANGE)
     else:
-        new_guard = '{}<=df'.format(i)
-    events.append(Event(new_guard, 'start', 'df_{}'.format(len(events))))
+        new_guard = '{}<=tmp'.format(i)
+    events.append(Event(new_guard, 'start', 'tmp_{}'.format(len(events))))
 
 events.append(Event('', 'stop', 's'))
 
-DRIVER_SIG = ['cp', 'df']
+DRIVER_SIG = ['sp', 'tmp']
 DEFAULT_M = 0
 DEFAULT_DISTR = 0
 
-args = {'name': 'assorbimento', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
+args = {'name': 'TAlimCuscinetti', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M, 'default_d': DEFAULT_DISTR}
 
-gr3n_cs = SystemUnderLearning([assorbimento], events, parse_data, label_event, get_absorption_param, is_chg_pt, args=args)
+gr3n_cs = SystemUnderLearning([Talim], events, parse_data, label_event, get_absorption_param, is_chg_pt, args=args)
 
 test = False
 if test:
     TEACHER = Teacher(gr3n_cs)
 
-    TEST_PATH = config['GR3N']['CV_PATH']
+    TEST_PATH = config['TRACE GENERATION']['SIM_LOGS_PATH']
     N = 10
     traces_files = os.listdir(TEST_PATH)
     traces_files = [file for file in traces_files]
@@ -88,6 +92,13 @@ if test:
         '''
         # testing chg pts identification
         chg_pts = gr3n_cs.find_chg_pts([sig for sig in new_signals if sig.label in DRIVER_SIG])
+
+
+        if len(chg_pts) == 0:
+            print(f"file without events {file}\n")
+            continue
+
+
         # testing event labeling
         id_events = [label_event(events, new_signals, pt.t) for pt in chg_pts[:10]]
         # testing signal to trace conversion
