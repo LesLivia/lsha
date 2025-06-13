@@ -61,7 +61,7 @@ energy_sim_cs = SystemUnderLearning([power], events, parse_data, label_event, ge
 
 test = False
 if test:
-    TEST_PATH = '/Users/lestingi/PycharmProjects/lsha/resources/traces/simulations/ENERGY/'
+    TEST_PATH = '/Users/livialestingi/PycharmProjects/lsha/sha_learning/resources/traces/ENERGY/'
     traces_files = os.listdir(TEST_PATH)
     traces_files = [file for file in traces_files if file.startswith('_')]
 

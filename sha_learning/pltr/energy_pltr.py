@@ -7,7 +7,7 @@ import numpy as np
 
 from sha_learning.domain.lshafeatures import TimedTrace
 
-SAVE_PATH = '/learned_sha/'
+SAVE_PATH = '/Users/livialestingi/PycharmProjects/lsha/sha_learning/resources/plots/'
 
 config = configparser.ConfigParser()
 config.read(
@@ -200,7 +200,7 @@ def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered
     axs[0].set_xticklabels(labels=xticks, fontsize=TICK_FONT)
     xmin, xmax = axs[0].get_xlim()
     axs[0].set_xlim(xmin - PAD, xmax)
-    yticks = np.arange(0, max(v1) + 2, 2)
+    yticks = np.arange(0, max(v1) + 2, 200)
     axs[0].set_yticks(ticks=yticks)
     axs[0].set_yticklabels(labels=yticks, fontsize=TICK_FONT)
     ymin, ymax = axs[0].get_ylim()
@@ -228,7 +228,7 @@ def double_plot(timestamps1, v1, timestamps2, v2, t: TimedTrace, title, filtered
     axs[2].set_xlim(xmin - PAD, xmax)
     yticks = np.arange(0, max(v3) + 1, 800)
     axs[2].set_yticks(ticks=yticks)
-    axs[2].set_yticklabels(labels=['unlocked', 'locked'], fontsize=TICK_FONT)
+    # axs[2].set_yticklabels(labels=['unlocked', 'locked'], fontsize=TICK_FONT)
     ymin, ymax = axs[2].get_ylim()
     axs[2].set_ylim(0, ymax)
 
@@ -276,11 +276,11 @@ def distr_hist(values: Dict[int, List[float]], name: str):
             ax.hist(values[i][1])
         else:
             ax.hist(values[i][1], density=True, histtype='step')
-            with open(os.environ['RES_PATH'] + SAVE_PATH +
+            with open(SAVE_PATH +
                       '{}_{}.txt'.format(name, 'histogram_values'), 'a') as f:
                 f.write('D_{}:\n'.format(i))
                 lines = [str(x) + '\n' for x in values[i][1]]
                 print(lines)
                 f.writelines(lines)
-    fig.savefig(os.environ['RES_PATH'] + SAVE_PATH + '{}_{}.pdf'.format(name, 'histograms'))
+    fig.savefig(SAVE_PATH + '{}_{}.pdf'.format(name, 'histograms'))
     del fig

@@ -67,7 +67,7 @@ args = {'name': 'TAlimCuscinetti', 'driver': DRIVER_SIG, 'default_m': DEFAULT_M,
 
 gr3n_cs = SystemUnderLearning([Talim], events, parse_data, label_event, get_absorption_param, is_chg_pt, args=args)
 
-test = True
+test = False
 if test:
     TEACHER = Teacher(gr3n_cs)
 
