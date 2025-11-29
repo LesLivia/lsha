@@ -11,8 +11,8 @@ from sha_learning.domain.sulfeatures import SystemUnderLearning
 from sha_learning.learning_setup.teacher import Teacher
 
 CLOSED_R = 100.0
-OFF_DISTR = (100.0, 1.0, 200)
-ON_DISTR = (0.7, 0.01, 200)
+OFF_DISTR = (150.0, 1.0, 200)
+ON_DISTR = (1.5, 0.01, 200)
 DRIVER_SIG = 't.ON'
 DEFAULT_M = 1
 DEFAULT_DISTR = 1
@@ -95,11 +95,16 @@ if test:
     print(thermostat_cs.symbols)
 
     # test trace processing
-    thermo_traces = [file for file in os.listdir('./resources/traces/uppaal') if file.startswith('THERMO')]
+    thermo_traces = [file for file in os.listdir('./resources/upp_results/') if file.startswith('THERMO_4')]
     for trace in thermo_traces:
-        thermostat_cs.process_data('./resources/traces/uppaal/' + trace)
+        thermostat_cs.process_data('./resources/upp_results/' + trace)
 
-    test_trace = Trace([on_event])
+    test_trace_str = ['h_1', 'c_0', 'h_1', 'c_1', 'h_0', 'c_0', 'h_0', 'c_1', 'h_0', 'c_0', 'h_0']
+    test_trace = []
+    for event_str in test_trace_str:
+        for event in thermostat_cs.events:
+            if event.symbol == event_str:
+                test_trace.append(event)
     plot_traces = [(i, t) for i, t in enumerate(thermostat_cs.traces) if t.startswith(test_trace)]
 
     # test visualization
@@ -119,10 +124,9 @@ if test:
     # test hypothesis testing query
     metrics = [get_thermo_param(s, id_flow) for s in segments]
     print(metrics)
-    print(thermostat_cs.vars[0].model2distr[0])
     print(teacher.ht_query(Trace([on_event]), on_fc, save=True))
-    print(thermostat_cs.vars[0].model2distr[0])
-    print(thermostat_cs.vars[0].model2distr[1])
     print(teacher.ht_query(Trace([on_event, off_event]), off_fc, save=True))
-    print(thermostat_cs.vars[0].model2distr[1])
+    print(teacher.ht_query(Trace([on_event, off_event, on_event]), off_fc, save=True))
+    print(teacher.ht_query(Trace([on_event, off_event, on_event, off_event]), off_fc, save=True))
+    print(teacher.ht_query(Trace([on_event, off_event, on_event, off_event]), off_fc, save=True))
     # thermostat_cs.plot_distributions()

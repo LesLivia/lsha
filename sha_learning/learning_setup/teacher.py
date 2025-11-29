@@ -80,8 +80,6 @@ class Teacher:
             if len(segments) > 0:
                 if len(self.flows[0]) == 1:
                     return self.flows[0][0]
-                if CS == 'THERMO' and word[-1].symbol == 'h_0':
-                    return self.flows[0][2]
 
                 fits = []
                 for segment in segments:
@@ -235,7 +233,7 @@ class Teacher:
 
                     statistic, pvalue = stats.ks_2samp(v1, v2)
                     fits = [d for d in eligible_distributions if d.d_id == distr]
-                    if statistic <= min_dist and pvalue >= P_VALUE and len(fits) > 0:
+                    if statistic < min_dist and len(fits) > 0:
                         min_dist = statistic
                         best_fit = fits[0]
             except AttributeError:
@@ -401,6 +399,11 @@ class Teacher:
 
         S = table.get_S()
         low_S = table.get_low_S()
+
+        # This is to put an upper bound on the number of traces to be processed.
+        # 150 is clearly an arbitrary quantity (change to whatever you need).
+        # if len(self.timed_traces) > 150:
+        #    return None
 
         # FIXME: Uncomment just for debugging purposes (i.e., to terminate the learning with a smaller table)
         # if CS == 'ENERGY' and max([len(t) for t in low_S]) >= 7:
