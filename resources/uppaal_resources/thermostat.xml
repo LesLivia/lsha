@@ -28,7 +28,7 @@ double Normal(double mean, double stdDev) {
 const int MAX_E = 15;
 bool force_exe = true;
 int curr = 0;
-int force_open[MAX_E] = {1, 0, 0, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+int force_open[MAX_E] = {1, 0, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
 const int TAU = 200;
 const int R = 10;
@@ -2941,7 +2941,7 @@ update_Tr(0, 0)</label>
 		</transition>
 	</template>
 	<system>t = Thermostat(15.0, 25.0);
-r = Room_5(15.2);
+r = Room_2(15.2);
 
 system t, r;
     </system>
