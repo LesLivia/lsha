@@ -5,6 +5,7 @@ import subprocess
 from typing import List, Set, Dict
 
 import skg_main.skg_mgrs.connector_mgr as conn
+from pm4py.objects.log.importer.xes import importer as xes_importer
 from skg_main.skg_mgrs.skg_reader import Skg_Reader
 from skg_main.skg_model.schema import Entity
 from skg_main.skg_model.schema import Timestamp as skg_Timestamp
@@ -154,6 +155,8 @@ class TraceGenerator:
             return self.get_traces_uppaal(n)
         elif RESAMPLE_STRATEGY == 'SKG':
             return self.get_traces_skg(n)
+        elif RESAMPLE_STRATEGY == 'XES':
+            return self.get_traces_xes(n)
         else:
             return self.get_traces_sim(n)
 
@@ -259,6 +262,19 @@ class TraceGenerator:
                 paths.append(SIM_LOGS_PATH.format(os.environ['RES_PATH'],
                                                   config['SUL CONFIGURATION']['CS_VERSION']) + '/' + sims[i] + '/')
         return paths
+
+    def get_traces_xes(self, n: int = 1):
+        # Beware that machines running macOS have a hidden .DS_STORE file in all folder, which needs to be
+        # handled in some way. Therefore, if you modify this white-listing bit, keep in mind
+        # that the hidden file might be returned as a potential trace file,
+        # parse_f will attempt to parse it causing the program to end in failure.
+        sims = os.listdir(os.getcwd() + SIM_LOGS_PATH)
+        logs = []
+        for sim in sims:
+            if sim.startswith('.') or sim in self.processed_traces:
+                continue
+            self.processed_traces.add(sim)
+            return xes_importer.apply(os.getcwd() + SIM_LOGS_PATH + sim)
 
     def get_traces_uppaal(self, n: int):
         # sample new traces through uppaal command line tool

@@ -4,13 +4,14 @@ DAYS_PER_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
 
 class Timestamp:
-    def __init__(self, y: int, m: int, d: int, h: int, min: int, sec: float):
+    def __init__(self, y: int, m: int, d: int, h: int, min: int, sec: float, ms: float = 0):
         self.year = y
         self.month = m
         self.day = d
         self.hour = h
         self.min = min
         self.sec = sec
+        self.ms = ms
 
     @staticmethod
     def from_secs(secs: int):
@@ -32,12 +33,21 @@ class Timestamp:
         new_ts.sec = secs - new_ts.min * 60
         return new_ts
 
+    @staticmethod
+    def from_millis(millis: int):
+        ts_wo_millis = Timestamp.from_secs(int(millis / 1000))
+        return Timestamp(ts_wo_millis.year, ts_wo_millis.month, ts_wo_millis.day, ts_wo_millis.hour,
+                         ts_wo_millis.min, ts_wo_millis.sec, millis % 1000)
+
     def to_secs(self):
         months = sum(DAYS_PER_MONTH[:self.month - 1]) if self.month > 0 else 0
         days = self.year * 365 + months + self.day - 1 if self.day > 0 else 0
         minutes = self.hour * 60 + self.min
         seconds = minutes * 60 + self.sec
         return days * 24 * 3600 + seconds
+
+    def to_millis(self):
+        return int(self.to_secs() * 1000 + self.ms)
 
     def __str__(self):
         return '{}/{}/{} {}:{}:{}'.format(self.day, self.month, self.year, self.hour, self.min, self.sec)
@@ -46,16 +56,16 @@ class Timestamp:
         return hash(str(self))
 
     def __eq__(self, other):
-        return self.to_secs() == other.to_secs()
+        return self.to_millis() == other.to_millis()
 
     def __ge__(self, other):
-        return self.to_secs() >= other.to_secs()
+        return self.to_millis() >= other.to_millis()
 
     def __lt__(self, other):
-        return self.to_secs() < other.to_secs()
+        return self.to_millis() < other.to_millis()
 
     def __sub__(self, other):
-        return self.to_secs() - other.to_secs()
+        return self.to_millis() - other.to_millis()
 
 
 class SignalPoint:

@@ -82,16 +82,16 @@ class SystemUnderLearning:
             main_sig = self.signals[trace][main_sig_index]
 
             if word != '' and str(word) != 'ε':
-                start_timestamp = self.timed_traces[trace].t[max(len(word) - 1, 0)].to_secs()
+                start_timestamp = self.timed_traces[trace].t[max(len(word) - 1, 0)].to_millis()
             else:
-                start_timestamp = Timestamp(0, 0, 0, 0, 0, 0).to_secs()
+                start_timestamp = Timestamp(0, 0, 0, 0, 0, 0).to_millis()
 
             if len(word) < len(self.timed_traces[trace]):
-                end_timestamp = self.timed_traces[trace].t[len(word)].to_secs()
+                end_timestamp = self.timed_traces[trace].t[len(word)].to_millis()
             else:
-                end_timestamp = main_sig.points[-1].timestamp.to_secs()
+                end_timestamp = main_sig.points[-1].timestamp.to_millis()
 
-            segment = [pt for pt in main_sig.points if start_timestamp <= pt.timestamp.to_secs() < end_timestamp]
+            segment = [pt for pt in main_sig.points if start_timestamp <= pt.timestamp.to_millis() < end_timestamp]
             segments.append(segment)
         else:
             return segments
