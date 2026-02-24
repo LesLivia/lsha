@@ -15,7 +15,11 @@ system s;
 </system>
 <queries>
 		<query>
-			<formula>simulate[&lt;=TAU]{**MONITORS**,s.loc_entity,s.edge_entity}</formula>
+			<formula>simulate[&lt;=TAU]{s.x}</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>simulate[&lt;=TAU]{**MONITORS**}</formula>
 			<comment></comment>
 		</query>
 </queries>

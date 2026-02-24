@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 
 config = configparser.ConfigParser()
-config.read('resources/config/config.ini')
+config.read('uppaal_generator/resources/config.ini')
 
 
 class LogLevel(Enum):

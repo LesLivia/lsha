@@ -2,17 +2,17 @@ import configparser
 import os
 from typing import List, Dict, Tuple
 
-import matplotlib.pyplot as plt
-import skg_main.skg_mgrs.connector_mgr as conn
-from skg_main.skg_mgrs.skg_reader import Skg_Reader
+import numpy as np
+from pm4py.objects.log.importer.xes import importer as xes_importer
 
+from sha_learning.case_studies.lego_factory.sul_functions import ACT_TO_SENSORS
+from sha_learning.domain.sigfeatures import Timestamp
 from uppaal_generator.model_generator.logger import Logger
-from uppaal_generator.model_generator.sha import SHA, Edge, Location
+from uppaal_generator.model_generator.sha import SHA, Edge
 
 config = configparser.ConfigParser()
 config.sections()
-config.read(
-    os.path.dirname(os.path.abspath(__file__)).split('semantic_main')[0] + 'semantic_main/resources/config/config.ini')
+config.read('uppaal_generator/resources/config.ini')
 config.sections()
 
 LOGGER = Logger('UppaalModelGenerator')
@@ -26,10 +26,6 @@ INVARIANT_FUN = config['AUTOMATON']['invariant.merge']
 LOCATION_TPLT = """<location id="{}" x="{}" y="{}">\n\t<name x="{}" y="{}">{}</name>
 <label kind="invariant" x="{}" y="{}">{}</label>
 </location>\n"""
-
-N_RUNS = int(config['UPPAAL SETTINGS']['N_RUNS'])
-TAU = int(config['UPPAAL SETTINGS']['TAU'])
-QUERY_TPLT = """E[<={};{}](max: s.coll_Tcdf[{}])\n"""
 
 X_START = 0
 X_MAX = 900
@@ -74,77 +70,173 @@ FUNC_TPLT = "{} if (d == {}) {{ {} }}"
 PLOT_DISTR = config['AUTOMATON']['plot.cdf'].lower() == 'true'
 
 
-def process_links(links: List[Link], edge: Edge, target: Location,
-                  entity_to_int: Dict[str, int]):
-    sync = edge.sync.replace('!', '')
-    loc_entity = 1
-    edge_entity = 1
-    for link in links:
-        link_edge = link.aut_feat[0].edge
-        link_loc = link.aut_feat[0].loc
-        link_entity = link.skg_feat[0].entity
-        if link_edge is not None and link_edge.label == sync:
-            edge_entity = entity_to_int[link_entity.entity_id]
-        if link_loc is not None and target.name == link_loc.name:
-            loc_entity = entity_to_int[link_entity.entity_id]
+def extract_event_station_associations():
+    xes_path = config['MODEL GENERATION']['xes.path']
+    log = xes_importer.apply(xes_path)
 
-    return loc_entity, edge_entity
+    associations = dict()
 
+    for trace in log:
+        for i, event in enumerate(trace):
+            station_id = event["station_id"]
+            event_id = event["org:resource"]
+            if station_id not in associations:
+                associations[station_id] = {"s" + str(ACT_TO_SENSORS.index(event["org:resource"]) + 1)}
+            else:
+                associations[station_id].update({"s" + str(ACT_TO_SENSORS.index(event["org:resource"]) + 1)})
 
-def get_dicts(links: List[Link]):
-    ent_list = list(set([link.skg_feat[0].entity.entity_id for link in links]))
-    return {x: i for i, x in enumerate(ent_list)}
+    return associations
 
 
-def get_time_distr(name: str, start: int, end: int, loc_name: str):
-    driver = conn.get_driver()
-    reader: Skg_Reader = Skg_Reader(driver)
+def parse_ts(ts):
+    return Timestamp(ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second, ts.microsecond / 1000)
 
-    formulae = reader.get_invariants(name, start, end, loc_name)
-    x_mean = 0.0
-    x_std = 0.0
-    for i, f in enumerate(formulae):
-        if INVARIANT_FUN.upper() == 'AVG':
-            x_mean = (x_mean * i + f.params['mean']) / (i + 1)
-            x_std = (x_std * i + f.params['std']) / (i + 1)
 
-        if PLOT_DISTR:
-            fig = plt.figure()
-            plt.plot(f.params['cdfX'], f.params['cdfY'])
-            plt.title(loc_name)
-            plt.savefig(SAVE_PATH + loc_name + '.png')
-            plt.close(fig)
+def extract_time_distributions(start_date, end_date):
+    """
+    Extract processing time distribution for a given station_id (loc_name)
+    within a global time window [start, end].
 
-    upp_th = x_mean + x_std
-    low_th = x_mean - x_std
+    Returns:
+        low_th, upp_th, cdfX, cdfY
+    """
+    xes_path = config['MODEL GENERATION']['xes.path']
+    log = xes_importer.apply(xes_path)
 
-    driver.close()
+    durations = dict()
 
-    cdfX = [] if len(formulae) <= 0 else formulae[-1].params['cdfX']
-    cdfY = [] if len(formulae) <= 0 else formulae[-1].params['cdfY']
+    for trace in log:
+        for i, event in enumerate(trace):
+            ts = parse_ts(event["time:timestamp"])
 
-    if config['AUTOMATON']['invariant.unit'] == 's':
-        return low_th, upp_th, cdfX, cdfY
-    else:
-        return low_th / 100 / 60, upp_th / 100 / 60, cdfX, cdfY
+            # Only start segment if event is in time window
+            if ts < start_date:
+                break
+
+            if i == 0 or event["station_id"] != trace[i - 1]["station_id"]:
+                segment_start_time = ts
+
+            # this is the last event or
+            if (i == len(trace) - 1 or
+                    # or the next event is in a different station
+                    (i < len(event) - 1 and (event["station_id"] != trace[i + 1]["station_id"]
+                                             # or the next event is in the same station but the next point is after the end date
+                                             or parse_ts(trace[i + 1]["time:timestamp"]) > end_date))):
+                segment_end_time = parse_ts(trace[i + 1]["time:timestamp"])
+                duration = (segment_end_time.to_millis() - segment_start_time.to_millis()) / 1000.0
+                if event["station_id"] in durations:
+                    durations[event["station_id"]].append(duration)
+                else:
+                    durations[event["station_id"]] = [duration]
+
+            if parse_ts(trace[i + 1]["time:timestamp"]) > end_date:
+                break
+
+    distributions = dict()
+
+    # Statistics
+    for station in durations:
+        values = durations[station]
+        x_mean = np.mean(values)
+        x_std = np.std(values)
+
+        low_th = x_mean - x_std
+        upp_th = x_mean + x_std
+
+        # Empirical CDF
+        sorted_durations = np.sort(values)
+        cdfX = sorted_durations.tolist()
+        cdfY = (np.arange(1, len(sorted_durations) + 1) / len(sorted_durations)).tolist()
+
+        distributions[station] = (low_th, upp_th, cdfX, cdfY)
+
+    return distributions
+
+
+def extract_prob_weights(start_date, end_date):
+    """
+    Extract processing time distribution for a given station_id (loc_name)
+    within a global time window [start, end].
+
+    Returns:
+        low_th, upp_th, cdfX, cdfY
+    """
+    xes_path = config['MODEL GENERATION']['xes.path']
+    log = xes_importer.apply(xes_path)
+
+    occurrences = dict()
+
+    for trace in log:
+        for i, event in enumerate(trace):
+            ts = parse_ts(event["time:timestamp"])
+
+            # Only start segment if event is in time window
+            if ts < start_date or ts > end_date or i == len(trace) - 1:
+                break
+
+            current_station = event["station_id"]
+            next_station = trace[i + 1]["station_id"]
+
+            if current_station not in occurrences:
+                occurrences[current_station] = [next_station]
+            else:
+                occurrences[current_station].append(next_station)
+
+    weights = dict()
+
+    # Statistics
+    for station in occurrences:
+        for occ in occurrences[station]:
+            if (station, occ) not in weights:
+                weights[(station, occ)] = sum([x == occ for x in occurrences[station]]) / len(occurrences[station])
+
+    return weights
+
+
+def link_locations_w_params(learned_sha, distributions,
+                            event_station_associations):
+    locations_to_distributions = dict()
+    locations_to_distributions["__init__"] = (0.0, 0.0, [], [])
+
+    for edge in learned_sha.edges:
+        for station in event_station_associations:
+            if edge.sync.replace("!", "") in event_station_associations[station]:
+                locations_to_distributions[edge.dest.name] = distributions[station]
+
+    return locations_to_distributions
+
+
+def locations_to_stations(learned_sha, event_station_associations):
+    locations_to_stations = dict()
+    locations_to_stations["__init__"] = "Start"
+    for edge in learned_sha.edges:
+        for station in event_station_associations:
+            if edge.sync.replace("!", "") in event_station_associations[station]:
+                locations_to_stations[edge.dest.name] = station
+
+    return locations_to_stations
 
 
 def get_route_info(name: str, start: int, end: int, sync: str, loc_name: str):
-    driver = conn.get_driver()
-    reader: Skg_Reader = Skg_Reader(driver)
+    # driver = conn.get_driver()
+    # reader: Skg_Reader = Skg_Reader(driver)
+    #
+    # route_info = reader.get_prob_weights(name, start, end, sync, loc_name)
+    #
+    # prob_weight = 0.0 if len(route_info) > 0 else 1.0
+    # for i, r in enumerate(route_info):
+    #     prob_weight = (prob_weight * i + r[0]) / (i + 1)
+    #
+    # driver.close()
+    #
+    # return prob_weight
+    return None
 
-    route_info = reader.get_prob_weights(name, start, end, sync, loc_name)
 
-    prob_weight = 0.0 if len(route_info) > 0 else 1.0
-    for i, r in enumerate(route_info):
-        prob_weight = (prob_weight * i + r[0]) / (i + 1)
-
-    driver.close()
-
-    return prob_weight
-
-
-def sha_to_upp_tplt(learned_sha: SHA, name: str, start, end, links: List[Link]):
+def sha_to_upp_tplt(learned_sha: SHA, name: str, start, end,
+                    loc_to_stations,
+                    loc_to_distributions,
+                    probability_weights):
     machine_path = (NTA_TPLT_PATH + MACHINE_TPLT_NAME).format(
         os.path.dirname(os.path.abspath(__file__)).split('semantic_main')[0] + 'semantic_main/')
     with open(machine_path, 'r') as machine_tplt:
@@ -162,7 +254,7 @@ def sha_to_upp_tplt(learned_sha: SHA, name: str, start, end, links: List[Link]):
     loc_to_distr = {}
 
     for i, loc in enumerate(learned_sha.locations):
-        time_distr = get_time_distr(name, start, end, loc.name)
+        time_distr = loc_to_distributions[loc.name]
 
         if INVARIANT_FUN.upper() == 'AVG':
             invariant = "x &lt;= {:.2f}".format(time_distr[1])
@@ -215,30 +307,34 @@ def sha_to_upp_tplt(learned_sha: SHA, name: str, start, end, links: List[Link]):
         mid_x = abs(x1 - x2) / 2 + min(x1, x2)
         mid_y = abs(y1 - y2) / 2 + min(y1, y2)
 
-        link_params = process_links(links, edge, edge.dest, get_dicts(links))
-        link_params_start = process_links(links, edge, edge.start, get_dicts(links))
+        station_start = loc_to_stations[edge.start.name]
+        station_dest = loc_to_stations[edge.dest.name]
 
-        if link_params[0] != link_params_start[0]:
-            guard = "x &gt;= {:.2f}".format(get_time_distr(name, start, end, edge.start.name)[0])
+        if station_start != station_dest:
+            time_distr_start = loc_to_distributions[edge.start.name]
+            guard = "x &gt;= {:.2f}".format(time_distr_start[0])
             if INVARIANT_FUN.upper() != 'AVG':
                 update = 'sample_ecdf({})'.format(loc_to_distr[edge.dest.id])
             else:
                 update = ''
-            update += ", update_entities({}, {}), x=0".format(link_params[0], link_params[1])
+            update += ", x=0"
         else:
             guard = "true"
-            update = "update_entities({}, {})".format(link_params[0], link_params[1])
+            update = ''
 
-        route_info = get_route_info(name, start, end, edge.sync.replace("!", ""), edge.start.name)
+        if station_start == "Start":
+            prob_weight = 1.0
+        else:
+            prob_weight = probability_weights[(station_start, station_dest)]
 
-        if route_info >= 1.0:
+        if prob_weight >= 1.0:
             new_edge_str = EDGE_TPLT.format(start_id, dest_id,
                                             mid_x, mid_y, guard,
                                             mid_x, mid_y + 5, edge.sync,
                                             mid_x, mid_y + 10, update)
             edges_str += new_edge_str
         else:
-            req_branch_point.append((edge, mid_x, mid_y, route_info, guard, update))
+            req_branch_point.append((edge, mid_x, mid_y, prob_weight, guard, update))
 
     conn_sets: Dict[str, int] = {}
     bp_id = 1000
@@ -263,33 +359,25 @@ def sha_to_upp_tplt(learned_sha: SHA, name: str, start, end, links: List[Link]):
     learned_sha_tplt = learned_sha_tplt.replace('**TCDF**', sizes_str + '};\n\n' + cdf_str)
     learned_sha_tplt = learned_sha_tplt.replace('**SAMPLING_FN**', func_str)
 
-    entity_dict = ['{}: {}'.format(x, get_dicts(links)[x]) for x in get_dicts(links)]
-    learned_sha_tplt = learned_sha_tplt.replace('**N_DICT**', str(len(entity_dict)))
-    learned_sha_tplt = learned_sha_tplt.replace('**0.0_N_DICT**', ','.join(['0.0'] * len(entity_dict)))
-    learned_sha_tplt = learned_sha_tplt.replace('**DICT**', '\n'.join(entity_dict))
-
     return learned_sha_tplt
 
 
-def generate_query_file(name: str, links):
-    query_path = SAVE_PATH + name + '.q'
-    entity_dict = get_dicts(links)
-    lines = set()
-    for link in links:
-        if link.aut_feat[0].loc is not None:
-            lines.add(QUERY_TPLT.format(TAU, N_RUNS, entity_dict[link.skg_feat[0].entity.entity_id]))
+def generate_upp_model(learned_sha: SHA, name: str, start, end):
+    LOGGER.info("Starting Uppaal model generation...")
 
-    with open(query_path, 'w') as q_file:
-        q_file.write(''.join(list(lines)))
-    return query_path
-
-
-def generate_upp_model(learned_sha: SHA, name: str, start, end, links: List[Link]):
-    LOGGER.info("Starting Uppaal semantic_model generation...")
+    event_station_associations = extract_event_station_associations()
+    loc_to_station_dict = locations_to_stations(learned_sha, event_station_associations)
+    distributions = extract_time_distributions(start, end)
+    probability_weights = extract_prob_weights(start, end)
+    locations_to_distributions = link_locations_w_params(learned_sha, distributions,
+                                                         event_station_associations)
 
     # Learned SHA Management
 
-    learned_sha_tplt = sha_to_upp_tplt(learned_sha, name, start, end, links)
+    learned_sha_tplt = sha_to_upp_tplt(learned_sha, name, start, end,
+                                       loc_to_station_dict,
+                                       locations_to_distributions,
+                                       probability_weights)
 
     nta_path = (NTA_TPLT_PATH + NTA_TPLT_NAME).format(
         os.path.dirname(os.path.abspath(__file__)).split('semantic_main')[0] + 'semantic_main/')
@@ -302,7 +390,7 @@ def generate_upp_model(learned_sha: SHA, name: str, start, end, links: List[Link
     nta_tplt = nta_tplt.replace('**MONITORS**', ','.join(['s.' + l.name for l in learned_sha.locations]))
 
     nta_tplt = nta_tplt.replace('**MACHINE**', learned_sha_tplt)
-    nta_tplt = nta_tplt.replace('**TAU**', str(TAU))
+    nta_tplt = nta_tplt.replace('**TAU**', "100")
 
     model_path = SAVE_PATH + name + '.xml'
 
@@ -311,8 +399,4 @@ def generate_upp_model(learned_sha: SHA, name: str, start, end, links: List[Link
 
     LOGGER.info('Uppaal semantic_model successfully created.')
 
-    query_path = generate_query_file(name, links)
-
-    LOGGER.info('Uppaal query file successfully created.')
-
-    return model_path, query_path
+    return model_path
