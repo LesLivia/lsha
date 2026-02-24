@@ -2,7 +2,7 @@
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
 	<declaration>
-broadcast chan **CHANNELS**;
+urgent broadcast chan **CHANNELS**;
 
 const int TAU = **TAU**;
 
@@ -15,7 +15,7 @@ system s;
 </system>
 <queries>
 		<query>
-			<formula>simulate[&lt;=TAU]{s.x}</formula>
+			<formula>simulate[&lt;=TAU;1000]{s.x}</formula>
 			<comment></comment>
 		</query>
 		<query>

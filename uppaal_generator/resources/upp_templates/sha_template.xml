@@ -7,6 +7,7 @@ clock x;
 ** Time CDFs
 **/
 
+double eps = 0.1;
 double Tcdf = 0.0;
 
 **TCDF**

@@ -117,9 +117,9 @@ def extract_time_distributions(start_date, end_date):
                 segment_start_time = ts
 
             # this is the last event or
-            if (i == len(trace) - 1 or
+            if (i == len(trace) - 2 or
                     # or the next event is in a different station
-                    (i < len(event) - 1 and (event["station_id"] != trace[i + 1]["station_id"]
+                    (i < len(trace) - 1 and (event["station_id"] != trace[i + 1]["station_id"]
                                              # or the next event is in the same station but the next point is after the end date
                                              or parse_ts(trace[i + 1]["time:timestamp"]) > end_date))):
                 segment_end_time = parse_ts(trace[i + 1]["time:timestamp"])
@@ -129,7 +129,7 @@ def extract_time_distributions(start_date, end_date):
                 else:
                     durations[event["station_id"]] = [duration]
 
-            if parse_ts(trace[i + 1]["time:timestamp"]) > end_date:
+            if i == len(trace) - 2 or parse_ts(trace[i + 1]["time:timestamp"]) > end_date:
                 break
 
     distributions = dict()
@@ -149,6 +149,8 @@ def extract_time_distributions(start_date, end_date):
         cdfY = (np.arange(1, len(sorted_durations) + 1) / len(sorted_durations)).tolist()
 
         distributions[station] = (low_th, upp_th, cdfX, cdfY)
+
+    distributions["End"] = (0.0, 0.0, [], [])
 
     return distributions
 
@@ -176,6 +178,9 @@ def extract_prob_weights(start_date, end_date):
 
             current_station = event["station_id"]
             next_station = trace[i + 1]["station_id"]
+
+            if current_station == next_station:
+                continue
 
             if current_station not in occurrences:
                 occurrences[current_station] = [next_station]
@@ -217,22 +222,6 @@ def locations_to_stations(learned_sha, event_station_associations):
     return locations_to_stations
 
 
-def get_route_info(name: str, start: int, end: int, sync: str, loc_name: str):
-    # driver = conn.get_driver()
-    # reader: Skg_Reader = Skg_Reader(driver)
-    #
-    # route_info = reader.get_prob_weights(name, start, end, sync, loc_name)
-    #
-    # prob_weight = 0.0 if len(route_info) > 0 else 1.0
-    # for i, r in enumerate(route_info):
-    #     prob_weight = (prob_weight * i + r[0]) / (i + 1)
-    #
-    # driver.close()
-    #
-    # return prob_weight
-    return None
-
-
 def sha_to_upp_tplt(learned_sha: SHA, name: str, start, end,
                     loc_to_stations,
                     loc_to_distributions,
@@ -256,23 +245,39 @@ def sha_to_upp_tplt(learned_sha: SHA, name: str, start, end,
     for i, loc in enumerate(learned_sha.locations):
         time_distr = loc_to_distributions[loc.name]
 
+        terminal_loc = True
+        for edge in learned_sha.edges:
+            if edge.start.name == loc.name:
+                terminal_loc = False
+                break
+
         if INVARIANT_FUN.upper() == 'AVG':
-            invariant = "x &lt;= {:.2f}".format(time_distr[1])
+            if terminal_loc:
+                invariant = "x'==0"
+            else:
+                invariant = "x &lt;= {:.2f}".format(time_distr[1])
         else:
             sizes_str += str(len(time_distr[2]))
             if i != len(learned_sha.locations) - 1:
                 sizes_str += ','
 
             if len(time_distr[2]) <= 0:
-                invariant = "x &lt;= {:.2f}".format(time_distr[1])
+                if terminal_loc:
+                    invariant = "x'==0"
+                else:
+                    invariant = "x &lt;= {:.2f}".format(time_distr[1])
             else:
                 loc_to_distr[loc.id] = i
 
-                invariant = "x &lt;= Tcdf"
-                if config['AUTOMATON']['invariant.unit'] == 's':
-                    x_vals = '{' + ','.join(['{:.1f}'.format(x) for x in time_distr[2]]) + '}'
+                if terminal_loc:
+                    invariant = "x'==0"
                 else:
-                    x_vals = '{' + ','.join(['{:.1f}'.format(x / 100 / 60) for x in time_distr[2]]) + '}'
+                    invariant = "x &lt;= Tcdf + eps"
+
+                if config['AUTOMATON']['invariant.unit'] == 's':
+                    x_vals = '{' + ','.join(['{:.3f}'.format(x) for x in time_distr[2]]) + '}'
+                else:
+                    x_vals = '{' + ','.join(['{:.3f}'.format(x / 100 / 60) for x in time_distr[2]]) + '}'
                 y_vals = '{' + ','.join(['{:.4f}'.format(x) for x in time_distr[3]]) + '}'
                 cdf_str += TIME_DISTR.format(i, len(time_distr[2]), x_vals,
                                              i, len(time_distr[3]), y_vals)
@@ -312,17 +317,18 @@ def sha_to_upp_tplt(learned_sha: SHA, name: str, start, end,
 
         if station_start != station_dest:
             time_distr_start = loc_to_distributions[edge.start.name]
-            guard = "x &gt;= {:.2f}".format(time_distr_start[0])
-            if INVARIANT_FUN.upper() != 'AVG':
-                update = 'sample_ecdf({})'.format(loc_to_distr[edge.dest.id])
+            if INVARIANT_FUN.upper() != 'AVG' and station_dest != "End":
+                guard = "x &gt;= Tcdf - eps"
+                update = 'sample_ecdf({}),'.format(loc_to_distr[edge.dest.id])
             else:
+                guard = "x &gt;= {:.2f}".format(time_distr_start[0])
                 update = ''
-            update += ", x=0"
+            update += "x=0"
         else:
             guard = "true"
             update = ''
 
-        if station_start == "Start":
+        if station_start == "Start" or station_dest == "End" or station_dest == station_start:
             prob_weight = 1.0
         else:
             prob_weight = probability_weights[(station_start, station_dest)]
@@ -390,7 +396,7 @@ def generate_upp_model(learned_sha: SHA, name: str, start, end):
     nta_tplt = nta_tplt.replace('**MONITORS**', ','.join(['s.' + l.name for l in learned_sha.locations]))
 
     nta_tplt = nta_tplt.replace('**MACHINE**', learned_sha_tplt)
-    nta_tplt = nta_tplt.replace('**TAU**', "100")
+    nta_tplt = nta_tplt.replace('**TAU**', "1000")
 
     model_path = SAVE_PATH + name + '.xml'
 
