@@ -29,3 +29,10 @@ What it does (high level):
 - Learns a Stochastic Hybrid Automaton (LSHA) for the LEGO Factory case study
 - Saves the learned SHA graph and source under `sha_learning/resources/learned_sha/`
 - Converts the learned model to an Uppaal NTA and stores results under `uppaal_generator/resources/gen_models/` (per the project config)
+
+### Changing the learning time window
+If you wish to change the learning time window, modify the `START_DATE` and `END_DATE` parameters in `sha_learning/resources/config/config.ini` under the `[AUTO-TWIN CONFIGURATION]` section:
+```ini
+START_DATE = 2025-09-05-12-30-00
+END_DATE = 2025-09-05-12-35-00
+```
