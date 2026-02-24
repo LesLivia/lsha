@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>
+broadcast chan **CHANNELS**;
+
+const int TAU = **TAU**;
+
+</declaration>
+**MACHINE**
+<system>
+s = DiscoveredSystem();
+
+system s;
+</system>
+<queries>
+		<query>
+			<formula>simulate[&lt;=TAU]{**MONITORS**,s.loc_entity,s.edge_entity}</formula>
+			<comment></comment>
+		</query>
+</queries>
+</nta>

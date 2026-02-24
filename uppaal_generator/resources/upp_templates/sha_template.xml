@@ -1,0 +1,39 @@
+<template>
+<name>DiscoveredSystem</name>
+<declaration>
+clock x;
+
+/**
+** Time CDFs
+**/
+
+double Tcdf = 0.0;
+
+**TCDF**
+
+void sample_ecdf(int d) {
+	double pr = random(1.0);
+	int i;
+    bool found = false;
+
+    **SAMPLING_FN**
+
+}
+
+
+int loc_entity = 0;
+int edge_entity = 0;
+
+/**
+**DICT**
+**/
+
+double coll_Tcdf[**N_DICT**] = {**0.0_N_DICT**};
+
+void update_entities(int loc, int edge) {
+    loc_entity = loc;
+    edge_entity = edge;
+    if (coll_Tcdf[loc]&lt;=0.0) coll_Tcdf[loc] = Tcdf;
+}
+</declaration>
+**LOCATIONS**<init ref="**INIT_ID**"/>**TRANSITIONS**</template>
