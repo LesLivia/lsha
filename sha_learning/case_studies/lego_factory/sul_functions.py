@@ -12,23 +12,33 @@ config.sections()
 
 CS = config['SUL CONFIGURATION']['CASE_STUDY']
 
-ACT_TO_SENSORS = ['corner1_RETURN', 'corner1_TRANSFER', 'corner2_RETURN', 'corner2_START', 'corner2_TRANSFER',
-                  'splitter1_FORWARD', 'splitter1_RETURN', 'splitter1_TRANSFER', 'splitter2_FORWARD',
-                  'splitter2_RETURN', 'splitter2_TRANSFER', 'splitter3_FORWARD', 'splitter3_RETURN',
-                  'splitter3_TRANSFER', 'splitter4_FORWARD', 'splitter4_RETURN', 'splitter4_TRANSFER',
+ACT_TO_SENSORS = ['corner1_START', 'corner1_RETURN', 'corner1_TRANSFER',
+                  'corner2_START', 'corner2_RETURN', 'corner2_TRANSFER',
+                  'End',
+                  'splitter1_FORWARD', 'splitter1_RETURN', 'splitter1_TRANSFER',
+                  'splitter2_FORWARD', 'splitter2_RETURN', 'splitter2_TRANSFER',
+                  'splitter3_FORWARD', 'splitter3_RETURN', 'splitter3_TRANSFER',
+                  'splitter4_FORWARD', 'splitter4_RETURN', 'splitter4_TRANSFER',
                   'splitter5_CHECKOUT', 'splitter5_FINISH', 'splitter5_FORWARD', 'splitter5_RETURN',
-                  'splitter5_SCRAP', 'splitter5_TRANSFER', 'station11_FAIL', 'station11_LOAD',
-                  'station11_PROCESS', 'station11_TRANSFER', 'station11_UNLOAD', 'station21_FAIL',
-                  'station21_LOAD', 'station21_PASS', 'station21_PROCESS', 'station21_TRANSFER',
-                  'station21_UNLOAD', 'station22_FAIL', 'station22_LOAD', 'station22_PASS',
-                  'station22_PROCESS', 'station22_TRANSFER', 'station22_UNLOAD', 'station31_BLOCK',
-                  'station31_FAIL', 'station31_LOAD', 'station31_PASS', 'station31_PROCESS', 'station31_TRANSFER',
-                  'station31_UNLOAD', 'station41_FAIL', 'station41_LOAD', 'station41_PASS', 'station41_PROCESS',
-                  'station41_TRANSFER', 'station41_UNLOAD', 'station51_FAIL', 'station51_LOAD', 'station51_PASS',
-                  'station51_PROCESS', 'station51_TRANSFER', 'station51_UNLOAD', 'station52_FAIL', 'station52_LOAD',
-                  'station52_PASS', 'station52_PROCESS', 'station52_TRANSFER', 'station52_UNLOAD', 'station61_LOAD',
-                  'station61_PASS', 'station61_PROCESS', 'station61_TRANSFER', 'station61_UNLOAD', 'station71_LOAD',
-                  'station71_PASS', 'station71_PROCESS', 'station71_TRANSFER', 'station71_UNLOAD']
+                  'splitter5_SCRAP', 'splitter5_TRANSFER',
+                  'station11_FAIL', 'station11_LOAD', 'station11_PROCESS', 'station11_TRANSFER',
+                  'station11_UNLOAD',
+                  'station21_FAIL', 'station21_LOAD', 'station21_PASS', 'station21_pass_PASS', 'station21_PROCESS',
+                  'station21_TRANSFER', 'station21_pass_TRANSFER', 'station21_UNLOAD',
+                  'station22_FAIL', 'station22_LOAD', 'station22_PASS', 'station22_pass_PASS', 'station22_PROCESS',
+                  'station22_TRANSFER', 'station22_pass_TRANSFER', 'station22_UNLOAD', 'station31_BLOCK',
+                  'station31_FAIL', 'station31_LOAD', 'station31_PASS', 'station31_pass_PASS', 'station31_PROCESS',
+                  'station31_TRANSFER', 'station31_pass_TRANSFER', 'station31_UNLOAD',
+                  'station41_FAIL', 'station41_LOAD', 'station41_PASS', 'station41_pass_PASS', 'station41_PROCESS',
+                  'station41_TRANSFER', 'station41_pass_TRANSFER', 'station41_UNLOAD',
+                  'station51_FAIL', 'station51_LOAD', 'station51_PASS', 'station51_pass_PASS', 'station51_PROCESS',
+                  'station51_TRANSFER', 'station51_pass_TRANSFER', 'station51_UNLOAD',
+                  'station52_FAIL', 'station52_LOAD', 'station52_PASS', 'station52_pass_PASS', 'station52_PROCESS',
+                  'station52_TRANSFER', 'station52_pass_TRANSFER', 'station52_UNLOAD',
+                  'station61_LOAD', 'station61_PASS', 'station61_pass_PASS', 'station61_PROCESS',
+                  'station61_TRANSFER', 'station61_pass_TRANSFER', 'station61_UNLOAD',
+                  'station71_LOAD', 'station71_PASS', 'station71_pass_PASS', 'station71_PROCESS',
+                  'station71_TRANSFER', 'station71_pass_TRANSFER', 'station71_UNLOAD']
 
 
 def is_chg_pt(curr, prev):
@@ -36,7 +46,6 @@ def is_chg_pt(curr, prev):
 
 
 def label_event(events: List[Event], signals: List[SampledSignal], t: Timestamp):
-    # FIXME
     curr_value = [pt.value for pt in signals[0].points if pt.timestamp == t][0]
 
     identified_event = [e for e in events if int(e.symbol.replace('s', '')) == int(curr_value)][0]
@@ -58,6 +67,7 @@ def get_acquisition_bounds():
                          int(end_fields[4]), int(end_fields[5]))
 
     return start_date, end_date
+
 
 def parse_data(path):
     DELTA_T = 300

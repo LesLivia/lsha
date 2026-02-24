@@ -1,12 +1,13 @@
 import configparser
 import os
 from typing import List
-from tqdm import tqdm
+
 from pm4py.objects.log.importer.xes import importer as xes_importer
+from tqdm import tqdm
 
 from sha_learning.case_studies.lego_factory.sul_functions import parse_data, label_event, is_chg_pt, get_rand_param
 from sha_learning.domain.lshafeatures import Event, ProbDistribution
-from sha_learning.domain.sigfeatures import Timestamp as lsha_Timestamp, Timestamp
+from sha_learning.domain.sigfeatures import Timestamp as lsha_Timestamp
 from sha_learning.domain.sulfeatures import SystemUnderLearning, RealValuedVar, FlowCondition
 
 config = configparser.ConfigParser()
@@ -42,23 +43,33 @@ act_to_sensors = dict()
 
 def getSUL():
     # define events
-    ACT_TO_SENSORS = ['corner1_RETURN', 'corner1_TRANSFER', 'corner2_RETURN', 'corner2_START', 'corner2_TRANSFER',
-                      'splitter1_FORWARD', 'splitter1_RETURN', 'splitter1_TRANSFER', 'splitter2_FORWARD',
-                      'splitter2_RETURN', 'splitter2_TRANSFER', 'splitter3_FORWARD', 'splitter3_RETURN',
-                      'splitter3_TRANSFER', 'splitter4_FORWARD', 'splitter4_RETURN', 'splitter4_TRANSFER',
+    ACT_TO_SENSORS = ['corner1_START', 'corner1_RETURN', 'corner1_TRANSFER',
+                      'corner2_START', 'corner2_RETURN', 'corner2_TRANSFER',
+                      'End',
+                      'splitter1_FORWARD', 'splitter1_RETURN', 'splitter1_TRANSFER',
+                      'splitter2_FORWARD', 'splitter2_RETURN', 'splitter2_TRANSFER',
+                      'splitter3_FORWARD', 'splitter3_RETURN', 'splitter3_TRANSFER',
+                      'splitter4_FORWARD', 'splitter4_RETURN', 'splitter4_TRANSFER',
                       'splitter5_CHECKOUT', 'splitter5_FINISH', 'splitter5_FORWARD', 'splitter5_RETURN',
-                      'splitter5_SCRAP', 'splitter5_TRANSFER', 'station11_FAIL', 'station11_LOAD',
-                      'station11_PROCESS', 'station11_TRANSFER', 'station11_UNLOAD', 'station21_FAIL',
-                      'station21_LOAD', 'station21_PASS', 'station21_PROCESS', 'station21_TRANSFER',
-                      'station21_UNLOAD', 'station22_FAIL', 'station22_LOAD', 'station22_PASS',
-                      'station22_PROCESS', 'station22_TRANSFER', 'station22_UNLOAD', 'station31_BLOCK',
-                      'station31_FAIL', 'station31_LOAD', 'station31_PASS', 'station31_PROCESS', 'station31_TRANSFER',
-                      'station31_UNLOAD', 'station41_FAIL', 'station41_LOAD', 'station41_PASS', 'station41_PROCESS',
-                      'station41_TRANSFER', 'station41_UNLOAD', 'station51_FAIL', 'station51_LOAD', 'station51_PASS',
-                      'station51_PROCESS', 'station51_TRANSFER', 'station51_UNLOAD', 'station52_FAIL', 'station52_LOAD',
-                      'station52_PASS', 'station52_PROCESS', 'station52_TRANSFER', 'station52_UNLOAD', 'station61_LOAD',
-                      'station61_PASS', 'station61_PROCESS', 'station61_TRANSFER', 'station61_UNLOAD', 'station71_LOAD',
-                      'station71_PASS', 'station71_PROCESS', 'station71_TRANSFER', 'station71_UNLOAD']
+                      'splitter5_SCRAP', 'splitter5_TRANSFER',
+                      'station11_FAIL', 'station11_LOAD', 'station11_PROCESS', 'station11_TRANSFER',
+                      'station11_UNLOAD',
+                      'station21_FAIL', 'station21_LOAD', 'station21_PASS', 'station21_pass_PASS', 'station21_PROCESS',
+                      'station21_TRANSFER', 'station21_pass_TRANSFER', 'station21_UNLOAD',
+                      'station22_FAIL', 'station22_LOAD', 'station22_PASS', 'station22_pass_PASS', 'station22_PROCESS',
+                      'station22_TRANSFER', 'station22_pass_TRANSFER', 'station22_UNLOAD', 'station31_BLOCK',
+                      'station31_FAIL', 'station31_LOAD', 'station31_PASS', 'station31_pass_PASS', 'station31_PROCESS',
+                      'station31_TRANSFER', 'station31_pass_TRANSFER', 'station31_UNLOAD',
+                      'station41_FAIL', 'station41_LOAD', 'station41_PASS', 'station41_pass_PASS', 'station41_PROCESS',
+                      'station41_TRANSFER', 'station41_pass_TRANSFER', 'station41_UNLOAD',
+                      'station51_FAIL', 'station51_LOAD', 'station51_PASS', 'station51_pass_PASS', 'station51_PROCESS',
+                      'station51_TRANSFER', 'station51_pass_TRANSFER', 'station51_UNLOAD',
+                      'station52_FAIL', 'station52_LOAD', 'station52_PASS', 'station52_pass_PASS', 'station52_PROCESS',
+                      'station52_TRANSFER', 'station52_pass_TRANSFER', 'station52_UNLOAD',
+                      'station61_LOAD', 'station61_PASS', 'station61_pass_PASS', 'station61_PROCESS',
+                      'station61_TRANSFER', 'station61_pass_TRANSFER', 'station61_UNLOAD',
+                      'station71_LOAD', 'station71_PASS', 'station71_pass_PASS', 'station71_PROCESS',
+                      'station71_TRANSFER', 'station71_pass_TRANSFER', 'station71_UNLOAD']
 
     events: List[Event] = [Event('', e, f's{i + 1}') for i, e in enumerate(ACT_TO_SENSORS)]
 
@@ -75,7 +86,7 @@ test = False
 if test:
     sul, _ = getSUL()
 
-    log = xes_importer.apply("/Users/livialestingi/PycharmProjects/lsha/resources/traces/event_log_processed_1.xes")
+    log = xes_importer.apply("resources/processed.xes")
     print(f"Found {len(log)} traces")
     for trace in tqdm(log[:10]):
         sul.process_data(trace)
