@@ -2,7 +2,13 @@
 
 ## 1) Prerequisites
 - Anaconda or Miniconda installed
-- macOS/Linux/Windows terminal
+- macOS/Linux terminal
+
+On Linux run:
+```
+sudo apt update
+sudo apt install xdg-utils
+```
 
 Optional but recommended:
 - Graphviz installed at system level (helps `pygraphviz`); on macOS: `brew install graphviz`, on Ubuntu/Debian: `sudo apt-get install graphviz`

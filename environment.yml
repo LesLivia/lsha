@@ -1,94 +1,25 @@
 name: lsha
 channels:
+  - conda-forge
   - defaults
+
 dependencies:
-  - blas=1.0=openblas
-  - boost-cpp=1.82.0=h48ca7d4_2
-  - bottleneck=1.3.7=py310hbda83bc_0
-  - brotli=1.0.9=h80987f9_8
-  - brotli-bin=1.0.9=h80987f9_8
-  - bzip2=1.0.8=h80987f9_6
-  - c-ares=1.19.1=h80987f9_0
-  - ca-certificates=2024.7.2=hca03da5_0
-  - cairo=1.16.0=h302bd0f_5
-  - expat=2.6.2=h313beb8_0
-  - font-ttf-dejavu-sans-mono=2.37=hd3eb1b0_0
-  - font-ttf-inconsolata=2.001=hcb22688_0
-  - font-ttf-source-code-pro=2.030=hd3eb1b0_0
-  - font-ttf-ubuntu=0.83=h8b1ccd4_0
-  - fontconfig=2.14.1=h6402c1e_3
-  - fonts-anaconda=1=h8fa9717_0
-  - fonts-conda-ecosystem=1=hd3eb1b0_0
-  - freetype=2.12.1=h1192e45_0
-  - fribidi=1.0.10=h1a28f6b_0
-  - gdk-pixbuf=2.42.10=h80987f9_1
-  - gettext=0.21.0=hbdbcc25_2
-  - giflib=5.2.1=h80987f9_3
-  - glib=2.78.4=h313beb8_0
-  - glib-tools=2.78.4=h313beb8_0
-  - graphite2=1.3.14=hc377ac9_1
-  - graphviz=2.50.0=hf331ead_1
-  - gts=0.7.6=hde733a8_3
-  - harfbuzz=4.3.0=he9eebac_2
-  - icu=73.1=h313beb8_0
-  - jpeg=9e=h80987f9_3
-  - krb5=1.20.1=hf3e1bf2_1
-  - lcms2=2.12=hba8e193_0
-  - lerc=3.0=hc377ac9_0
-  - libboost=1.82.0=h0bc93f9_2
-  - libbrotlicommon=1.0.9=h80987f9_8
-  - libbrotlidec=1.0.9=h80987f9_8
-  - libbrotlienc=1.0.9=h80987f9_8
-  - libcurl=8.7.1=h3e2b118_0
-  - libcxx=14.0.6=h848a8c0_0
-  - libdeflate=1.17=h80987f9_1
-  - libedit=3.1.20230828=h80987f9_0
-  - libev=4.33=h1a28f6b_1
-  - libffi=3.4.4=hca03da5_1
-  - libgd=2.3.3=h313beb8_3
-  - libgfortran=5.0.0=11_3_0_hca03da5_28
-  - libgfortran5=11.3.0=h009349e_28
-  - libglib=2.78.4=h0a96307_0
-  - libiconv=1.16=h80987f9_3
-  - libnghttp2=1.57.0=h62f6fdd_0
-  - libopenblas=0.3.21=h269037a_0
-  - libpng=1.6.39=h80987f9_0
-  - librsvg=2.54.4=h01aef1a_4
-  - libssh2=1.11.0=h3e2b118_0
-  - libtiff=4.5.1=h313beb8_0
-  - libtool=2.4.6=h313beb8_1009
-  - libwebp=1.2.4=ha3663a8_1
-  - libwebp-base=1.2.4=h80987f9_1
-  - libxml2=2.13.1=h0b34f26_2
-  - llvm-openmp=14.0.6=hc6e5704_0
-  - lz4-c=1.9.4=h313beb8_1
-  - ncurses=6.4=h313beb8_0
-  - nspr=4.35=h313beb8_0
-  - nss=3.89.1=h313beb8_0
-  - numexpr=2.8.7=py310hecc3335_0
-  - openjpeg=2.5.2=h54b8e55_0
-  - openssl=3.0.14=h80987f9_0
-  - packaging=24.1=py310hca03da5_0
-  - pandas=2.2.2=py310h313beb8_0
-  - pango=1.50.7=h7271ec9_0
-  - pcre2=10.42=hb066dcc_1
-  - pixman=0.40.0=h1a28f6b_0
-  - poppler=22.12.0=h52f4003_3
-  - poppler-data=0.4.11=hca03da5_1
-  - pybind11-abi=4=hd3eb1b0_1
-  - python=3.10.14=hb885b13_1
-  - python-dateutil=2.9.0post0=py310hca03da5_2
-  - pytz=2024.1=py310hca03da5_0
-  - readline=8.2=h1a28f6b_0
-  - six=1.16.0=pyhd3eb1b0_1
-  - sqlite=3.45.3=h80987f9_0
-  - tk=8.6.14=h6ba3021_0
-  - tornado=6.4.1=py310h80987f9_0
-  - unicodedata2=15.1.0=py310h80987f9_0
-  - wheel=0.43.0=py310hca03da5_0
-  - xz=5.4.6=h80987f9_1
-  - zlib=1.2.13=h18a0788_1
-  - zstd=1.5.5=hd90d995_2
+  - python=3.11
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - numexpr
+  - tornado
+  - packaging
+  - python-dateutil
+  - pytz
+  - six
+  - wheel
+  - graphviz
+  - pygraphviz
+  - pip
+
   - pip:
       - backports-tarfile==1.2.0
       - build==1.2.2.post1
@@ -110,29 +41,24 @@ dependencies:
       - kiwisolver==1.4.7
       - lxml==6.0.2
       - markdown-it-py==3.0.0
-      - matplotlib==3.9.2
       - mdurl==0.1.2
       - more-itertools==10.5.0
       - neo4j==5.24.0
       - networkx==3.4.2
       - nh3==0.2.18
-      - numpy==1.26.4
       - pillow==10.4.0
       - pip==24.3.1
       - pkginfo==1.10.0
       - pm4py==2.7.19.5
       - pygad==3.3.1
       - pygments==2.18.0
-      - pygraphviz==1.13
       - pyparsing==3.1.4
       - pyproject-hooks==1.1.0
-      - python-graphviz==0.20.3
       - readme-renderer==44.0
       - requests==2.32.3
       - requests-toolbelt==1.0.0
       - rfc3986==2.0.0
       - rich==13.8.0
-      - scipy==1.14.1
       - setuptools==80.9.0
       - skg-connector==0.1.16
       - tomli==2.0.1
@@ -141,4 +67,3 @@ dependencies:
       - tzdata==2024.1
       - urllib3==2.2.2
       - zipp==3.20.1
-prefix: /opt/anaconda3/envs/lsha
