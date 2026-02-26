@@ -52,17 +52,11 @@ BRANCH_POINT_TPLT = """<branchpoint id="{}" x="{}" y="{}"/>\n"""
 
 BRANCH_POINT_EDGE_TPLT = """"<transition>\n\t<source ref="{}"/>\n\t<target ref="{}"/>\n</transition>"""
 
-TIME_DISTR = """const double ECDFx_{}[{}] = {};
-const double ECDFy_{}[{}] = {};\n
+TIME_DISTR = """const int ECDFx_{} = {};
 """
 
 ECDF_SAMPLING_TPLT = """
-        for(i=0; i &lt; ECDF_SIZES[d]-1 &amp;&amp; not found;i++)
-			if(ECDFy_{}[i] &gt; pr) {{
-                Tcdf = ECDFx_{}[i];
-                found = true;
-            }}
-        if(not found) Tcdf = ECDFx_{}[i];
+        Tcdf = ECDFx_{};
 """
 
 FUNC_TPLT = "{} if (d == {}) {{ {} }}"
@@ -148,9 +142,9 @@ def extract_time_distributions(start_date, end_date):
         cdfX = sorted_durations.tolist()
         cdfY = (np.arange(1, len(sorted_durations) + 1) / len(sorted_durations)).tolist()
 
-        distributions[station] = (low_th, upp_th, cdfX, cdfY)
+        distributions[station] = (low_th, upp_th, cdfX, cdfY, x_mean)
 
-    distributions["End"] = (0.0, 0.0, [], [])
+    distributions["End"] = (0.0, 0.0, [], [], 0.0)
 
     return distributions
 
@@ -201,7 +195,7 @@ def extract_prob_weights(start_date, end_date):
 def link_locations_w_params(learned_sha, distributions,
                             event_station_associations):
     locations_to_distributions = dict()
-    locations_to_distributions["__init__"] = (0.0, 0.0, [], [])
+    locations_to_distributions["__init__"] = (0.0, 0.0, [], [], 0.0)
 
     for edge in learned_sha.edges:
         for station in event_station_associations:
@@ -265,22 +259,21 @@ def sha_to_upp_tplt(learned_sha: SHA, name: str, start, end,
                 if terminal_loc:
                     invariant = "x'==0"
                 else:
-                    invariant = "x &lt;= {:.2f}".format(time_distr[1])
+                    invariant = "x &lt;= {}".format(int(time_distr[4]))
             else:
                 loc_to_distr[loc.id] = i
 
                 if terminal_loc:
                     invariant = "x'==0"
                 else:
-                    invariant = "x &lt;= Tcdf + eps"
+                    invariant = "x &lt;= Tcdf "
 
                 if config['AUTOMATON']['invariant.unit'] == 's':
                     x_vals = '{' + ','.join(['{:.3f}'.format(x) for x in time_distr[2]]) + '}'
                 else:
                     x_vals = '{' + ','.join(['{:.3f}'.format(x / 100 / 60) for x in time_distr[2]]) + '}'
                 y_vals = '{' + ','.join(['{:.4f}'.format(x) for x in time_distr[3]]) + '}'
-                cdf_str += TIME_DISTR.format(i, len(time_distr[2]), x_vals,
-                                             i, len(time_distr[3]), y_vals)
+                cdf_str += TIME_DISTR.format(i, int(time_distr[4]))
 
                 if i == 0:
                     func_str += FUNC_TPLT.format('', i, ECDF_SAMPLING_TPLT.format(i, i, i))
@@ -318,14 +311,15 @@ def sha_to_upp_tplt(learned_sha: SHA, name: str, start, end,
         if station_start != station_dest:
             time_distr_start = loc_to_distributions[edge.start.name]
             if INVARIANT_FUN.upper() != 'AVG' and station_dest != "End":
-                guard = "x &gt;= Tcdf - eps"
+                guard = "x &gt;= 0"
                 update = 'sample_ecdf({}),'.format(loc_to_distr[edge.dest.id])
             else:
-                guard = "x &gt;= {:.2f}".format(time_distr_start[0])
+                # guard = "x &gt;= {:.2f}".format(time_distr_start[0])
+                guard = ''
                 update = ''
             update += "x=0"
         else:
-            guard = "true"
+            guard = ''
             update = ''
 
         if station_start == "Start" or station_dest == "End" or station_dest == station_start:

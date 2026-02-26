@@ -7,18 +7,12 @@ clock x;
 ** Time CDFs
 **/
 
-double eps = 0.1;
-double Tcdf = 0.0;
+int Tcdf = 0;
 
 **TCDF**
 
 void sample_ecdf(int d) {
-	double pr = random(1.0);
-	int i;
-    bool found = false;
-
     **SAMPLING_FN**
-
 }
 </declaration>
 **LOCATIONS**<init ref="**INIT_ID**"/>**TRANSITIONS**</template>
