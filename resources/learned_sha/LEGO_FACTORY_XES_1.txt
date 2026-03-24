@@ -1,0 +1,217 @@
+--EVENT LABELS DICT--
+
+
+
+--OBSERVABLE EVENTS--
+
+s1: corner1_START
+s2: corner1_RETURN
+s3: corner1_TRANSFER
+s4: corner2_START
+s5: corner2_RETURN
+s6: corner2_TRANSFER
+s7: End
+s8: splitter1_FORWARD
+s9: splitter1_RETURN
+s10: splitter1_TRANSFER
+s11: splitter2_FORWARD
+s12: splitter2_RETURN
+s13: splitter2_TRANSFER
+s14: splitter3_FORWARD
+s15: splitter3_RETURN
+s16: splitter3_TRANSFER
+s17: splitter4_FORWARD
+s18: splitter4_RETURN
+s19: splitter4_TRANSFER
+s20: splitter5_CHECKOUT
+s21: splitter5_FINISH
+s22: splitter5_FORWARD
+s23: splitter5_RETURN
+s24: splitter5_SCRAP
+s25: splitter5_TRANSFER
+s26: station11_FAIL
+s27: station11_LOAD
+s28: station11_PROCESS
+s29: station11_TRANSFER
+s30: station11_UNLOAD
+s31: station21_FAIL
+s32: station21_LOAD
+s33: station21_PASS
+s34: station21_pass_PASS
+s35: station21_PROCESS
+s36: station21_TRANSFER
+s37: station21_pass_TRANSFER
+s38: station21_UNLOAD
+s39: station22_FAIL
+s40: station22_LOAD
+s41: station22_PASS
+s42: station22_pass_PASS
+s43: station22_PROCESS
+s44: station22_TRANSFER
+s45: station22_pass_TRANSFER
+s46: station22_UNLOAD
+s47: station31_BLOCK
+s48: station31_FAIL
+s49: station31_LOAD
+s50: station31_PASS
+s51: station31_pass_PASS
+s52: station31_PROCESS
+s53: station31_TRANSFER
+s54: station31_pass_TRANSFER
+s55: station31_UNLOAD
+s56: station41_FAIL
+s57: station41_LOAD
+s58: station41_PASS
+s59: station41_pass_PASS
+s60: station41_PROCESS
+s61: station41_TRANSFER
+s62: station41_pass_TRANSFER
+s63: station41_UNLOAD
+s64: station51_FAIL
+s65: station51_LOAD
+s66: station51_PASS
+s67: station51_pass_PASS
+s68: station51_PROCESS
+s69: station51_TRANSFER
+s70: station51_pass_TRANSFER
+s71: station51_UNLOAD
+s72: station52_FAIL
+s73: station52_LOAD
+s74: station52_PASS
+s75: station52_pass_PASS
+s76: station52_PROCESS
+s77: station52_TRANSFER
+s78: station52_pass_TRANSFER
+s79: station52_UNLOAD
+s80: station61_LOAD
+s81: station61_PASS
+s82: station61_pass_PASS
+s83: station61_PROCESS
+s84: station61_TRANSFER
+s85: station61_pass_TRANSFER
+s86: station61_UNLOAD
+s87: station71_LOAD
+s88: station71_PASS
+s89: station71_pass_PASS
+s90: station71_PROCESS
+s91: station71_TRANSFER
+s92: station71_pass_TRANSFER
+s93: station71_UNLOAD
+
+
+--LEARNED DISTRIBUTIONS--
+
+D_0(4.000000)
+D_1(6.000000)
+D_2(27.000000)
+D_3(28.000000)
+D_4(29.000000)
+D_5(32.000000)
+D_6(34.000000)
+D_7(35.000000)
+D_8(37.000000)
+D_9(36.000000)
+D_10(42.000000)
+D_11(40.000000)
+D_12(43.000000)
+D_13(44.000000)
+D_14(49.000000)
+D_15(52.000000)
+D_16(53.000000)
+D_17(57.000000)
+D_18(60.000000)
+D_19(67.000000)
+D_20(61.000000)
+D_21(70.000000)
+D_22(73.000000)
+D_23(76.000000)
+D_24(45.000000)
+D_25(65.000000)
+D_26(68.000000)
+D_27(75.000000)
+D_28(69.000000)
+D_29(78.000000)
+D_30(51.000000)
+D_31(54.000000)
+D_32(59.000000)
+D_33(62.000000)
+D_34(82.000000)
+D_35(85.000000)
+D_36(87.000000)
+D_37(90.000000)
+D_38(2.000000)
+D_39(91.000000)
+D_40(3.000000)
+D_41(7.000000)
+
+
+--FINAL OBSERVATION TABLE--
+
+                                                                      |ε         
+----------------------------------------------------------------------+----------
+s4                                                                    |(f_0,D_0) 
+s4s6                                                                  |(f_0,D_1) 
+s4s6s27                                                               |(f_0,D_2) 
+s4s6s27s28                                                            |(f_0,D_3) 
+s4s6s27s28s29                                                         |(f_0,D_4) 
+s4s6s27s28s29s32                                                      |(f_0,D_5) 
+s4s6s27s28s29s34                                                      |(f_0,D_6) 
+s4s6s27s28s29s32s35                                                   |(f_0,D_7) 
+s4s6s27s28s29s34s37                                                   |(f_0,D_8) 
+s4s6s27s28s29s32s35s36                                                |(f_0,D_9) 
+s4s6s27s28s29s32s35s42                                                |(f_0,D_10)
+s4s6s27s28s29s34s37s40                                                |(f_0,D_11)
+s4s6s27s28s29s34s37s40s43                                             |(f_0,D_12)
+s4s6s27s28s29s34s37s40s43s44                                          |(f_0,D_13)
+s4s6s27s28s29s34s37s40s43s44s49                                       |(f_0,D_14)
+s4s6s27s28s29s34s37s40s43s44s49s52                                    |(f_0,D_15)
+s4s6s27s28s29s34s37s40s43s44s49s52s53                                 |(f_0,D_16)
+s4s6s27s28s29s34s37s40s43s44s49s52s53s57                              |(f_0,D_17)
+s4s6s27s28s29s34s37s40s43s44s49s52s53s57s60                           |(f_0,D_18)
+s4s6s27s28s29s34s37s40s43s44s49s52s53s57s60s67                        |(f_0,D_19)
+s4s6s27s28s29s34s37s40s43s44s49s52s53s57s60s67s61                     |(f_0,D_20)
+s4s6s27s28s29s34s37s40s43s44s49s52s53s57s60s67s61s70                  |(f_0,D_21)
+s4s6s27s28s29s34s37s40s43s44s49s52s53s57s60s67s61s70s73               |(f_0,D_22)
+s4s6s27s28s29s34s37s40s43s44s49s52s53s57s60s67s61s70s73s76            |(f_0,D_23)
+s4s6s27s28s29s32s35s42s36                                             |(f_0,D_9) 
+s4s6s27s28s29s32s35s42s36s45                                          |(f_0,D_24)
+s4s6s27s28s29s32s35s42s36s45s49                                       |(f_0,D_14)
+s4s6s27s28s29s32s35s42s36s45s49s52                                    |(f_0,D_15)
+s4s6s27s28s29s32s35s42s36s45s49s52s53                                 |(f_0,D_16)
+s4s6s27s28s29s32s35s42s36s45s49s52s53s57                              |(f_0,D_17)
+s4s6s27s28s29s32s35s42s36s45s49s52s53s57s60                           |(f_0,D_18)
+s4s6s27s28s29s32s35s42s36s45s49s52s53s57s60s65                        |(f_0,D_25)
+s4s6s27s28s29s32s35s42s36s45s49s52s53s57s60s65s61                     |(f_0,D_20)
+s4s6s27s28s29s32s35s42s36s45s49s52s53s57s60s65s61s68                  |(f_0,D_26)
+s4s6s27s28s29s32s35s42s36s45s49s52s53s57s60s65s61s68s75               |(f_0,D_27)
+s4s6s27s28s29s32s35s42s36s45s49s52s53s57s60s65s61s68s75s69            |(f_0,D_28)
+s4s6s27s28s29s32s35s42s36s45s49s52s53s57s60s65s61s68s75s69s78         |(f_0,D_29)
+s4s6s27s28s29s34s37s42                                                |(f_0,D_10)
+s4s6s27s28s29s34s37s42s45                                             |(f_0,D_24)
+s4s6s27s28s29s34s37s42s45s51                                          |(f_0,D_30)
+s4s6s27s28s29s34s37s42s45s51s54                                       |(f_0,D_31)
+s4s6s27s28s29s34s37s42s45s51s54s59                                    |(f_0,D_32)
+s4s6s27s28s29s34s37s42s45s51s54s59s62                                 |(f_0,D_33)
+s4s6s27s28s29s34s37s42s45s51s54s59s62s67                              |(f_0,D_19)
+s4s6s27s28s29s34s37s42s45s51s54s59s62s67s70                           |(f_0,D_21)
+s4s6s27s28s29s34s37s42s45s51s54s59s62s67s70s75                        |(f_0,D_27)
+s4s6s27s28s29s34s37s42s45s51s54s59s62s67s70s75s78                     |(f_0,D_29)
+s4s6s27s28s29s34s37s42s45s51s54s59s62s67s70s75s78s82                  |(f_0,D_34)
+s4s6s27s28s29s34s37s42s45s51s54s59s62s67s70s75s78s82s85               |(f_0,D_35)
+s4s6s27s28s29s34s37s42s45s51s54s59s62s67s70s75s78s82s85s87            |(f_0,D_36)
+s4s6s27s28s29s34s37s42s45s51s54s59s62s67s70s75s78s82s85s87s90         |(f_0,D_37)
+s4s6s27s28s29s34s37s42s45s51s54s59s62s67s70s75s78s82s85s87s90s2       |(f_0,D_38)
+s4s6s27s28s29s34s37s42s45s51s54s59s62s67s70s75s78s82s85s87s90s2s91    |(f_0,D_39)
+s4s6s27s28s29s34s37s42s45s51s54s59s62s67s70s75s78s82s85s87s90s2s91s3  |(f_0,D_40)
+s4s6s27s28s29s34s37s42s45s51s54s59s62s67s70s75s78s82s85s87s90s2s91s3s7|(f_0,D_41)
+----------------------------------------------------------------------+----------
+s4s6s27s28s29s32s35s36s42                                             |(f_0,D_10)
+s4s6s27s28s29s34s37s42s45s34                                          |(f_0,D_6) 
+----------------------------------------------------------------------+----------
+
+
+
+--PERFORMANCE DATA--
+
+SAMPLED TRACES:	262
+RUNNING TIME:	0:04:07.548227
